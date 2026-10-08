@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Player } from '@/types/game';
-import { BombBustersAction, BombBustersClientState, ClientWireTile } from './types';
+import { BombBustersAction, BombBustersClientState, ClientWireTile, WireValue } from './types';
 import { soundFX } from '@/lib/sounds';
 import confetti from 'canvas-confetti';
 import {
@@ -11,6 +11,7 @@ import {
   Award,
   BatteryCharging,
   Check,
+  Crown,
   Flame,
   HelpCircle,
   Radio,
@@ -56,6 +57,13 @@ export default function BombBustersBoard({
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showManual, setShowManual] = useState(false);
 
+  // Double Detector Skill State
+  const [doubleDetectorModalOpen, setDoubleDetectorModalOpen] = useState(false);
+  const [ddTargetPlayerId, setDdTargetPlayerId] = useState<string>('');
+  const [ddWireId1, setDdWireId1] = useState<string>('');
+  const [ddWireId2, setDdWireId2] = useState<string>('');
+  const [ddGuessedValue, setDdGuessedValue] = useState<number>(1);
+
   // Auto Bot Turn Runner: Host triggers the server-side bot AI so bot secret wire values remain 100% hidden
   useEffect(() => {
     if (state.phase !== 'in_progress') return;
@@ -91,14 +99,18 @@ export default function BombBustersBoard({
   const myStand = state.stands[currentPlayerId] || [];
   const selectedMyWires = myStand.filter((w) => selectedMyWireIds.includes(w.id));
   const isSoloCutReady =
-    selectedMyWires.length === 2 &&
-    selectedMyWires[0].value === selectedMyWires[1].value &&
-    selectedMyWires[0].value !== 'RED';
+    (selectedMyWires.length === 2 || selectedMyWires.length === 4) &&
+    selectedMyWires.every((w) => w.value === selectedMyWires[0].value) &&
+    selectedMyWires[0].color !== 'red';
+
+  const myUncutWires = myStand.filter((w) => !w.isCut);
+  const hasOnlyRedWires = myUncutWires.length > 0 && myUncutWires.every((w) => w.color === 'red');
+  const canUseDoubleDetector = !(state.doubleDetectorUsed && state.doubleDetectorUsed[currentPlayerId]);
 
   const progressPercent = Math.round((state.cutWiresCount / state.totalWiresToCut) * 100);
 
 
-  const getWireColor = (value: number | 'RED' | null, color?: string) => {
+  const getWireColor = (value: WireValue | null, color?: string) => {
     if (value === 'RED' || color === 'red') {
       return {
         name: 'RED DANGER',
@@ -133,8 +145,9 @@ export default function BombBustersBoard({
       { name: 'Teal', bg: 'bg-teal-600', text: 'text-teal-600', border: 'border-teal-500', wire: '#0d9488', accent: 'from-teal-600 to-teal-700' },
       { name: 'Ruby', bg: 'bg-rose-600', text: 'text-rose-600', border: 'border-rose-500', wire: '#e11d48', accent: 'from-rose-600 to-rose-700' },
     ];
-    if (typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 12) {
-      return colors[value - 1];
+    const num = typeof value === 'number' ? Math.floor(value) : typeof value === 'string' ? parseInt(value, 10) : NaN;
+    if (!isNaN(num) && num >= 1 && num <= 12) {
+      return colors[num - 1];
     }
     return { name: 'Unknown', bg: 'bg-slate-600', text: 'text-slate-400', border: 'border-slate-500', wire: '#64748b', accent: 'from-slate-600 to-slate-700' };
   };
@@ -213,6 +226,35 @@ export default function BombBustersBoard({
     onAction({ type: 'PASS_TURN' });
     setSelectedMyWireIds([]);
     setTargetSelection(null);
+  };
+
+  const handleDoubleDetector = () => {
+    if (!ddTargetPlayerId || !ddWireId1 || !ddWireId2) return;
+    soundFX.playClick();
+    onAction({
+      type: 'USE_DOUBLE_DETECTOR',
+      targetPlayerId: ddTargetPlayerId,
+      wireId1: ddWireId1,
+      wireId2: ddWireId2,
+      guessedValue: ddGuessedValue,
+    });
+    setDoubleDetectorModalOpen(false);
+    setDdWireId1('');
+    setDdWireId2('');
+  };
+
+  const handleUseHelperCard = (cardId: string, targetWireId?: string) => {
+    soundFX.playClick();
+    onAction({
+      type: 'USE_HELPER_CARD',
+      cardId,
+      targetWireId,
+    });
+  };
+
+  const handleRevealRedWires = () => {
+    soundFX.playClick();
+    onAction({ type: 'REVEAL_RED_WIRES' });
   };
 
 
@@ -333,8 +375,19 @@ export default function BombBustersBoard({
                     <div className="flex items-center justify-between px-1">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{teammate.avatar}</span>
-                        <div className="font-serif font-black text-xs sm:text-sm text-amber-100 drop-shadow">
-                          {teammate.name}
+                        <div className="font-serif font-black text-xs sm:text-sm text-amber-100 drop-shadow flex items-center gap-1.5">
+                          <span>{teammate.name}</span>
+                          {teammate.id === state.captainPlayerId && (
+                            <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-mono font-bold flex items-center gap-1">
+                              <Crown className="w-2.5 h-2.5 text-amber-400" />
+                              <span>CAPTAIN</span>
+                            </span>
+                          )}
+                          {stand.length > 0 && stand.every((w) => w.isCut) && (
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[8px] font-mono font-bold">
+                              ✓ CLEARED
+                            </span>
+                          )}
                         </div>
                       </div>
                       {isTheirTurn && (
@@ -491,6 +544,72 @@ export default function BombBustersBoard({
             </div>
           )}
 
+          {/* TACTICAL HELPER CARDS (การ์ดตัวช่วย) */}
+          {state.helperCards && state.helperCards.length > 0 && (
+            <div className="bg-black/50 border border-indigo-900/50 rounded-2xl p-3.5 space-y-2.5 shadow-inner">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-[11px] font-mono uppercase tracking-wider text-indigo-300 flex items-center gap-2 font-bold">
+                  <Shield className="w-4 h-4 text-indigo-400" />
+                  <span>Tactical Helper Cards (การ์ดตัวช่วย):</span>
+                </div>
+                <span className="text-[10px] text-indigo-300/70 font-mono">
+                  Unlocked when wire #{'{n}'} is cut. Can play multiple per turn!
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {state.helperCards.map((card) => {
+                  const canUse = isMyTurn && card.isUnlocked && !card.isUsed;
+                  return (
+                    <div
+                      key={card.id}
+                      className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 transition ${
+                        card.isUsed
+                          ? 'bg-slate-950/60 border-slate-800 opacity-40'
+                          : card.isUnlocked
+                          ? 'bg-indigo-950/40 border-indigo-500/60 shadow-md shadow-indigo-950/30'
+                          : 'bg-slate-900/70 border-slate-800'
+                      }`}
+                    >
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5 text-xs font-bold truncate">
+                          <span className={card.isUnlocked ? 'text-indigo-200' : 'text-slate-400'}>
+                            {card.name}
+                          </span>
+                          {card.isUsed ? (
+                            <span className="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.2 rounded font-mono">
+                              USED
+                            </span>
+                          ) : card.isUnlocked ? (
+                            <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded font-mono font-bold flex items-center gap-0.5">
+                              <Check className="w-2.5 h-2.5" /> READY
+                            </span>
+                          ) : (
+                            <span className="text-[9px] bg-amber-500/10 text-amber-400/80 px-1.5 py-0.2 rounded font-mono">
+                              Need #{card.requiredNumber}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-tight">
+                          {card.description}
+                        </p>
+                      </div>
+
+                      {canUse && (
+                        <button
+                          type="button"
+                          onClick={() => handleUseHelperCard(card.id)}
+                          className="px-2.5 py-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-lg text-xs font-bold transition shrink-0 shadow active:scale-95 cursor-pointer"
+                        >
+                          Use
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* CENTER INFO TOKEN SUPPLY TRAY (โทเคนใบ้ตรงกลาง) */}
           <div className="bg-black/40 border border-amber-900/40 rounded-2xl p-3.5 space-y-2 shadow-inner">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -610,14 +729,54 @@ export default function BombBustersBoard({
                 <BatteryCharging className="w-4 h-4 text-emerald-400" />
                 <span>Stabilizer +1 {state.equipment.stabilizerAvailable ? '(Ready)' : '(Used)'}</span>
               </button>
+
+              <button
+                disabled={!canUseDoubleDetector || !isMyTurn}
+                onClick={() => {
+                  soundFX.playClick();
+                  const firstOther = players.find((p) => p.id !== currentPlayerId);
+                  setDdTargetPlayerId(firstOther?.id || '');
+                  setDdWireId1('');
+                  setDdWireId2('');
+                  setDoubleDetectorModalOpen(true);
+                }}
+                className={`px-3.5 py-2.5 rounded-xl border flex items-center gap-2 text-xs font-bold transition shadow-md ${
+                  canUseDoubleDetector && isMyTurn
+                    ? 'bg-slate-800 hover:bg-slate-700 text-purple-300 border-purple-500/60 shadow-purple-900/30'
+                    : 'bg-slate-900/80 text-slate-500 border-slate-800 opacity-50 cursor-not-allowed'
+                }`}
+              >
+                <Zap className="w-4 h-4 text-purple-400" />
+                <span>Double Detector {canUseDoubleDetector ? '(1 Left)' : '(Used)'}</span>
+              </button>
             </div>
           </div>
 
-          {/* ACTIVE SNIP ACTION BENCH (DUO CUT, SOLO CUT, OR OPERATIVE DEDUCTION CALL) */}
+          {/* ACTIVE SNIP ACTION BENCH (DUO CUT, SOLO CUT, SAFE RED REVEAL, OR OPERATIVE CALL) */}
           {isMyTurn && (
             <div className="bg-black/50 border border-slate-700 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-inner">
-              {/* Option A: Solo Cut Ready */}
-              {isSoloCutReady ? (
+              {/* Option A: Safe Red Wire Reveal when only Red wires remain */}
+              {hasOnlyRedWires ? (
+                <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-4 bg-rose-950/30 border border-rose-500/40 rounded-xl p-3">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-6 h-6 text-rose-400 animate-pulse shrink-0" />
+                    <div>
+                      <div className="font-bold text-rose-300 text-xs sm:text-sm">
+                        ALL REMAINING WIRES ON YOUR STAND ARE RED DANGER WIRES!
+                      </div>
+                      <div className="text-[11px] text-slate-300">
+                        Per defusal protocol (Rule 6.3), you can safely reveal all red wires to clear your stand!
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRevealRedWires}
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-xl shadow-rose-950/60 flex items-center justify-center gap-2 transform active:scale-95 shrink-0"
+                  >
+                    <span>REVEAL ALL RED WIRES 🚩</span>
+                  </button>
+                </div>
+              ) : isSoloCutReady ? (
                 <div className="flex flex-col sm:flex-row items-center justify-between w-full gap-4">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">🎯</span>
@@ -773,9 +932,17 @@ export default function BombBustersBoard({
             <div className="flex items-center gap-2.5">
               <span className="text-2xl">🪵</span>
               <div>
-                <h3 className="text-base sm:text-lg font-serif font-black text-amber-100 drop-shadow">
-                  Your Personal Defusal Stand (Secret Wires)
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-serif font-black text-amber-100 drop-shadow">
+                    Your Personal Defusal Stand (Secret Wires)
+                  </h3>
+                  {currentPlayerId === state.captainPlayerId && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/40">
+                      <Crown className="w-3 h-3 text-amber-400" />
+                      CAPTAIN
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-amber-300/70 font-sans">
                   Sorted strictly ascending (1 ➔ 12). Select 1 wire for a Duo Cut, or select 2 identical wires for a Solo Cut!
                 </p>
@@ -985,6 +1152,147 @@ export default function BombBustersBoard({
         </div>
       )}
 
+      {/* DOUBLE DETECTOR (เครื่องตรวจจับแบบสองเท่า) MODAL */}
+      {doubleDetectorModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#111215] border border-purple-500/40 rounded-2xl p-5 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-purple-400" />
+                <div>
+                  <h3 className="text-sm font-bold text-white">Double Detector (เครื่องตรวจจับแบบสองเท่า)</h3>
+                  <div className="text-[10px] text-zinc-400">1 use per operative per mission</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setDoubleDetectorModalOpen(false)}
+                className="p-1.5 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-400 hover:text-white border border-[#272930] transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* Select Teammate */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-300">1. Select Teammate:</label>
+                <select
+                  value={ddTargetPlayerId}
+                  onChange={(e) => {
+                    setDdTargetPlayerId(e.target.value);
+                    setDdWireId1('');
+                    setDdWireId2('');
+                  }}
+                  className="w-full bg-[#141518] border border-[#272930] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-purple-500"
+                >
+                  {players
+                    .filter((p) => p.id !== currentPlayerId)
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.avatar} {p.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Select 2 Adjacent Wires */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-zinc-300">2. Select 2 Adjacent Wires:</label>
+                  <span className="text-[10px] text-purple-400">
+                    {ddWireId1 && ddWireId2 ? '✓ 2 Adjacent wires selected' : ddWireId1 ? 'Pick 1 adjacent wire' : 'Click first wire'}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2 p-3 bg-black/40 rounded-xl border border-zinc-800 justify-center">
+                  {(() => {
+                    const uncutWires = (state.stands[ddTargetPlayerId] || []).filter((w) => !w.isCut);
+                    if (uncutWires.length === 0) {
+                      return <span className="text-xs text-zinc-500">No uncut wires remaining</span>;
+                    }
+                    return uncutWires.map((wire, idx) => {
+                      const isSelected = wire.id === ddWireId1 || wire.id === ddWireId2;
+                      return (
+                        <button
+                          key={wire.id}
+                          type="button"
+                          onClick={() => {
+                            if (wire.id === ddWireId1) {
+                              setDdWireId1(ddWireId2);
+                              setDdWireId2('');
+                            } else if (wire.id === ddWireId2) {
+                              setDdWireId2('');
+                            } else if (!ddWireId1) {
+                              setDdWireId1(wire.id);
+                            } else if (!ddWireId2) {
+                              const idx1 = uncutWires.findIndex((w) => w.id === ddWireId1);
+                              if (Math.abs(idx - idx1) === 1) {
+                                setDdWireId2(wire.id);
+                              } else {
+                                setDdWireId1(wire.id);
+                              }
+                            } else {
+                              setDdWireId1(wire.id);
+                              setDdWireId2('');
+                            }
+                          }}
+                          className={`w-10 h-14 rounded-xl border flex flex-col items-center justify-center font-mono text-xs font-bold transition ${
+                            isSelected
+                              ? 'bg-purple-600 border-purple-300 text-white shadow-lg shadow-purple-900/50 scale-105'
+                              : 'bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-white'
+                          }`}
+                        >
+                          <span className="text-[9px] text-zinc-400">#{idx + 1}</span>
+                          <span>{wire.infoToken ? `#${wire.infoToken}` : '?'}</span>
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              {/* Select Guess Value */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-zinc-300">3. Call Guessed Value (1-12):</label>
+                <select
+                  value={ddGuessedValue}
+                  onChange={(e) => setDdGuessedValue(Number(e.target.value))}
+                  className="w-full bg-[#141518] border border-[#272930] rounded-xl p-2.5 text-xs text-purple-300 font-mono font-bold focus:outline-none focus:border-purple-500"
+                >
+                  {Array.from({ length: state.numberRange || 12 }, (_, i) => i + 1).map((val) => (
+                    <option key={val} value={val}>
+                      #{val}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="p-2.5 bg-purple-950/20 border border-purple-900/40 rounded-xl text-[10px] text-purple-300/80 space-y-1">
+                <div>• <strong>Both Match:</strong> Cut both wires immediately! ✂️✂️</div>
+                <div>• <strong>1 Matches:</strong> Wire reveals its Info Token (no stability lost). 💡</div>
+                <div>• <strong>0 Match:</strong> Detonator loses 1 stability cell. 💥</div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2 border-t border-[#222429]">
+              <button
+                onClick={() => setDoubleDetectorModalOpen(false)}
+                className="px-4 py-2 bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] rounded-xl text-xs font-semibold transition"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!ddTargetPlayerId || !ddWireId1 || !ddWireId2}
+                onClick={handleDoubleDetector}
+                className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md disabled:opacity-40"
+              >
+                Scan Adjacent Wires
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* GAME OVER (VICTORY OR EXPLODED) MODAL */}
       {state.phase !== 'in_progress' && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
@@ -1054,50 +1362,63 @@ export default function BombBustersBoard({
 
             <div className="overflow-y-auto space-y-3.5 pr-1 text-xs text-zinc-300 leading-relaxed">
               <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl text-zinc-300">
-                <strong className="text-white">Mission Goal:</strong> Work with your squad to cut all standard numbered wires across everyone&apos;s stands before the detonator runs out of lives or a Red Danger wire triggers!
+                <strong className="text-white">Mission Protocol:</strong> Complete up to 60 missions from easiest to expert! Work with your squad to cut all standard numbered wires across everyone&apos;s stands without detonating. If all standard wires are cut (or red wires safely revealed), you win!
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">🪵 Ascending Wire Stands</h4>
+                <h4 className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">👑 Captain & Turn Order</h4>
                 <p className="text-zinc-400">
-                  Every operative&apos;s stand is ordered from <strong>lowest number on the left</strong> to <strong>highest number on the right</strong>. Use relative positioning to deduce teammates&apos; hidden numbers.
+                  Player #1 in the randomized turn order is designated <strong>Mission Captain</strong>. Each operative starts the mission by placing 1 Info Token on a matching wire on their rack to give the squad an opening clue.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-sky-400 uppercase tracking-wider text-[11px]">✂️ Duo Cut (Teammate Action)</h4>
+                <h4 className="font-bold text-sky-400 uppercase tracking-wider text-[11px]">✂️ Duo Cut (ตัดคู่)</h4>
                 <p className="text-zinc-400">
-                  On your turn, point to a wire on a teammate&apos;s stand that matches a number on your own stand:
+                  Select 1 wire on your stand and target 1 wire on a teammate&apos;s stand:
                   <br />• <strong>Match:</strong> Both wires are safely cut!
-                  <br />• <strong>Miss:</strong> Detonator loses 1 life, and teammate reveals that wire&apos;s Info Token to help future deductions.
+                  <br />• <strong>Miss:</strong> Detonator loses 1 stability cell, and your teammate reveals that wire&apos;s Info Token to assist future deductions.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">⚡ Solo Cut (Pair Action)</h4>
+                <h4 className="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">⚡ Solo Cut (ตัดเดี่ยว)</h4>
                 <p className="text-zinc-400">
-                  If you hold two identical wires on your own rack and no teammate holds that number, select both to cut them safely!
+                  You can cut wires on your own rack without teammate confirmation in two scenarios:
+                  <br />1. You hold all 4 copies of that number in your own hand.
+                  <br />2. That number has already had 1 pair cut on the board, and you hold the remaining 2 copies in your hand.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">🟡 Yellow Decimal Wires (.5)</h4>
+                <h4 className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">🟡 Yellow Decimals (.1) & 🚨 Red Danger (.5)</h4>
                 <p className="text-zinc-400">
-                  Decimal wires (like 2.5) sit between consecutive whole numbers, providing tight positional clues.
+                  • <strong>Yellow Wires (.1):</strong> 1.1, 2.1, etc. Sorted naturally between whole numbers. Yellow pairs can be cut together without guessing numbers!
+                  <br />• <strong>Red Danger Wires (.5):</strong> Cutting a red wire causes immediate explosion! However, if <strong>only Red wires remain</strong> on your stand, you can use <em>Safe Red Wire Reveal</em> to clear your rack without detonation.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-rose-400 uppercase tracking-wider text-[11px]">🚨 Red Danger Wires</h4>
+                <h4 className="font-bold text-purple-400 uppercase tracking-wider text-[11px]">⚡ Double Detector (เครื่องตรวจจับแบบสองเท่า)</h4>
                 <p className="text-zinc-400">
-                  Never cut Red Wires unless specifically instructed by the mission card, or the bomb will instantly detonate!
+                  Each operative can use the Double Detector <strong>once per mission</strong>. Choose 2 adjacent wires on a teammate&apos;s rack and guess 1 number:
+                  <br />• <strong>Both match:</strong> Cut both wires immediately!
+                  <br />• <strong>1 matches:</strong> Reveal that wire&apos;s Info Token (no stability lost).
+                  <br />• <strong>0 match:</strong> Detonator loses 1 stability cell.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-purple-400 uppercase tracking-wider text-[11px]">📡 Scanner / Detector Equipment</h4>
+                <h4 className="font-bold text-indigo-400 uppercase tracking-wider text-[11px]">🛡️ Tactical Helper Cards (การ์ดตัวช่วย)</h4>
                 <p className="text-zinc-400">
-                  Use the Scanner tool to query whether any teammate holds a specific number on their stand to narrow down critical deductions.
+                  Helper cards unlock once their designated wire number has been cut on the board. Once unlocked, operatives can play them on their turn (multiple can be used per turn, one-time use per card).
+                </p>
+              </div>
+
+              <div className="space-y-1">
+                <h4 className="font-bold text-rose-400 uppercase tracking-wider text-[11px]">💥 Detonator Stability Formula</h4>
+                <p className="text-zinc-400">
+                  Total mistakes allowed = <strong>Number of Players + 1</strong>. When an operative has no uncut wires remaining, their turns are automatically skipped.
                 </p>
               </div>
             </div>
