@@ -30,72 +30,167 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Initialize socket and profile
+  // Fetch room via REST API for instant initial load and fallback
+  const fetchRoomState = async (userProfile?: UserProfile | null) => {
+    try {
+      const u = userProfile || profile || getUserProfile();
+      const params = new URLSearchParams({
+        playerId: u.id,
+        name: u.name,
+        avatar: u.avatar,
+      });
+      const res = await fetch(`/api/room/${roomCode}?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.room) {
+          setRoom(data.room);
+          setLoading(false);
+          setError(null);
+          return data.room;
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (errData.error) {
+          setError(errData.error);
+          setLoading(false);
+        }
+      }
+    } catch (err) {
+      console.warn('HTTP room sync error:', err);
+    }
+  };
+
+  // Dual transport: Immediate HTTP fetch + Socket.IO + Auto polling fallback
   useEffect(() => {
     const user = getUserProfile();
     setProfile(user);
 
+    // 1. Immediately fetch room state over HTTP (sub-20ms)
+    fetchRoomState(user);
+
+    // 2. Setup Socket.IO for real-time push
     const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || undefined;
-    const s = io(socketUrl);
-    setSocket(s);
-
-    s.on('connect', () => {
-      s.emit('join_room', {
-        code: roomCode,
-        player: user,
+    let s: Socket | null = null;
+    try {
+      s = io(socketUrl, {
+        reconnectionAttempts: 5,
+        timeout: 4000,
+        transports: ['websocket', 'polling'],
       });
-    });
+      setSocket(s);
 
-    s.on('room_state_update', (updatedRoom: Room) => {
-      setRoom(updatedRoom);
-      setLoading(false);
-      setError(null);
-    });
+      s.on('connect', () => {
+        s?.emit('join_room', {
+          code: roomCode,
+          player: user,
+        });
+      });
 
-    s.on('error_notification', ({ message }: { message: string }) => {
-      setError(message);
-      setLoading(false);
-    });
+      s.on('room_state_update', (updatedRoom: Room) => {
+        setRoom(updatedRoom);
+        setLoading(false);
+        setError(null);
+      });
+
+      s.on('error_notification', ({ message }: { message: string }) => {
+        setError(message);
+        setLoading(false);
+      });
+
+      s.on('connect_error', () => {
+        // Fallback gracefully without blocking
+        fetchRoomState(user);
+      });
+    } catch {
+      // Socket creation fallback
+    }
+
+    // 3. Fallback polling loop (1.5s interval ensures sync on serverless Vercel)
+    const pollInterval = setInterval(() => {
+      fetchRoomState(user);
+    }, 1500);
 
     return () => {
-      s.disconnect();
+      clearInterval(pollInterval);
+      if (s) s.disconnect();
     };
   }, [roomCode]);
 
-  // Actions
+  // Dual Action Dispatcher (Socket.IO with HTTP POST fallback)
+  const postRoomAction = async (type: string, payload: any = {}) => {
+    try {
+      const u = profile || getUserProfile();
+      const res = await fetch(`/api/room/${roomCode}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, playerId: u.id, ...payload }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.room) {
+          setRoom(data.room);
+          setError(null);
+        }
+      }
+    } catch (err) {
+      console.error('Action POST failed:', err);
+    }
+  };
+
   const handleSelectGame = (gameId: string) => {
-    if (!socket) return;
-    socket.emit('select_game', { code: roomCode, gameId });
+    if (socket && socket.connected) {
+      socket.emit('select_game', { code: roomCode, gameId });
+    } else {
+      postRoomAction('select_game', { gameId });
+    }
   };
 
   const handleUpdateSettings = (settings: any) => {
-    if (!socket) return;
-    socket.emit('update_settings', { code: roomCode, settings });
+    if (socket && socket.connected) {
+      socket.emit('update_settings', { code: roomCode, settings });
+    } else {
+      postRoomAction('update_settings', { settings });
+    }
   };
 
   const handleToggleReady = (isReady: boolean) => {
-    if (!socket) return;
-    socket.emit('set_ready', { code: roomCode, isReady });
+    if (socket && socket.connected) {
+      socket.emit('set_ready', { code: roomCode, isReady });
+    } else {
+      postRoomAction('set_ready', { isReady });
+    }
   };
 
   const handleStartGame = () => {
-    if (!socket) return;
-    socket.emit('start_game', { code: roomCode });
+    if (socket && socket.connected) {
+      socket.emit('start_game', { code: roomCode });
+    } else {
+      postRoomAction('start_game');
+    }
   };
 
   const handleReturnToLobby = () => {
-    if (!socket) return;
-    socket.emit('return_to_lobby', { code: roomCode });
+    if (socket && socket.connected) {
+      socket.emit('return_to_lobby', { code: roomCode });
+    } else {
+      postRoomAction('return_to_lobby');
+    }
   };
 
   const handleGameAction = (action: any) => {
-    if (!socket) return;
-    socket.emit('game_action', { code: roomCode, action });
+    if (socket && socket.connected) {
+      socket.emit('game_action', { code: roomCode, action });
+    } else {
+      postRoomAction('game_action', { action });
+    }
   };
 
   const handleSendMessage = (text: string) => {
-    if (!socket) return;
-    socket.emit('send_chat', { code: roomCode, text });
+    if (socket && socket.connected) {
+      socket.emit('send_chat', { code: roomCode, text });
+    } else {
+      postRoomAction('send_chat', { text });
+    }
   };
 
   // Helper: Add simulated bot player for quick solo testing
@@ -105,18 +200,25 @@ export default function RoomPage({ params }: RoomPageProps) {
     const botNames = ['PixelBot', 'Echo', 'Nexus', 'Cypher', 'Gizmo'];
     const botId = `bot_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
-    // Create a temporary secondary socket connection to join as bot
-    const botSocket = io();
-    botSocket.on('connect', () => {
-      botSocket.emit('join_room', {
-        code: roomCode,
-        player: {
-          id: botId,
-          name: botNames[botIndex % botNames.length],
-          avatar: botAvatars[botIndex % botAvatars.length],
-        },
+    if (socket && socket.connected) {
+      const botSocket = io();
+      botSocket.on('connect', () => {
+        botSocket.emit('join_room', {
+          code: roomCode,
+          player: {
+            id: botId,
+            name: botNames[botIndex % botNames.length],
+            avatar: botAvatars[botIndex % botAvatars.length],
+          },
+        });
       });
-    });
+    } else {
+      postRoomAction('join', {
+        id: botId,
+        name: botNames[botIndex % botNames.length],
+        avatar: botAvatars[botIndex % botAvatars.length],
+      });
+    }
   };
 
   const allGames = getAllGames();
