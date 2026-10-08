@@ -77,7 +77,7 @@ export function GameDrawerSheet({
             animate="visible"
             exit="exit"
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className={`fixed z-50 bg-[#0d1422] border-slate-800 text-slate-100 flex flex-col shadow-2xl ${
+            className={`fixed z-50 bg-[#140d07] border-[#382416] text-[#ffedd7] flex flex-col shadow-2xl ${
               side === 'right'
                 ? 'top-0 right-0 bottom-0 w-full sm:w-96 border-l'
                 : side === 'left'
@@ -86,24 +86,24 @@ export function GameDrawerSheet({
             } ${className}`}
           >
             {/* Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-800/80 flex items-center justify-between bg-black/30">
+            <div className="p-4 sm:p-5 border-b border-[#382416] flex items-center justify-between bg-black/40">
               <div className="flex items-center gap-3">
                 {icon && (
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <div className="w-9 h-9 rounded-xl bg-[#dc5000]/15 border border-[#dc5000]/30 flex items-center justify-center text-[#dc5000]">
                     {icon}
                   </div>
                 )}
                 <div>
-                  <h3 className="font-bold text-sm text-white tracking-wide">{title}</h3>
+                  <h3 className="font-bold text-sm text-[#ffedd7] tracking-wide font-serifDisplay">{title}</h3>
                   {description && (
-                    <p className="text-[11px] text-slate-400 mt-0.5">{description}</p>
+                    <p className="text-[11px] text-[#cdcdc9] mt-0.5">{description}</p>
                   )}
                 </div>
               </div>
 
               <button
                 onClick={onClose}
-                className="btn-tactile p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700/60"
+                className="btn-tactile p-2 rounded-xl bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] border border-[#40372e]"
                 aria-label="Close drawer"
               >
                 <X className="w-4 h-4" />

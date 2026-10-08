@@ -82,26 +82,26 @@ export default function RoomLobby({
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8">
       {/* Top Invite Banner with Wood & Felt Table Trim */}
-      <div className="bg-gradient-to-r from-[#111927] via-[#0d1422] to-[#151c2e] border-2 border-amber-900/40 rounded-3xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+      <div className="bg-[#150d08]/95 border-2 border-[#382416] rounded-3xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-md">
         <div className="space-y-1.5 text-center md:text-left">
-          <div className="text-xs font-black tracking-widest text-amber-400 uppercase flex items-center justify-center md:justify-start gap-1.5">
+          <div className="text-xs font-black tracking-widest text-[#dc5000] uppercase flex items-center justify-center md:justify-start gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Private Table Dispatcher</span>
           </div>
           <div className="flex items-center gap-3 justify-center md:justify-start">
-            <h1 className="text-4xl sm:text-5xl font-black text-white font-mono tracking-widest bg-black/40 px-4 py-1 rounded-2xl border border-white/10 shadow-inner">
+            <h1 className="text-4xl sm:text-5xl font-black text-[#ffedd7] font-mono tracking-widest bg-[#0a0705] px-4 py-1 rounded-2xl border border-[#382416] shadow-inner">
               {room.code}
             </h1>
             <button
               onClick={copyRoomCode}
-              className="btn-tactile p-3 bg-slate-800/90 hover:bg-slate-700 text-slate-200 rounded-2xl border border-slate-700 shadow-md"
+              className="btn-tactile p-3 bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] rounded-2xl border border-[#40372e] shadow-md"
               title="Copy Room Code"
               aria-label="Copy Room Code"
             >
               {copiedCode ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
             </button>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-[#cdcdc9]">
             Share this 4-letter room code or link with friends to seat them at the table.
           </p>
         </div>
@@ -109,12 +109,12 @@ export default function RoomLobby({
         <div className="flex flex-wrap items-center gap-3 justify-center">
           <button
             onClick={copyRoomLink}
-            className="btn-tactile px-4 py-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-2 shadow-sm"
+            className="btn-tactile px-4 py-2.5 rounded-2xl bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] border border-[#40372e] font-bold text-xs flex items-center gap-2 shadow-sm"
           >
             {copiedLink ? (
               <Check className="w-4 h-4 text-emerald-400" />
             ) : (
-              <Share2 className="w-4 h-4 text-amber-400" />
+              <Share2 className="w-4 h-4 text-[#dc5000]" />
             )}
             <span>{copiedLink ? 'Link Copied!' : 'Copy Invite Link'}</span>
           </button>
@@ -122,10 +122,10 @@ export default function RoomLobby({
           {onAddBotPlayer && isHost && (
             <button
               onClick={onAddBotPlayer}
-              className="btn-tactile px-4 py-2.5 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold text-xs flex items-center gap-2 shadow-sm"
+              className="btn-tactile px-4 py-2.5 rounded-2xl bg-[#dc5000]/15 hover:bg-[#dc5000]/25 text-[#fde68a] border border-[#dc5000]/40 font-bold text-xs flex items-center gap-2 shadow-sm"
               title="Add a test player to easily verify multi-seat gameplay"
             >
-              <Bot className="w-4 h-4 text-amber-400" />
+              <Bot className="w-4 h-4 text-[#dc5000]" />
               <span>+ Add Test Player</span>
             </button>
           )}
@@ -135,9 +135,9 @@ export default function RoomLobby({
               soundFX.playClick();
               setShowRulesModal(true);
             }}
-            className="btn-tactile px-4 py-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs flex items-center gap-2 shadow-sm"
+            className="btn-tactile px-4 py-2.5 rounded-2xl bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] border border-[#40372e] font-bold text-xs flex items-center gap-2 shadow-sm"
           >
-            <BookOpen className="w-4 h-4 text-cyan-400" />
+            <BookOpen className="w-4 h-4 text-[#f59e0b]" />
             <span>📖 Rules & Materials</span>
           </button>
         </div>
@@ -147,13 +147,13 @@ export default function RoomLobby({
         {/* Left 2 Cols: Game Picker & Settings */}
         <div className="lg:col-span-2 space-y-6">
           {/* Game Selection */}
-          <div className="bg-[#0e1524] border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+          <div className="bg-[#150d08]/90 border border-[#382416] rounded-3xl p-6 space-y-4 shadow-xl backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-black text-white flex items-center gap-2 font-fantasy">
+                <h2 className="text-lg font-black text-[#ffedd7] flex items-center gap-2 font-serifDisplay">
                   <span>🎲</span> Tabletop Title Selector
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#cdcdc9]">
                   {isHost
                     ? 'As Table Host, choose which board game to play next.'
                     : 'The Table Host selects the active game.'}
@@ -164,7 +164,7 @@ export default function RoomLobby({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {games.map((game) => {
                 const isSelected = game.id === room.selectedGameId;
-                const fontClass = GAME_FONTS[game.id] || 'text-white';
+                const fontClass = GAME_FONTS[game.id] || 'text-[#ffedd7]';
                 return (
                   <div
                     key={game.id}
@@ -176,10 +176,10 @@ export default function RoomLobby({
                     }}
                     className={`relative rounded-2xl p-5 border transition-all text-left flex flex-col justify-between gap-3 btn-tactile ${
                       isSelected
-                        ? 'bg-gradient-to-br from-[#1a2337] via-[#101725] to-[#1d263b] border-amber-500 ring-2 ring-amber-500/40 shadow-xl'
+                        ? 'bg-gradient-to-br from-[#2a170b] via-[#1c0f07] to-[#251409] border-[#dc5000] ring-2 ring-[#dc5000]/40 shadow-2xl'
                         : isHost
-                        ? 'bg-[#121929] border-slate-800 hover:border-slate-700 hover:bg-[#182236] cursor-pointer'
-                        : 'bg-[#101522] border-slate-800/80 opacity-75'
+                        ? 'bg-[#1a110a] border-[#382416] hover:border-[#5a3a24] hover:bg-[#24170e] cursor-pointer'
+                        : 'bg-[#120a06] border-[#2b1b11] opacity-75'
                     }`}
                   >
                     <div>
@@ -188,25 +188,25 @@ export default function RoomLobby({
                           {game.icon}
                         </div>
                         {isSelected && (
-                          <span className="text-[10px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 rounded-full shadow-sm">
+                          <span className="text-[10px] font-black uppercase tracking-wider bg-[#dc5000]/20 text-[#fde68a] border border-[#dc5000]/40 px-2.5 py-0.5 rounded-full shadow-sm">
                             ★ Selected Game
                           </span>
                         )}
                       </div>
 
                       <h3 className={`text-xl font-black mt-3 ${fontClass}`}>{game.name}</h3>
-                      <p className="text-xs text-slate-300 mt-1 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-[#cdcdc9] mt-1 line-clamp-2 leading-relaxed">
                         {game.description}
                       </p>
                     </div>
 
-                    <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+                    <div className="pt-3 border-t border-[#382416]/60 flex items-center justify-between text-xs text-[#84847e]">
                       <span className="flex items-center gap-1 font-medium">
-                        <Users className="w-3.5 h-3.5 text-slate-500" />
+                        <Users className="w-3.5 h-3.5 text-[#84847e]" />
                         {game.minPlayers} - {game.maxPlayers} players
                       </span>
                       <span className="flex items-center gap-1 font-medium">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <Clock className="w-3.5 h-3.5 text-[#84847e]" />
                         {game.durationMinutes}
                       </span>
                     </div>
@@ -318,14 +318,14 @@ export default function RoomLobby({
 
         {/* Right Col: Player Roster & Start Button */}
         <div className="space-y-6">
-          <div className="bg-[#0e1524] border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+          <div className="bg-[#150d08]/90 border border-[#382416] rounded-3xl p-6 space-y-4 shadow-xl backdrop-blur-sm">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-amber-400" />
+              <h2 className="text-base font-bold text-[#ffedd7] flex items-center gap-2">
+                <Users className="w-5 h-5 text-[#dc5000]" />
                 <span>Players Seated ({room.players.length})</span>
               </h2>
               {selectedGame && (
-                <span className="text-xs text-slate-400 font-mono">
+                <span className="text-xs text-[#cdcdc9] font-mono">
                   Min: {selectedGame.minPlayers}
                 </span>
               )}
@@ -339,8 +339,8 @@ export default function RoomLobby({
                     key={player.id}
                     className={`flex items-center justify-between p-3 rounded-2xl border transition ${
                       isMe
-                        ? 'bg-[#192336] border-amber-500/40 ring-1 ring-amber-500/30'
-                        : 'bg-[#121827] border-slate-800'
+                        ? 'bg-[#26180e] border-[#dc5000]/50 ring-1 ring-[#dc5000]/30'
+                        : 'bg-[#18110a] border-[#382416]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
@@ -348,17 +348,17 @@ export default function RoomLobby({
                         {player.avatar}
                       </span>
                       <div className="min-w-0">
-                        <div className="font-bold text-xs text-white truncate flex items-center gap-1.5">
+                        <div className="font-bold text-xs text-[#ffedd7] truncate flex items-center gap-1.5">
                           <span>{player.name}</span>
                           {isMe && (
-                            <span className="text-[10px] text-amber-300 bg-amber-500/20 px-1.5 py-0.2 rounded font-bold">
+                            <span className="text-[10px] text-[#fde68a] bg-[#dc5000]/20 px-1.5 py-0.2 rounded font-bold">
                               You
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                        <div className="text-[10px] text-[#cdcdc9] flex items-center gap-1">
                           {player.isHost && (
-                            <span className="text-amber-400 flex items-center gap-0.5 font-bold">
+                            <span className="text-[#f59e0b] flex items-center gap-0.5 font-bold">
                               <Crown className="w-3 h-3" /> Host
                             </span>
                           )}
@@ -368,11 +368,11 @@ export default function RoomLobby({
 
                     <div className="flex items-center gap-2">
                       {player.isReady ? (
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold">
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold">
                           Ready ✓
                         </span>
                       ) : (
-                        <span className="text-[10px] bg-slate-700/40 text-slate-400 px-2 py-0.5 rounded-full">
+                        <span className="text-[10px] bg-[#281b12] text-[#84847e] px-2.5 py-0.5 rounded-full border border-[#382416]">
                           Waiting
                         </span>
                       )}
@@ -389,10 +389,10 @@ export default function RoomLobby({
                   soundFX.playClick();
                   onToggleReady(!me.isReady);
                 }}
-                className={`btn-tactile w-full py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition ${
+                className={`btn-tactile w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition ${
                   me.isReady
                     ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                    : 'bg-[#281b12] hover:bg-[#382416] text-[#ffedd7] border border-[#40372e]'
                 }`}
               >
                 {me.isReady ? 'You Are Ready ✓' : 'Mark Ready'}
@@ -408,10 +408,10 @@ export default function RoomLobby({
                     soundFX.playStart();
                     onStartGame();
                   }}
-                  className={`btn-tactile w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl ${
+                  className={`btn-tactile w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xl transition ${
                     hasEnoughPlayers
-                      ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-amber-950/60 cursor-pointer'
-                      : 'bg-slate-800 text-slate-500 border border-slate-800 cursor-not-allowed opacity-60'
+                      ? 'bg-gradient-to-r from-[#dc5000] via-[#ea580c] to-[#c2410c] hover:from-[#ea580c] hover:to-[#dc5000] text-white shadow-[#dc5000]/30 cursor-pointer border border-[#f97316]/50'
+                      : 'bg-[#24170e] text-[#84847e] border border-[#382416] cursor-not-allowed opacity-60'
                   }`}
                 >
                   <Play className="w-5 h-5 fill-current" />
@@ -419,7 +419,7 @@ export default function RoomLobby({
                 </button>
 
                 {!hasEnoughPlayers && selectedGame && (
-                  <p className="text-[11px] text-center text-amber-400/90 font-medium">
+                  <p className="text-[11px] text-center text-[#fbbf24] font-medium">
                     Need at least {selectedGame.minPlayers} players to start (currently{' '}
                     {room.players.length}). Share the invite code or click &quot;+ Add Test Player&quot; above!
                   </p>
