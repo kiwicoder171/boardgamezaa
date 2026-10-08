@@ -101,9 +101,33 @@ export function setupSocketServer(io: SocketIOServer) {
       roomManager.broadcastRoomState(result.room!);
     });
 
+    socket.on('add_bot', ({ code, bot }: { code: string; bot: any }) => {
+      if (!currentPlayerId || !bot) return;
+      const room = roomManager.getRoom(code);
+      if (room && room.hostId === currentPlayerId) {
+        const result = roomManager.joinRoom(code, bot);
+        if (result.room) {
+          roomManager.broadcastRoomState(result.room);
+        }
+      }
+    });
+
     socket.on('game_action', ({ code, action }: { code: string; action: any }) => {
       if (!currentPlayerId) return;
-      const result = roomManager.dispatchAction(code, currentPlayerId, action);
+      const room = roomManager.getRoom(code);
+      let actingPlayerId = currentPlayerId;
+      const botCandidate =
+        action?._asPlayerId ||
+        (typeof action?.playerId === 'string' &&
+        (action.playerId.startsWith('bot_') ||
+          action.playerId.startsWith('mouse_bot_') ||
+          action.playerId.startsWith('spy_bot_'))
+          ? action.playerId
+          : null);
+      if (room && room.hostId === currentPlayerId && botCandidate) {
+        actingPlayerId = botCandidate;
+      }
+      const result = roomManager.dispatchAction(code, actingPlayerId, action);
       if (result.error) {
         socket.emit('error_notification', { message: result.error });
         return;

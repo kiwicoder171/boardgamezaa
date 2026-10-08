@@ -458,65 +458,65 @@ export default function HomePage() {
               <h2 className="text-3xl font-black text-white">
                 How to Code and Add Your Own Boardgame
               </h2>
-              <p className="text-sm text-slate-400 max-w-2xl">
+              <p className="text-xs text-zinc-400 max-w-2xl">
                 The BoardgameZaa architecture is designed so you can create a new folder under{' '}
-                <code className="text-amber-300">src/games/</code>, define your game logic, and it
+                <code className="text-zinc-200 font-mono bg-[#18191e] px-1.5 py-0.5 rounded border border-[#272930]">src/games/</code>, define your game logic, and it
                 immediately becomes playable in the lobby!
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold">
-                  1
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-3">
+                <div className="w-9 h-9 rounded-xl bg-[#18191e] text-zinc-200 border border-[#272930] flex items-center justify-center font-bold text-xs font-mono">
+                  01
                 </div>
-                <h3 className="font-bold text-white text-base">Create Game Folder</h3>
-                <p className="text-xs text-slate-400">
-                  Create <code className="text-amber-300">src/games/my-game/</code> with:{' '}
-                  <code className="text-slate-300">index.ts</code>,{' '}
-                  <code className="text-slate-300">logic.ts</code>, and{' '}
-                  <code className="text-slate-300">MyGameBoard.tsx</code>.
+                <h3 className="font-bold text-white text-sm">Create Game Folder</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Create <code className="text-zinc-300 font-mono">src/games/my-game/</code> with:{' '}
+                  <code className="text-zinc-300 font-mono">index.ts</code>,{' '}
+                  <code className="text-zinc-300 font-mono">logic.ts</code>, and{' '}
+                  <code className="text-zinc-300 font-mono">MyGameBoard.tsx</code>.
                 </p>
               </div>
 
-              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold">
-                  2
+              <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-3">
+                <div className="w-9 h-9 rounded-xl bg-[#18191e] text-zinc-200 border border-[#272930] flex items-center justify-center font-bold text-xs font-mono">
+                  02
                 </div>
-                <h3 className="font-bold text-white text-base">Implement Game Contract</h3>
-                <p className="text-xs text-slate-400">
-                  Implement <code className="text-purple-300">initGame()</code>,{' '}
-                  <code className="text-purple-300">handleAction()</code>, and{' '}
-                  <code className="text-purple-300">sanitizeState()</code> to hide secret info
+                <h3 className="font-bold text-white text-sm">Implement Game Contract</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Implement <code className="text-zinc-300 font-mono">initGame()</code>,{' '}
+                  <code className="text-zinc-300 font-mono">handleAction()</code>, and{' '}
+                  <code className="text-zinc-300 font-mono">sanitizeState()</code> to hide secret info
                   from opponents.
                 </p>
               </div>
 
-              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
-                  3
+              <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-3">
+                <div className="w-9 h-9 rounded-xl bg-[#18191e] text-zinc-200 border border-[#272930] flex items-center justify-center font-bold text-xs font-mono">
+                  03
                 </div>
-                <h3 className="font-bold text-white text-base">Register in 2 Lines</h3>
-                <p className="text-xs text-slate-400">
-                  Import your game in <code className="text-emerald-300">src/games/registry.ts</code>{' '}
-                  and add the board in <code className="text-emerald-300">GameRenderer.tsx</code>.
+                <h3 className="font-bold text-white text-sm">Register in 2 Lines</h3>
+                <p className="text-xs text-zinc-400 leading-relaxed">
+                  Import your game in <code className="text-zinc-300 font-mono">src/games/registry.ts</code>{' '}
+                  and add the board in <code className="text-zinc-300 font-mono">GameRenderer.tsx</code>.
                   It will show up instantly in the lobby selector!
                 </p>
               </div>
             </div>
 
             {/* Code Template Card */}
-            <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-3.5 shadow-xl">
+              <div className="flex items-center justify-between border-b border-[#222429] pb-3">
                 <div className="flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-mono font-bold text-slate-300">
+                  <Terminal className="w-4 h-4 text-zinc-400" />
+                  <span className="text-xs font-mono font-semibold text-zinc-300">
                     src/games/bomb-busters/index.ts (Plugin Schema Specification)
                   </span>
                 </div>
               </div>
 
-              <pre className="text-xs font-mono text-slate-300 overflow-x-auto p-4 bg-slate-900/60 rounded-2xl leading-relaxed">
+              <pre className="text-xs font-mono text-zinc-300 overflow-x-auto p-4 bg-[#18191e] border border-[#272930] rounded-xl leading-relaxed">
 {`export const bombBustersGameDefinition: GameDefinition = {
   id: 'bomb-busters',
   name: 'Bomb Busters',
@@ -538,15 +538,15 @@ export default function HomePage() {
         )}
       </main>
 
-      {/* Tabletop Footer */}
-      <footer className="border-t border-slate-800/80 bg-[#090e17] px-6 py-6 text-center text-xs text-slate-500 relative z-10">
+      {/* Minimalist Footer */}
+      <footer className="border-t border-[#1e2025] bg-[#090a0c] px-6 py-5 text-center text-xs text-zinc-500 relative z-10">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-fantasy text-amber-400 font-bold">BoardgameZaa</span>
+            <span className="font-bold text-white tracking-tight">BoardgameZaa</span>
             <span>• Tabletop Simulation Platform</span>
           </div>
-          <div>
-            Built with Next.js, Socket.IO, Tailwind CSS & Real Tabletop Passion 🎲
+          <div className="text-[11px] font-mono text-zinc-600">
+            Next.js • Socket.IO • Web Audio • Zero-Latency Realtime 🎲
           </div>
         </div>
       </footer>

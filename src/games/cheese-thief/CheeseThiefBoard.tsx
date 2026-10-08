@@ -672,7 +672,7 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
 
         {/* Game Over Banner */}
         {state.phase === 'game_over' && (
-          <div className="mt-6 w-full max-w-xl bg-gradient-to-r from-stone-900 via-stone-850 to-stone-900 border-2 border-amber-500/60 p-6 rounded-3xl shadow-2xl text-center flex flex-col items-center">
+          <div className="mt-6 w-full max-w-xl bg-[#111215] border border-[#222429] p-6 rounded-2xl shadow-2xl text-center flex flex-col items-center">
             <span className="text-5xl mb-2">
               {state.winner === 'sleepyheads' ? '🧀🎉' : state.winner === 'fall_mouse' ? '🎭👑' : '🐭👑'}
             </span>
@@ -683,19 +683,19 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
                 ? 'Fall Mouse Solo Victory!'
                 : 'Cheese Thief & Follower Win!'}
             </h2>
-            <p className="text-sm text-stone-300 max-w-md mb-4">{state.winReason}</p>
+            <p className="text-sm text-zinc-400 max-w-md mb-4">{state.winReason}</p>
 
             <div className="flex items-center gap-3">
               <button
                 onClick={() => onAction({ type: 'reset_game' })}
-                className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-xl shadow-lg transition"
+                className="btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs px-6 py-2.5 rounded-xl shadow-lg transition"
               >
                 Play Again 🔄
               </button>
               {onReturnToLobby && (
                 <button
                   onClick={onReturnToLobby}
-                  className="px-6 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-600 font-bold rounded-xl shadow-lg transition"
+                  className="btn-tactile bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] font-bold text-xs px-6 py-2.5 rounded-xl shadow-lg transition"
                 >
                   Return to Lobby 🏛️
                 </button>
@@ -768,64 +768,64 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
       {/* TAVERN RULES & ROLES MODAL */}
       {showRulesGuide && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-stone-900 border-2 border-amber-600/60 rounded-3xl p-6 max-w-xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-stone-200">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-zinc-200">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">🧀</span>
                 <div>
-                  <h3 className="text-xl font-bold font-serif text-amber-400">Cheese Thief Rules & Roles</h3>
-                  <div className="text-xs text-stone-400">Jolly Thinkers • Hidden Dice Social Deduction</div>
+                  <h3 className="text-xl font-bold font-serif text-zinc-100">Cheese Thief Rules & Roles</h3>
+                  <div className="text-xs text-zinc-500">Jolly Thinkers • Hidden Dice Social Deduction</div>
                 </div>
               </div>
               <button
                 onClick={() => setShowRulesGuide(false)}
-                className="p-1.5 rounded-xl bg-stone-800 text-stone-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-[#18191e] border border-[#272930] text-zinc-400 hover:text-white transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto space-y-4 pr-1 text-xs text-stone-300 leading-relaxed">
-              <div className="p-3 bg-amber-950/40 border border-amber-500/30 rounded-2xl">
+            <div className="overflow-y-auto space-y-3 pr-1 text-xs text-zinc-300 leading-relaxed">
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl">
                 <strong className="text-amber-300">Premise:</strong> Everyone is a mouse sleeping at the inn. Secretly peek under your cup to view your Wake-Up Hour die (1–6). During the night, the Clock strikes each hour from 1:00 AM to 6:00 AM.
               </div>
 
-              <div className="space-y-1">
-                <h4 className="font-bold text-amber-400 uppercase tracking-wider">🐭 Night Phase (Hours 1:00 to 6:00 AM)</h4>
-                <p>
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
+                <h4 className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">🐭 Night Phase (Hours 1:00 to 6:00 AM)</h4>
+                <p className="text-zinc-400">
                   When your hour is called, you wake up!
-                  <br />• <strong>Solo Waker:</strong> If you are the ONLY mouse awake at your hour, you may secretly peek under ONE fellow player's cup!
-                  <br />• <strong>Multiple Wakers:</strong> If two or more mice share the same hour, you make eye contact, but neither may peek under any cups!
-                  <br />• <strong>Cheese Thief:</strong> At your hour, swipe the golden cheese from the platter into your pocket!
+                  <br />• <strong className="text-zinc-200">Solo Waker:</strong> If you are the ONLY mouse awake at your hour, you may secretly peek under ONE fellow player&apos;s cup!
+                  <br />• <strong className="text-zinc-200">Multiple Wakers:</strong> If two or more mice share the same hour, you make eye contact, but neither may peek under any cups!
+                  <br />• <strong className="text-zinc-200">Cheese Thief:</strong> At your hour, swipe the golden cheese from the platter into your pocket!
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <h4 className="font-bold text-amber-400 uppercase tracking-wider">🤝 Dawn Sneak (Follower Recruitment)</h4>
-                <p>
-                  After Hour 6:00 AM, the Thief secretly taps one player to recruit as their Follower (accomplice). The Follower joins the Thief's team to protect them!
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
+                <h4 className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">🤝 Dawn Sneak (Follower Recruitment)</h4>
+                <p className="text-zinc-400">
+                  After Hour 6:00 AM, the Thief secretly taps one player to recruit as their Follower (accomplice). The Follower joins the Thief&apos;s team to protect them!
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <h4 className="font-bold text-purple-400 uppercase tracking-wider">🎭 Fall Mouse (Expansion Role)</h4>
-                <p>
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
+                <h4 className="font-bold text-purple-400 uppercase tracking-wider text-[11px]">🎭 Fall Mouse (Expansion Role)</h4>
+                <p className="text-zinc-400">
                   The Fall Mouse wants to take the blame! If the Fall Mouse receives the most votes at the trial, the Fall Mouse wins alone!
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <h4 className="font-bold text-emerald-400 uppercase tracking-wider">🗳️ Morning Discussion & Verdict</h4>
-                <p>
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
+                <h4 className="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">🗳️ Morning Discussion & Verdict</h4>
+                <p className="text-zinc-400">
                   Day arrives! Players discuss who woke up at which hour, who saw whom, and who stole the cheese. Then everyone points/votes simultaneously. If the Thief gets the most votes, Sleepyheads win! Otherwise, the Thief & Follower win!
                 </p>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-stone-800 text-right">
+            <div className="pt-2 border-t border-[#222429] text-right">
               <button
                 onClick={() => setShowRulesGuide(false)}
-                className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs"
+                className="btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs px-5 py-2.5 rounded-xl"
               >
                 Close Guide
               </button>

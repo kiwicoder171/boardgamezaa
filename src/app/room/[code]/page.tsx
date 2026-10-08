@@ -331,14 +331,18 @@ export default function RoomPage({ params }: RoomPageProps) {
       };
     });
 
-    // Notify backend
-    postRoomAction('join', {
-      id: botId,
-      playerId: botId,
-      name: botName,
-      avatar: botAvatar,
-      isReady: true,
-    });
+    // Notify backend (instant over socket or HTTP fallback)
+    if (socket && socket.connected) {
+      socket.emit('add_bot', { code: roomCode, bot: optimisticBot });
+    } else {
+      postRoomAction('join', {
+        id: botId,
+        playerId: botId,
+        name: botName,
+        avatar: botAvatar,
+        isReady: true,
+      });
+    }
   };
 
   const allGames = getAllGames();

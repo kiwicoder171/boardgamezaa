@@ -116,7 +116,22 @@ export async function POST(req: Request, context: RouteContext) {
       }
 
       case 'game_action': {
-        const res = await roomManager.dispatchActionAsync(normalizedCode, playerId, payload.action);
+        let actingId = playerId;
+        const botCandidate =
+          payload.action?._asPlayerId ||
+          (typeof payload.action?.playerId === 'string' &&
+          (payload.action.playerId.startsWith('bot_') ||
+            payload.action.playerId.startsWith('mouse_bot_') ||
+            payload.action.playerId.startsWith('spy_bot_'))
+            ? payload.action.playerId
+            : null);
+        if (botCandidate) {
+          const room = await roomManager.getRoomAsync(normalizedCode);
+          if (room && room.hostId === playerId) {
+            actingId = botCandidate;
+          }
+        }
+        const res = await roomManager.dispatchActionAsync(normalizedCode, actingId, payload.action);
         if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
         if (res.room) updatedRoom = res.room;
         break;

@@ -609,7 +609,7 @@ export default function WerewolfBoard({
       {/* VILLAGE VERDICT / VICTORY MODAL */}
       {state.phase === 'game_over' && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#10141f] border-2 border-amber-500/60 rounded-3xl p-6 sm:p-8 max-w-lg w-full text-center space-y-5 shadow-2xl text-slate-100">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 sm:p-8 max-w-lg w-full text-center space-y-5 shadow-2xl text-zinc-100">
             <div className="text-6xl animate-bounce">
               {state.winner === 'werewolves' ? '🐺' : state.winner === 'tanner' ? '🤡' : '🛡️'}
             </div>
@@ -624,7 +624,7 @@ export default function WerewolfBoard({
                   <span className="text-emerald-400">THE VILLAGERS WIN!</span>
                 )}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-300">
+              <p className="text-xs sm:text-sm text-zinc-400">
                 {state.winner === 'werewolves'
                   ? 'The lycanthropes have equaled or outnumbered the surviving villagers!'
                   : state.winner === 'tanner'
@@ -634,8 +634,8 @@ export default function WerewolfBoard({
             </div>
 
             {/* Complete Village Roles Reveal Roster */}
-            <div className="bg-black/60 rounded-2xl p-4 border border-white/10 text-left space-y-2">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+            <div className="bg-[#141518] rounded-xl p-4 border border-[#272930] text-left space-y-2">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-400 font-mono">
                 True Identities Revealed:
               </span>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -644,9 +644,9 @@ export default function WerewolfBoard({
                   return (
                     <div
                       key={p.id}
-                      className="p-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between"
+                      className="p-2 rounded-xl bg-[#18191e] border border-[#272930] flex items-center justify-between"
                     >
-                      <span className="truncate">{p.name}</span>
+                      <span className="truncate text-zinc-200">{p.name}</span>
                       <span className={`font-mono text-[10px] font-bold ${role.team === 'werewolves' ? 'text-rose-400' : role.team === 'tanner' ? 'text-purple-400' : 'text-emerald-400'}`}>
                         {role.name}
                       </span>
@@ -660,13 +660,13 @@ export default function WerewolfBoard({
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
               <button
                 onClick={() => onAction({ type: 'RESTART_GAME' })}
-                className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-stone-950 font-extrabold rounded-xl transition shadow-lg shadow-amber-900/50 text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+                className="btn-tactile w-full py-3 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl transition shadow-lg text-xs uppercase tracking-wider flex items-center justify-center gap-2"
               >
                 <span>Play Again 🔄</span>
               </button>
               <button
                 onClick={onReturnToLobby}
-                className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-extrabold rounded-xl transition text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+                className="btn-tactile w-full py-3 bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] font-bold rounded-xl transition text-xs uppercase tracking-wider flex items-center justify-center gap-2"
               >
                 <span>Return to Lobby 🏛️</span>
               </button>
@@ -678,37 +678,37 @@ export default function WerewolfBoard({
       {/* VILLAGE GRIMOIRE & ROLES GUIDE MODAL */}
       {showGrimoire && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0f1422] border-2 border-amber-600/60 rounded-3xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-zinc-200">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">📜</span>
                 <div>
-                  <h3 className="text-xl font-bold font-serif text-amber-400">Village Grimoire & Roles</h3>
-                  <div className="text-xs text-slate-400">All Base & Expansion Roles Reference</div>
+                  <h3 className="text-lg font-bold font-serif text-zinc-100">Village Grimoire & Roles</h3>
+                  <div className="text-xs text-zinc-500 font-sans">All Base & Expansion Roles Reference</div>
                 </div>
               </div>
               <button
                 onClick={() => setShowGrimoire(false)}
-                className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-[#18191e] border border-[#272930] text-zinc-400 hover:text-white transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto space-y-3 pr-1 text-xs text-slate-300">
+            <div className="overflow-y-auto space-y-2.5 pr-1 text-xs text-zinc-300">
               {Object.values(WEREWOLF_ROLES_CATALOG).map((r) => (
                 <div
                   key={r.id}
-                  className="p-3 rounded-2xl bg-black/40 border border-slate-800 flex items-start gap-3"
+                  className="p-3 rounded-xl bg-[#141518] border border-[#272930] flex items-start gap-3"
                 >
-                  <div className="text-2xl p-2 rounded-xl bg-slate-800/80 border border-slate-700">
+                  <div className="text-2xl p-2 rounded-xl bg-[#18191e] border border-[#272930]">
                     {r.icon}
                   </div>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-white text-sm">{r.name}</span>
                       <span
-                        className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                        className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase font-mono ${
                           r.team === 'werewolves'
                             ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                             : r.team === 'tanner'
@@ -719,16 +719,16 @@ export default function WerewolfBoard({
                         {r.team.toUpperCase()} TEAM
                       </span>
                     </div>
-                    <p className="text-slate-400 text-xs leading-relaxed">{r.description}</p>
+                    <p className="text-zinc-400 text-xs leading-relaxed">{r.description}</p>
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="pt-2 border-t border-slate-800 text-right">
+            <div className="pt-2 border-t border-[#222429] text-right">
               <button
                 onClick={() => setShowGrimoire(false)}
-                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs uppercase tracking-wider"
+                className="btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs uppercase tracking-wider font-mono px-5 py-2.5 rounded-xl"
               >
                 Close Grimoire
               </button>

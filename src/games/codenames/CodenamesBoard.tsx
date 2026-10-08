@@ -654,24 +654,24 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
       {/* Game Over Modal */}
       {state.winner && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-stone-900 border-2 border-amber-400 p-8 rounded-3xl max-w-lg w-full text-center shadow-2xl flex flex-col items-center">
+          <div className="bg-[#111215] border border-[#222429] p-7 rounded-2xl max-w-lg w-full text-center shadow-2xl flex flex-col items-center">
             <span className="text-6xl mb-3">{state.winner === 'red' ? '🔴🎉' : '🔵🎉'}</span>
-            <h2 className="text-3xl font-black font-mono tracking-wider text-amber-300 mb-2 uppercase">
+            <h2 className="text-2xl font-bold font-mono tracking-wider text-amber-300 mb-2 uppercase">
               {state.winner} Team Triumphs!
             </h2>
-            <p className="text-sm text-stone-300 mb-6">{state.winReason}</p>
+            <p className="text-sm text-zinc-400 mb-6 font-medium">{state.winReason}</p>
 
             <div className="flex items-center gap-3">
               <button
                 onClick={() => onAction({ type: 'reset_game' })}
-                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-black font-mono text-xs uppercase tracking-wider rounded-xl shadow-xl transition"
+                className="btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold font-mono text-xs uppercase tracking-wider px-6 py-2.5 rounded-xl shadow-xl transition"
               >
                 Play Another Mission 🔄
               </button>
               {onReturnToLobby && (
                 <button
                   onClick={onReturnToLobby}
-                  className="px-6 py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 font-black font-mono text-xs uppercase tracking-wider rounded-xl shadow-xl transition"
+                  className="btn-tactile bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] font-bold font-mono text-xs uppercase tracking-wider px-6 py-2.5 rounded-xl shadow-xl transition"
                 >
                   Return to Lobby 🏛️
                 </button>
@@ -684,18 +684,18 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
       {/* INTEL CLUE TRANSMISSION LOG MODAL */}
       {showIntelLog && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#121622] border-2 border-stone-700 rounded-3xl p-6 max-w-xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-stone-200">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-zinc-200">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">📜</span>
                 <div>
-                  <h3 className="text-xl font-bold font-mono text-amber-400">Classified Clue Intel Log</h3>
-                  <div className="text-xs text-stone-400">Chronological Transmissions & Contact Reports</div>
+                  <h3 className="text-lg font-bold font-mono text-zinc-100">Classified Clue Intel Log</h3>
+                  <div className="text-xs text-zinc-500 font-sans">Chronological Transmissions & Contact Reports</div>
                 </div>
               </div>
               <button
                 onClick={() => setShowIntelLog(false)}
-                className="p-1.5 rounded-xl bg-stone-800 text-stone-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-[#18191e] border border-[#272930] text-zinc-400 hover:text-white transition"
               >
                 ✕
               </button>
@@ -703,14 +703,14 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
 
             <div className="overflow-y-auto space-y-2 pr-1 text-xs font-mono max-h-96">
               {state.logs.length === 0 ? (
-                <div className="text-stone-500 text-center py-8">
+                <div className="text-zinc-500 text-center py-8">
                   No clue transmissions logged yet this match.
                 </div>
               ) : (
                 state.logs.map((log) => (
                   <div
                     key={log.id}
-                    className="p-2.5 rounded-xl bg-stone-900 border border-stone-800 text-stone-300 leading-relaxed"
+                    className="p-2.5 rounded-xl bg-[#141518] border border-[#272930] text-zinc-300 leading-relaxed"
                   >
                     {log.text}
                   </div>
@@ -718,10 +718,10 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
               )}
             </div>
 
-            <div className="pt-2 border-t border-stone-800 text-right">
+            <div className="pt-2 border-t border-[#222429] text-right">
               <button
                 onClick={() => setShowIntelLog(false)}
-                className="px-5 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs"
+                className="btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs px-5 py-2.5 rounded-xl"
               >
                 Close Intel Log
               </button>
@@ -733,60 +733,60 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
       {/* FIELD OPERATIVES & SPYMASTER MANUAL MODAL */}
       {showManual && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#10141f] border-2 border-amber-600/60 rounded-3xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-stone-200">
-            <div className="flex items-center justify-between border-b border-stone-800 pb-3">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-zinc-200">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">🕵️</span>
                 <div>
-                  <h3 className="text-xl font-bold font-mono text-amber-400">Codenames Field Manual</h3>
-                  <div className="text-xs text-stone-400">Classified Espionage Rules & Protocols</div>
+                  <h3 className="text-lg font-bold font-mono text-zinc-100">Codenames Field Manual</h3>
+                  <div className="text-xs text-zinc-500 font-sans">Classified Espionage Rules & Protocols</div>
                 </div>
               </div>
               <button
                 onClick={() => setShowManual(false)}
-                className="p-1.5 rounded-xl bg-stone-800 text-stone-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-[#18191e] border border-[#272930] text-zinc-400 hover:text-white transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto space-y-4 pr-1 text-xs text-stone-300 leading-relaxed font-sans">
-              <div className="p-3 bg-stone-900 border border-amber-500/30 rounded-2xl">
+            <div className="overflow-y-auto space-y-3.5 pr-1 text-xs text-zinc-300 leading-relaxed font-sans">
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl">
                 <strong className="text-amber-300">Objective:</strong> Two rival Spymasters know the secret identities of 25 agents. Teammates must decode one-word clues to contact all friendly agents before the opponent does—without contacting the deadly Assassin!
               </div>
 
-              <div className="space-y-1">
-                <h4 className="font-bold text-amber-400 uppercase tracking-wider font-mono">🕶️ Giving Clues (Spymaster)</h4>
-                <p>
-                  Transmit <strong>1 single word</strong> and <strong>1 number</strong> (indicating how many cards relate to that word).
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
+                <h4 className="font-bold text-amber-400 uppercase tracking-wider font-mono text-[11px]">🕶️ Giving Clues (Spymaster)</h4>
+                <p className="text-zinc-400">
+                  Transmit <strong className="text-zinc-200">1 single word</strong> and <strong className="text-zinc-200">1 number</strong> (indicating how many cards relate to that word).
                   <br />• Your clue word must NOT be any word currently unrevealed on the table.
-                  <br />• Clue number <strong>0 (Unlimited)</strong> permits operatives to guess as many cards as they like.
+                  <br />• Clue number <strong className="text-zinc-200">0 (Unlimited)</strong> permits operatives to guess as many cards as they like.
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <h4 className="font-bold text-sky-400 uppercase tracking-wider font-mono">🕵️ Guessing Cards (Operatives)</h4>
-                <p>
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
+                <h4 className="font-bold text-sky-400 uppercase tracking-wider font-mono text-[11px]">🕵️ Guessing Cards (Operatives)</h4>
+                <p className="text-zinc-400">
                   Operatives touch cards one by one:
-                  <br />• <strong>Friendly Agent:</strong> Success! The team may make another guess (up to clue count + 1 bonus guess) or click <strong>End Turn ⏩</strong>.
-                  <br />• <strong>Bystander:</strong> Neutral civilian. Turn ends immediately.
-                  <br />• <strong>Opposing Agent:</strong> Turn ends immediately, and the other team gets a free agent contact!
-                  <br />• <strong>Assassin 💀:</strong> Sudden Death! Your team loses immediately!
+                  <br />• <strong className="text-zinc-200">Friendly Agent:</strong> Success! The team may make another guess (up to clue count + 1 bonus guess) or click <strong className="text-zinc-200">End Turn ⏩</strong>.
+                  <br />• <strong className="text-zinc-200">Bystander:</strong> Neutral civilian. Turn ends immediately.
+                  <br />• <strong className="text-zinc-200">Opposing Agent:</strong> Turn ends immediately, and the other team gets a free agent contact!
+                  <br />• <strong className="text-rose-400">Assassin 💀:</strong> Sudden Death! Your team loses immediately!
                 </p>
               </div>
 
-              <div className="space-y-1">
-                <h4 className="font-bold text-emerald-400 uppercase tracking-wider font-mono">📌 Pinning Suspects</h4>
-                <p>
-                  Click the <strong>📌 pin icon</strong> on any card to mark it as a tentative suspect while debating with teammates before committing to touch it.
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
+                <h4 className="font-bold text-emerald-400 uppercase tracking-wider font-mono text-[11px]">📌 Pinning Suspects</h4>
+                <p className="text-zinc-400">
+                  Click the <strong className="text-zinc-200">📌 pin icon</strong> on any card to mark it as a tentative suspect while debating with teammates before committing to touch it.
                 </p>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-stone-800 text-right">
+            <div className="pt-2 border-t border-[#222429] text-right">
               <button
                 onClick={() => setShowManual(false)}
-                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs uppercase tracking-wider font-mono"
+                className="btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs uppercase tracking-wider font-mono px-5 py-2.5 rounded-xl"
               >
                 Acknowledge Protocol
               </button>

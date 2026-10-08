@@ -144,30 +144,32 @@ export function initBombBustersGame(
 
 export function handleBombBustersAction(
   state: BombBustersState,
-  action: BombBustersAction,
+  action: BombBustersAction & { _asPlayerId?: string },
   playerId: string,
   room: Room<BombBustersState, BombBustersSettings>
 ): { newState: BombBustersState; events?: string[]; error?: string } {
-  const player = room.players.find((p) => p.id === playerId);
+  const effectivePlayerId =
+    playerId === room.hostId && action._asPlayerId ? action._asPlayerId : playerId;
+  const player = room.players.find((p) => p.id === effectivePlayerId);
   const playerName = player?.name || 'Operative';
 
   if (state.phase !== 'in_progress') {
     return { newState: state, error: 'The mission has already concluded.' };
   }
 
-  if (state.currentTurnPlayerId !== playerId && action.type !== 'USE_STABILIZER') {
+  if (state.currentTurnPlayerId !== effectivePlayerId && action.type !== 'USE_STABILIZER') {
     return { newState: state, error: 'It is not your turn to cut wires.' };
   }
 
   switch (action.type) {
     case 'CUT_WIRE': {
-      const myStand = state.stands[playerId];
+      const myStand = state.stands[effectivePlayerId];
       const targetStand = state.stands[action.targetPlayerId];
 
       if (!myStand || !targetStand) {
         return { newState: state, error: 'Invalid operative stand.' };
       }
-      if (action.targetPlayerId === playerId) {
+      if (action.targetPlayerId === effectivePlayerId) {
         return { newState: state, error: 'You must pair your wire with a teammate, or use Solo Cut if you hold both!' };
       }
 
@@ -185,7 +187,7 @@ export function handleBombBustersAction(
       const targetName = targetPlayer?.name || 'Teammate';
 
       // Advance turn clockwise
-      const currentTurnIndex = state.turnOrder.indexOf(playerId);
+      const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
       const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
 
       // 1. Check if RED wire triggered
@@ -282,7 +284,7 @@ export function handleBombBustersAction(
 
     case 'SOLO_CUT': {
       // Official Rule: Player cuts 2 matching wires in their own stand if they hold all remaining copies of that value
-      const myStand = state.stands[playerId];
+      const myStand = state.stands[effectivePlayerId];
       if (!myStand) return { newState: state, error: 'Stand not found.' };
 
       const wire1 = myStand.find((w) => w.id === action.wireId1);
@@ -304,7 +306,7 @@ export function handleBombBustersAction(
       // Check that no other player holds an uncut wire of this value
       let otherPlayerHasIt = false;
       Object.entries(state.stands).forEach(([pId, wires]) => {
-        if (pId !== playerId) {
+        if (pId !== effectivePlayerId) {
           if (wires.some((w) => !w.isCut && w.value === wire1.value)) {
             otherPlayerHasIt = true;
           }
@@ -335,7 +337,7 @@ export function handleBombBustersAction(
         };
       }
 
-      const currentTurnIndex = state.turnOrder.indexOf(playerId);
+      const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
       const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
       const isDefused = newCutCount >= state.totalWiresToCut;
 
@@ -429,7 +431,7 @@ export function handleBombBustersAction(
     }
 
     case 'PLACE_INFO_TOKEN': {
-      const myStand = state.stands[playerId];
+      const myStand = state.stands[effectivePlayerId];
       if (!myStand) return { newState: state, error: 'Stand not found.' };
 
       const targetWire = myStand.find((w) => w.id === action.wireId);
@@ -444,7 +446,7 @@ export function handleBombBustersAction(
       targetWire.clues.push(`Token: #${targetWire.value}`);
 
       // Advance turn clockwise
-      const currentTurnIndex = state.turnOrder.indexOf(playerId);
+      const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
       const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
 
       return {
@@ -477,7 +479,7 @@ export function handleBombBustersAction(
       const targetPlayer = room.players.find((p) => p.id === action.targetPlayerId);
       const targetName = targetPlayer?.name || 'Teammate';
 
-      const currentTurnIndex = state.turnOrder.indexOf(playerId);
+      const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
       const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
 
       if (targetWire.value === 'RED') {
@@ -568,7 +570,7 @@ export function handleBombBustersAction(
     }
 
     case 'PASS_TURN': {
-      const currentTurnIndex = state.turnOrder.indexOf(playerId);
+      const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
       const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
 
       return {
@@ -603,10 +605,12 @@ export function sanitizeBombBustersState(
 
   Object.entries(state.stands).forEach(([pId, wires]) => {
     const isOwner = pId === playerId;
+    const isBot = pId.startsWith('bot_');
 
     sanitizedStands[pId] = wires.map((wire) => {
       const hasInfoToken = wire.infoToken !== null;
-      const canSeeValue = isGameOver || isOwner || wire.isCut || hasInfoToken;
+      // Include bot wires so the host's bot AI engine can make valid moves
+      const canSeeValue = isGameOver || isOwner || wire.isCut || hasInfoToken || isBot;
 
       return {
         id: wire.id,

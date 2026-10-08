@@ -66,6 +66,7 @@ export default function BombBustersBoard({
       const botId = state.currentTurnPlayerId;
       const botStand = state.stands[botId] || [];
       const uncutBotWires = botStand.filter((w) => !w.isCut && w.value !== 'RED');
+      const botAction = (act: any) => onAction({ ...act, _asPlayerId: botId });
 
       // 1. Duo Cut with any teammate who has a visible infoToken or known clue matching a bot wire
       for (const bWire of uncutBotWires) {
@@ -76,7 +77,7 @@ export default function BombBustersBoard({
             (w) => !w.isCut && (w.infoToken === bWire.value || (w.value != null && w.value === bWire.value))
           );
           if (targetWire) {
-            onAction({
+            botAction({
               type: 'CUT_WIRE',
               myWireId: bWire.id,
               targetPlayerId: pId,
@@ -100,7 +101,7 @@ export default function BombBustersBoard({
           const v = Number(val);
           const track = state.validationTrack[v];
           if (track && track.cut + group.length >= track.total) {
-            onAction({
+            botAction({
               type: 'SOLO_CUT',
               wireId1: group[0].id,
               wireId2: group[1].id,
@@ -113,7 +114,7 @@ export default function BombBustersBoard({
       // 3. Give clue by placing an Info Token on an unclued blue wire
       const uncluedBlue = uncutBotWires.find((w) => w.color === 'blue' && w.infoToken == null);
       if (uncluedBlue) {
-        onAction({
+        botAction({
           type: 'PLACE_INFO_TOKEN',
           wireId: uncluedBlue.id,
         });
@@ -127,7 +128,7 @@ export default function BombBustersBoard({
           if (pId === botId) continue;
           const targetWire = wires.find((w) => !w.isCut);
           if (targetWire) {
-            onAction({
+            botAction({
               type: 'CUT_WIRE',
               myWireId: myWire.id,
               targetPlayerId: pId,
@@ -146,7 +147,7 @@ export default function BombBustersBoard({
           const guessVal = targetWire.infoToken
             ? Number(targetWire.infoToken)
             : Math.floor(Math.random() * (state.numberRange || 12)) + 1;
-          onAction({
+          botAction({
             type: 'OPERATIVE_CALL',
             targetPlayerId: pId,
             targetWireId: targetWire.id,
@@ -157,8 +158,8 @@ export default function BombBustersBoard({
       }
 
       // Fallback: pass turn
-      onAction({ type: 'PASS_TURN' });
-    }, 1300);
+      botAction({ type: 'PASS_TURN' });
+    }, 1200);
 
     return () => clearTimeout(timer);
   }, [state.currentTurnPlayerId, state.phase, isHost, state.stands, state.validationTrack, state.numberRange, onAction]);
@@ -998,27 +999,27 @@ export default function BombBustersBoard({
       {/* SCANNER MODAL */}
       {scannerModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border-2 border-indigo-500 rounded-3xl p-6 max-w-md w-full space-y-5 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-indigo-400 font-bold text-lg">
-                <Radio className="w-5 h-5" />
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
+              <div className="flex items-center gap-2 text-white font-bold text-sm">
+                <Radio className="w-4 h-4 text-amber-400" />
                 <span>Sonar Scanner Query</span>
               </div>
               <button
                 onClick={() => setScannerModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-400 hover:text-white border border-[#272930] transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Select Teammate to Scan:</label>
+                <label className="text-xs font-semibold text-zinc-300">Select Teammate to Scan:</label>
                 <select
                   value={scannerTargetPlayerId}
                   onChange={(e) => setScannerTargetPlayerId(e.target.value)}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white"
+                  className="w-full bg-[#141518] border border-[#272930] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-zinc-500"
                 >
                   {players
                     .filter((p) => p.id !== currentPlayerId)
@@ -1031,7 +1032,7 @@ export default function BombBustersBoard({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">
+                <label className="text-xs font-semibold text-zinc-300">
                   Select Wire Value to Search (1-12):
                 </label>
                 <input
@@ -1040,21 +1041,21 @@ export default function BombBustersBoard({
                   max={12}
                   value={scannerValue}
                   onChange={(e) => setScannerValue(parseInt(e.target.value, 10))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-2.5 text-xs text-white font-mono"
+                  className="w-full bg-[#141518] border border-[#272930] rounded-xl p-2.5 text-xs text-white font-mono focus:outline-none focus:border-zinc-500"
                 />
               </div>
             </div>
 
-            <div className="pt-2 flex justify-end gap-2">
+            <div className="pt-2 flex justify-end gap-2 border-t border-[#222429]">
               <button
                 onClick={() => setScannerModalOpen(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold"
+                className="px-4 py-2 bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] rounded-xl text-xs font-semibold transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUseScanner}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-900/50"
+                className="px-5 py-2 btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 rounded-xl text-xs font-bold transition shadow-sm"
               >
                 Deploy Scanner
               </button>
@@ -1067,46 +1068,42 @@ export default function BombBustersBoard({
       {state.phase !== 'in_progress' && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div
-            className={`bg-slate-900 border-2 rounded-3xl p-8 max-w-lg w-full text-center space-y-6 shadow-2xl ${
-              state.phase === 'victory'
-                ? 'border-emerald-500 shadow-emerald-950/60'
-                : 'border-rose-500 shadow-rose-950/60 animate-in shake'
-            }`}
+            className="bg-[#111215] border border-[#222429] rounded-2xl p-6 sm:p-8 max-w-lg w-full text-center space-y-5 shadow-2xl"
           >
-            <div className="text-6xl">
+            <div className="text-5xl">
               {state.phase === 'victory' ? '🏆' : '💥'}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <h2
-                className={`text-3xl font-black ${
-                  state.phase === 'victory' ? 'text-emerald-400' : 'text-rose-500'
+                className={`text-2xl font-bold ${
+                  state.phase === 'victory' ? 'text-emerald-400' : 'text-rose-400'
                 }`}
               >
-                {state.phase === 'victory' ? 'BOMB DEFUSED!' : 'MISSION FAILED!'}
+                {state.phase === 'victory' ? 'Bomb Defused!' : 'Mission Failed!'}
               </h2>
-              <p className="text-sm text-slate-300">{state.endReason}</p>
+              <p className="text-xs text-zinc-400">{state.endReason}</p>
             </div>
 
-            <div className="p-4 bg-slate-800/80 rounded-2xl border border-slate-700 text-xs text-slate-400 space-y-1">
+            <div className="p-3.5 bg-[#141518] rounded-xl border border-[#272930] text-xs text-zinc-300 space-y-1 text-left">
               <div>
-                Mission #{state.missionId}: <strong>{state.missionName}</strong>
+                Mission #{state.missionId}: <strong className="text-white">{state.missionName}</strong>
               </div>
               <div>
-                Final Score: <strong>{state.cutWiresCount} / {state.totalWiresToCut} Wires Disarmed</strong>
+                Disarmed: <strong className="text-white">{state.cutWiresCount} / {state.totalWiresToCut} Wires</strong>
               </div>
-              <div>Detonator Stability Remaining: {state.detonatorLives}</div>
+              <div>Detonator Stability Remaining: <strong className="text-white">{state.detonatorLives}</strong></div>
             </div>
 
             {isHost ? (
               <button
                 onClick={onReturnToLobby}
-                className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold rounded-2xl transition shadow-lg shadow-indigo-900/50 text-xs uppercase tracking-wider"
+                className="w-full py-2.5 btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl transition shadow-sm text-xs"
               >
-                Return to Lobby (Next Mission or Switch Game)
+                Return to Lobby
               </button>
             ) : (
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-zinc-500">
                 Waiting for host to return squad to lobby...
               </div>
             )}
@@ -1117,79 +1114,79 @@ export default function BombBustersBoard({
       {/* BOMB DISPOSAL FIELD MANUAL MODAL */}
       {showManual && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#1c150c] border-2 border-amber-600/60 rounded-3xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-amber-100 font-sans">
-            <div className="flex items-center justify-between border-b border-amber-900/60 pb-3">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">💣</span>
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-zinc-200 font-sans">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">💣</span>
                 <div>
-                  <h3 className="text-xl font-bold font-serif text-amber-300">Bomb Disposal Field Manual</h3>
-                  <div className="text-xs text-amber-400/80">Cooperative Wire Defusal Protocols & Tactics</div>
+                  <h3 className="text-base font-bold text-white">Bomb Disposal Field Manual</h3>
+                  <div className="text-xs text-zinc-400">Cooperative Wire Defusal Protocols & Tactics</div>
                 </div>
               </div>
               <button
                 onClick={() => setShowManual(false)}
-                className="p-1.5 rounded-xl bg-amber-950/80 text-amber-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-400 hover:text-white border border-[#272930] transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto space-y-4 pr-1 text-xs text-amber-200/90 leading-relaxed">
-              <div className="p-3 bg-amber-950/60 border border-amber-600/40 rounded-2xl">
-                <strong className="text-amber-300">Mission Goal:</strong> Work with your bomb squad to cut all standard numbered wires across everyone&apos;s stands before the detonator runs out of lives or a Red Danger wire triggers!
+            <div className="overflow-y-auto space-y-3.5 pr-1 text-xs text-zinc-300 leading-relaxed">
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl text-zinc-300">
+                <strong className="text-white">Mission Goal:</strong> Work with your squad to cut all standard numbered wires across everyone&apos;s stands before the detonator runs out of lives or a Red Danger wire triggers!
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-amber-400 uppercase tracking-wider">🪵 Ascending Wire Racks</h4>
-                <p>
-                  Every operative&apos;s stand is strictly ordered from <strong>lowest number on the left</strong> to <strong>highest number on the right</strong>. Use relative positioning to deduce teammates&apos; hidden values!
+                <h4 className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">🪵 Ascending Wire Stands</h4>
+                <p className="text-zinc-400">
+                  Every operative&apos;s stand is ordered from <strong>lowest number on the left</strong> to <strong>highest number on the right</strong>. Use relative positioning to deduce teammates&apos; hidden numbers.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-sky-400 uppercase tracking-wider">✂️ Duo Cut (Teammate Action)</h4>
-                <p>
-                  On your turn, point to a wire on a teammate&apos;s stand that matches the number of a wire on your own stand:
-                  <br />• <strong>Correct:</strong> Both wires are safely severed!
-                  <br />• <strong>Incorrect:</strong> The detonator ticks down 1 life, and your teammate reveals their wire value to aid future deduction.
+                <h4 className="font-bold text-sky-400 uppercase tracking-wider text-[11px]">✂️ Duo Cut (Teammate Action)</h4>
+                <p className="text-zinc-400">
+                  On your turn, point to a wire on a teammate&apos;s stand that matches a number on your own stand:
+                  <br />• <strong>Match:</strong> Both wires are safely cut!
+                  <br />• <strong>Miss:</strong> Detonator loses 1 life, and teammate reveals that wire&apos;s Info Token to help future deductions.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-emerald-400 uppercase tracking-wider">⚡ Solo Cut (Pair Action)</h4>
-                <p>
-                  If you hold two matching identical wires on your own rack (e.g. two 3s), select both to cut them safely without risking a teammate&apos;s guess!
+                <h4 className="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">⚡ Solo Cut (Pair Action)</h4>
+                <p className="text-zinc-400">
+                  If you hold two identical wires on your own rack and no teammate holds that number, select both to cut them safely!
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-amber-300 uppercase tracking-wider">🟡 Yellow Decimal Wires (.5)</h4>
-                <p>
-                  Decimal wires (like 2.5 or 4.5) sit between consecutive whole numbers on the wooden stand, providing precise positional hints!
+                <h4 className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">🟡 Yellow Decimal Wires (.5)</h4>
+                <p className="text-zinc-400">
+                  Decimal wires (like 2.5) sit between consecutive whole numbers, providing tight positional clues.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-rose-400 uppercase tracking-wider">🚨 Red Danger Wires</h4>
-                <p>
+                <h4 className="font-bold text-rose-400 uppercase tracking-wider text-[11px]">🚨 Red Danger Wires</h4>
+                <p className="text-zinc-400">
                   Never cut Red Wires unless specifically instructed by the mission card, or the bomb will instantly detonate!
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-purple-400 uppercase tracking-wider">📡 Scanner / Detector Equipment</h4>
-                <p>
+                <h4 className="font-bold text-purple-400 uppercase tracking-wider text-[11px]">📡 Scanner / Detector Equipment</h4>
+                <p className="text-zinc-400">
                   Use the Scanner tool to query whether any teammate holds a specific number on their stand to narrow down critical deductions.
                 </p>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-amber-900/60 text-right">
+            <div className="pt-2 border-t border-[#222429] text-right">
               <button
                 onClick={() => setShowManual(false)}
-                className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs uppercase tracking-wider"
+                className="px-5 py-2 rounded-xl btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs transition"
               >
-                Understood, Resume Mission!
+                Understood, Resume Mission
               </button>
             </div>
           </div>

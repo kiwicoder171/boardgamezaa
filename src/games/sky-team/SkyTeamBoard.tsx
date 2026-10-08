@@ -1130,61 +1130,61 @@ export default function SkyTeamBoard({
       {/* MISSION DEBRIEF MODAL (LANDING / CRASH) */}
       {(state.status === 'won' || state.status === 'crashed') && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0f172a] border-2 border-sky-500/60 rounded-3xl p-6 sm:p-8 max-w-lg w-full text-center space-y-5 shadow-2xl">
-            <div className="text-6xl animate-bounce">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 sm:p-8 max-w-lg w-full text-center space-y-5 shadow-2xl">
+            <div className="text-5xl">
               {state.status === 'won' ? '🛬' : '💥'}
             </div>
 
             <div className="space-y-1">
-              <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-wide">
+              <h2 className="text-2xl font-bold tracking-tight">
                 {state.status === 'won' ? (
-                  <span className="text-emerald-400">TOUCHDOWN SUCCESSFUL!</span>
+                  <span className="text-emerald-400">Touchdown Successful!</span>
                 ) : (
-                  <span className="text-rose-500">MAYDAY - FLIGHT CRASHED!</span>
+                  <span className="text-rose-400">Mayday - Flight Crashed</span>
                 )}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-300">
+              <p className="text-xs text-zinc-400">
                 {state.status === 'won'
-                  ? `All checklists cleared! Perfectly landed at ${state.airportName} (${state.airportCode})!`
-                  : state.crashReason || 'Aircraft lost control during approach.'}
+                  ? `All checklists cleared! Safely landed at ${state.airportName} (${state.airportCode}).`
+                  : state.crashReason || 'Aircraft lost control during final approach.'}
               </p>
             </div>
 
             {/* Telemetry Debrief Stats */}
-            <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 text-left grid grid-cols-2 gap-3 text-xs font-mono">
+            <div className="bg-[#141518] rounded-xl p-3.5 border border-[#272930] text-left grid grid-cols-2 gap-3 text-xs font-mono">
               <div>
-                <span className="text-slate-500 block text-[10px]">AIRPORT</span>
+                <span className="text-zinc-500 block text-[10px]">AIRPORT</span>
                 <span className="font-bold text-sky-300">{state.airportCode} ({state.difficulty})</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[10px]">FINAL ALTITUDE</span>
-                <span className="font-bold text-amber-300">{state.altitude} ft (Round {state.round}/7)</span>
+                <span className="text-zinc-500 block text-[10px]">FINAL ALTITUDE</span>
+                <span className="font-bold text-amber-300">{state.altitude} ft (R{state.round}/7)</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[10px]">AXIS TILT</span>
+                <span className="text-zinc-500 block text-[10px]">AXIS TILT</span>
                 <span className={`font-bold ${state.tilt === 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {state.tilt === 0 ? 'LEVEL (0°)' : `${state.tilt > 0 ? '+' : ''}${state.tilt}°`}
                 </span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[10px]">APPROACH DISTANCE</span>
+                <span className="text-zinc-500 block text-[10px]">APPROACH DISTANCE</span>
                 <span className="font-bold text-purple-300">{state.currentApproachIndex} / {state.approachTrack.length}</span>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
               <button
                 onClick={() => onAction({ type: 'RESTART_GAME' })}
-                className="w-full py-3.5 bg-sky-600 hover:bg-sky-500 text-white font-extrabold rounded-xl transition shadow-lg shadow-sky-900/50 text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+                className="w-full py-2.5 btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl transition shadow-sm text-xs"
               >
-                <span>Fly Again ✈️</span>
+                Fly Again ✈️
               </button>
               <button
                 onClick={onReturnToLobby}
-                className="w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-extrabold rounded-xl transition text-xs uppercase tracking-wider flex items-center justify-center gap-2"
+                className="w-full py-2.5 btn-tactile bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] font-semibold rounded-xl transition text-xs"
               >
-                <span>Return to Lobby 🏛️</span>
+                Return to Lobby
               </button>
             </div>
           </div>
@@ -1194,80 +1194,70 @@ export default function SkyTeamBoard({
       {/* FLIGHT OPERATIONS MANUAL & CHECKLIST MODAL */}
       {showFlightManual && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0b1120] border-2 border-sky-600/60 rounded-3xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">✈️</span>
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-2xl w-full space-y-4 shadow-2xl max-h-[85vh] flex flex-col text-zinc-200 font-sans">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">✈️</span>
                 <div>
-                  <h3 className="text-xl font-bold font-sans text-sky-400">Sky Team Flight Operations Manual</h3>
-                  <div className="text-xs text-slate-400">Official Cockpit Procedures & Approach Checklist</div>
+                  <h3 className="text-base font-bold text-white">Flight Operations Manual</h3>
+                  <div className="text-xs text-zinc-400">Cockpit Procedures & Approach Checklist</div>
                 </div>
               </div>
               <button
                 onClick={() => setShowFlightManual(false)}
-                className="p-1.5 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-400 hover:text-white border border-[#272930] transition"
               >
                 ✕
               </button>
             </div>
 
-            <div className="overflow-y-auto space-y-4 pr-1 text-xs text-slate-300 leading-relaxed font-sans">
-              <div className="p-3 bg-sky-950/40 border border-sky-500/30 rounded-2xl">
-                <strong className="text-sky-300">Cooperative Flight Crew:</strong> Pilot (Blue dice) and Co-pilot (Orange dice) must work together under radio silence to land safely across 7 altitude rounds.
+            <div className="overflow-y-auto space-y-3.5 pr-1 text-xs text-zinc-300 leading-relaxed">
+              <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl text-zinc-300">
+                <strong className="text-white">Cooperative Flight Crew:</strong> Pilot (Blue dice) and Co-pilot (Orange dice) must work together under radio silence to land safely across 7 altitude rounds.
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-sky-400 uppercase tracking-wider">🕹️ Artificial Horizon (Axis - Mandatory)</h4>
-                <p>
-                  Both Pilot & Co-pilot place 1 die. The difference tilts the plane left or right. If the needle exceeds ±3 at any moment, the plane spirals and crashes! At final touchdown (altitude 0), the needle MUST be perfectly level (0).
+                <h4 className="font-bold text-sky-400 uppercase tracking-wider text-[11px]">🕹️ Artificial Horizon (Axis - Mandatory)</h4>
+                <p className="text-zinc-400">
+                  Both Pilot & Co-pilot place 1 die. The difference tilts the plane left or right. If the needle exceeds ±3 at any moment, the plane crashes! At final touchdown (altitude 0), the needle MUST be level (0).
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-sky-400 uppercase tracking-wider">⚡ Engines & Throttle (Mandatory)</h4>
-                <p>
+                <h4 className="font-bold text-sky-400 uppercase tracking-wider text-[11px]">⚡ Engines & Throttle (Mandatory)</h4>
+                <p className="text-zinc-400">
                   Sum of Pilot + Co-pilot engine dice determines distance moved along the approach track. If you advance into a space occupied by traffic airplanes, you crash! Use Radio to clear them beforehand.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-blue-400 uppercase tracking-wider">🛞 Landing Gear (Pilot) & 🪽 Flaps (Co-Pilot)</h4>
-                <p>
+                <h4 className="font-bold text-blue-400 uppercase tracking-wider text-[11px]">🛞 Landing Gear (Pilot) & 🪽 Flaps (Co-Pilot)</h4>
+                <p className="text-zinc-400">
                   • <strong>Landing Gear:</strong> Pilot must activate slots [1-2], [3-4], and [5-6] sequentially. All 3 green lights must be lit before landing.
                   <br />• <strong>Flaps:</strong> Co-pilot must activate slots [1-2], [2-3], [3-4], and [4-5] sequentially to deploy flaps.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-rose-400 uppercase tracking-wider">🛑 Brakes & Touchdown Speed</h4>
-                <p>
+                <h4 className="font-bold text-rose-400 uppercase tracking-wider text-[11px]">🛑 Brakes & Touchdown Speed</h4>
+                <p className="text-zinc-400">
                   Pilot must deploy brake slots [2], [4], [6] sequentially. When landing at altitude 0, the total braking power MUST be strictly greater than the airplane speed!
                 </p>
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-amber-400 uppercase tracking-wider">☕ Coffee & 🎲 Reroll Tokens</h4>
-                <p>
+                <h4 className="font-bold text-amber-300 uppercase tracking-wider text-[11px]">☕ Coffee & 🎲 Reroll Tokens</h4>
+                <p className="text-zinc-400">
                   • <strong>Coffee:</strong> Spends 1 coffee to modify any unplaced die value by +1 or -1.
                   <br />• <strong>Reroll:</strong> Allows you to pick up and reroll any number of unplaced dice.
                 </p>
               </div>
-
-              <div className="space-y-1">
-                <h4 className="font-bold text-purple-400 uppercase tracking-wider">🌪️ Turbulence & Expansion Modules</h4>
-                <p>
-                  • <strong>Wind:</strong> Crosswinds skew the artificial horizon each round.
-                  <br />• <strong>Ice:</strong> Increases required braking distance on the runway.
-                  <br />• <strong>Kerosene:</strong> Plane burns fuel each round; fuel dump actions regulate weight.
-                  <br />• <strong>Intern:</strong> Enables training apprentice dice on helper slots.
-                </p>
-              </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-800 text-right">
+            <div className="pt-2 border-t border-[#222429] text-right">
               <button
                 onClick={() => setShowFlightManual(false)}
-                className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider"
+                className="px-5 py-2 rounded-xl btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs transition"
               >
                 Acknowledge & Close
               </button>

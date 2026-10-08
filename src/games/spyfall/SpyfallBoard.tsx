@@ -766,18 +766,18 @@ export default function SpyfallBoard({
       {/* LOCATION INSPECTOR MODAL */}
       {inspectLocation && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-in zoom-in-95">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
               <div className="flex items-center gap-3">
                 <span className="text-4xl">{inspectLocation.icon}</span>
                 <div>
-                  <h3 className="text-lg font-black text-white">{inspectLocation.name}</h3>
+                  <h3 className="text-lg font-bold text-zinc-100">{inspectLocation.name}</h3>
                   <span className="text-xs text-indigo-400 font-semibold">{inspectLocation.category}</span>
                 </div>
               </div>
               <button
                 onClick={() => setInspectLocation(null)}
-                className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-[#18191e] border border-[#272930] text-zinc-400 hover:text-white transition"
               >
                 ✕
               </button>
@@ -785,14 +785,14 @@ export default function SpyfallBoard({
 
             {/* Typical Roles List */}
             <div className="space-y-2">
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
                 Typical Roles at this Location:
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {inspectLocation.roles.map((r) => (
                   <span
                     key={r}
-                    className="text-xs px-2.5 py-1 rounded-xl bg-slate-800 border border-slate-700 text-slate-300"
+                    className="text-xs px-2.5 py-1 rounded-xl bg-[#18191e] border border-[#272930] text-zinc-300"
                   >
                     {r}
                   </span>
@@ -801,13 +801,13 @@ export default function SpyfallBoard({
             </div>
 
             {/* Sample Questions */}
-            <div className="space-y-1.5 pt-2 border-t border-slate-800">
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <div className="space-y-1.5 pt-2 border-t border-[#222429]">
+              <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
                 Sample Question Ideas:
               </div>
-              <div className="space-y-1 text-xs text-slate-300">
+              <div className="space-y-1 text-xs text-zinc-300">
                 {inspectLocation.sampleQuestions.map((q, idx) => (
-                  <div key={idx} className="p-2 bg-slate-800/40 rounded-lg">
+                  <div key={idx} className="p-2.5 bg-[#141518] border border-[#272930] rounded-xl text-zinc-300">
                     &quot;{q}&quot;
                   </div>
                 ))}
@@ -826,7 +826,7 @@ export default function SpyfallBoard({
               </button>
               <button
                 onClick={() => setInspectLocation(null)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold"
+                className="btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl text-xs px-4 py-2"
               >
                 Close
               </button>
@@ -838,26 +838,26 @@ export default function SpyfallBoard({
       {/* ACCUSATION MODAL OVERLAY */}
       {state.phase === 'accusation' && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border-2 border-rose-500 rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-6 shadow-2xl shadow-rose-950/80 animate-in fade-in zoom-in-95">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 sm:p-8 max-w-lg w-full space-y-6 shadow-2xl animate-in fade-in zoom-in-95">
             <div className="text-center space-y-2">
-              <div className="inline-flex p-3.5 rounded-2xl bg-rose-500/20 border border-rose-500/40 text-rose-400 animate-pulse">
-                <AlertTriangle className="w-10 h-10" />
+              <div className="inline-flex p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-400">
+                <AlertTriangle className="w-8 h-8" />
               </div>
-              <h2 className="text-3xl font-black text-white tracking-tight">SPY ACCUSATION!</h2>
-              <p className="text-sm text-slate-300">
+              <h2 className="text-2xl font-black text-white tracking-tight">SPY ACCUSATION!</h2>
+              <p className="text-sm text-zinc-300">
                 <strong className="text-indigo-400">{accuser?.name}</strong> has formally accused{' '}
                 <strong className="text-rose-400 text-base">{accused?.name}</strong> of being the SPY!
               </p>
-              <div className="text-xs text-slate-400 font-mono">
+              <div className="text-xs text-zinc-400 font-mono">
                 Voting ends in <strong className="text-amber-400">{localVotingTime}s</strong> (Unanimous guilty required)
               </div>
             </div>
 
             {/* Voting Progress */}
-            <div className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 space-y-3">
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
+            <div className="bg-[#141518] rounded-xl p-4 border border-[#272930] space-y-3">
+              <div className="flex items-center justify-between text-xs font-semibold text-zinc-400">
                 <span className="uppercase tracking-wider">Cast Votes</span>
-                <span>
+                <span className="font-mono">
                   {Object.keys(state.votes).length} / {players.length - 1} Voted
                 </span>
               </div>
@@ -871,7 +871,7 @@ export default function SpyfallBoard({
                         key={voter.id}
                         className={`text-xs px-3 py-1.5 rounded-xl border flex items-center gap-1.5 font-medium ${
                           vote === undefined
-                            ? 'bg-slate-800 text-slate-400 border-slate-700'
+                            ? 'bg-[#18191e] text-zinc-400 border-[#272930]'
                             : vote === true
                             ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                             : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
@@ -889,12 +889,12 @@ export default function SpyfallBoard({
 
             {/* Voting Buttons */}
             {amIAccused ? (
-              <div className="text-center p-4 rounded-2xl bg-slate-800 border border-slate-700 text-xs text-slate-300 space-y-1">
+              <div className="text-center p-4 rounded-xl bg-[#141518] border border-[#272930] text-xs text-zinc-300 space-y-1">
                 <div className="font-bold text-amber-300">You are on trial!</div>
-                <div>Defend yourself verbally or in chat. You cannot cast a vote on your own trial.</div>
+                <div className="text-zinc-400">Defend yourself verbally or in chat. You cannot cast a vote on your own trial.</div>
               </div>
             ) : hasVoted ? (
-              <div className="text-center p-4 rounded-2xl bg-slate-800/60 border border-slate-700 text-xs text-slate-400">
+              <div className="text-center p-4 rounded-xl bg-[#141518] border border-[#272930] text-xs text-zinc-400">
                 Your vote has been submitted. Waiting for remaining players to vote...
               </div>
             ) : (
@@ -904,7 +904,7 @@ export default function SpyfallBoard({
                     soundFX.playClick();
                     onAction({ type: 'CAST_VOTE', voteGuilty: true });
                   }}
-                  className="py-3.5 px-4 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-900/40 transition flex items-center justify-center gap-2"
+                  className="py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg transition flex items-center justify-center gap-2"
                 >
                   <AlertTriangle className="w-4 h-4" />
                   Vote GUILTY
@@ -914,7 +914,7 @@ export default function SpyfallBoard({
                     soundFX.playClick();
                     onAction({ type: 'CAST_VOTE', voteGuilty: false });
                   }}
-                  className="py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/40 transition flex items-center justify-center gap-2"
+                  className="py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg transition flex items-center justify-center gap-2"
                 >
                   <Shield className="w-4 h-4" />
                   Vote INNOCENT
@@ -927,7 +927,7 @@ export default function SpyfallBoard({
               <div className="text-center pt-2">
                 <button
                   onClick={() => onAction({ type: 'CANCEL_ACCUSATION' })}
-                  className="text-xs text-slate-400 hover:text-slate-200 underline"
+                  className="text-xs text-zinc-400 hover:text-zinc-200 underline"
                 >
                   Withdraw Accusation
                 </button>
@@ -940,20 +940,20 @@ export default function SpyfallBoard({
       {/* SPY GUESS MODAL */}
       {isGuessModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border-2 border-amber-500/60 rounded-3xl p-6 max-w-2xl w-full space-y-6 shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-2xl w-full space-y-5 shadow-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
               <div>
-                <h2 className="text-2xl font-black text-amber-300 flex items-center gap-2">
-                  <MapPin className="w-6 h-6 text-rose-500" />
+                <h2 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-rose-500" />
                   Spy Location Guess
                 </h2>
-                <p className="text-xs text-slate-300 mt-1">
+                <p className="text-xs text-zinc-400 mt-1">
                   Choose the location where you believe everyone is. If correct, you win immediately! If wrong, citizens win!
                 </p>
               </div>
               <button
                 onClick={() => setIsGuessModalOpen(false)}
-                className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+                className="p-1.5 rounded-xl bg-[#18191e] border border-[#272930] text-zinc-400 hover:text-white transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -966,24 +966,24 @@ export default function SpyfallBoard({
                   <button
                     key={loc.id}
                     onClick={() => setSelectedGuessLoc(loc.name)}
-                    className={`p-3.5 rounded-2xl border text-center transition flex flex-col items-center justify-center gap-2 ${
+                    className={`p-3.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1.5 ${
                       isSelected
-                        ? 'bg-amber-500/20 border-amber-400 text-amber-200 ring-2 ring-amber-400'
-                        : 'bg-slate-800/80 border-slate-700 text-slate-300 hover:border-slate-600'
+                        ? 'bg-white/10 border-white/60 text-white shadow-lg'
+                        : 'bg-[#141518] border-[#272930] text-zinc-300 hover:border-zinc-500'
                     }`}
                   >
                     <span className="text-3xl">{loc.icon}</span>
                     <span className="text-xs font-bold">{loc.name}</span>
-                    <span className="text-[10px] text-slate-500">{loc.category}</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">{loc.category}</span>
                   </button>
                 );
               })}
             </div>
 
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+            <div className="pt-3 border-t border-[#222429] flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsGuessModalOpen(false)}
-                className="px-4 py-2.5 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700"
+                className="btn-tactile bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] rounded-xl text-xs px-4 py-2.5 font-bold"
               >
                 Cancel
               </button>
@@ -995,7 +995,7 @@ export default function SpyfallBoard({
                     setIsGuessModalOpen(false);
                   }
                 }}
-                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-900/30 disabled:opacity-40"
+                className="btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl text-xs px-6 py-2.5 shadow-lg disabled:opacity-40"
               >
                 Confirm Guess: {selectedGuessLoc || 'None'}
               </button>
@@ -1007,25 +1007,25 @@ export default function SpyfallBoard({
       {/* DETAILED MISSION DEBRIEF (GAME OVER MODAL) */}
       {state.phase === 'gameover' && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border-2 border-indigo-500/60 rounded-3xl p-6 sm:p-8 max-w-xl w-full text-center space-y-6 shadow-2xl max-h-[92vh] overflow-y-auto">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 sm:p-8 max-w-xl w-full text-center space-y-6 shadow-2xl max-h-[92vh] overflow-y-auto">
             <div className="text-6xl animate-bounce">
               {state.winner === 'spy' ? '🕵️‍♂️' : '🎉'}
             </div>
 
-            <div className="space-y-2">
-              <h2 className="text-3xl sm:text-4xl font-black text-white">
+            <div className="space-y-1.5">
+              <h2 className="text-2xl sm:text-3xl font-black text-white">
                 {state.winner === 'spy' ? (
                   <span className="text-rose-400">THE SPY WINS!</span>
                 ) : (
                   <span className="text-emerald-400">CITIZENS WIN!</span>
                 )}
               </h2>
-              <p className="text-sm text-slate-300 font-medium">{state.winReason}</p>
+              <p className="text-sm text-zinc-400 font-medium">{state.winReason}</p>
             </div>
 
             {/* Revealed Location Card */}
-            <div className="bg-gradient-to-br from-indigo-950/60 to-slate-850 p-4 rounded-2xl border border-indigo-500/30 text-left space-y-1">
-              <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider">
+            <div className="bg-[#141518] p-4 rounded-xl border border-[#272930] text-left space-y-1">
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider font-mono">
                 Secret Location Was
               </span>
               <div className="text-2xl font-black text-white flex items-center gap-2">
@@ -1036,8 +1036,8 @@ export default function SpyfallBoard({
 
             {/* Complete Player Roles Roster */}
             {state.revealedRoles && (
-              <div className="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 text-left space-y-3">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <div className="bg-[#141518] rounded-xl p-4 border border-[#272930] text-left space-y-3">
+                <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider font-mono">
                   Player Identities & Roles Revealed:
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
@@ -1050,8 +1050,8 @@ export default function SpyfallBoard({
                         key={p.id}
                         className={`p-2.5 rounded-xl border flex items-center justify-between ${
                           isSpyPlayer
-                            ? 'bg-rose-500/20 border-rose-500/50 text-rose-300'
-                            : 'bg-slate-800 border-slate-700 text-slate-200'
+                            ? 'bg-rose-500/15 border-rose-500/40 text-rose-300'
+                            : 'bg-[#18191e] border-[#272930] text-zinc-200'
                         }`}
                       >
                         <div className="flex items-center gap-2 truncate">
@@ -1072,12 +1072,12 @@ export default function SpyfallBoard({
             {isHost ? (
               <button
                 onClick={onReturnToLobby}
-                className="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold rounded-2xl transition shadow-lg shadow-indigo-900/50 text-sm uppercase tracking-wider"
+                className="btn-tactile w-full py-3.5 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl transition shadow-lg text-xs uppercase tracking-wider"
               >
                 Return to Lobby (Next Round or Switch Game)
               </button>
             ) : (
-              <div className="text-xs text-slate-400">
+              <div className="text-xs text-zinc-400">
                 Waiting for the host to return everyone to the lobby...
               </div>
             )}

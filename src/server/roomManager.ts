@@ -381,7 +381,21 @@ class RoomManager {
     const game = getGame(room.selectedGameId);
     if (!game) return { error: 'Game logic missing' };
 
-    const result = game.handleAction(room.gameState, action, playerId, room);
+    let effectivePlayerId = playerId;
+    const botCandidate =
+      action?._asPlayerId ||
+      (typeof action?.playerId === 'string' &&
+      (action.playerId.startsWith('bot_') ||
+        action.playerId.startsWith('mouse_bot_') ||
+        action.playerId.startsWith('spy_bot_'))
+        ? action.playerId
+        : null);
+
+    if (room.hostId === playerId && botCandidate) {
+      effectivePlayerId = botCandidate;
+    }
+
+    const result = game.handleAction(room.gameState, action, effectivePlayerId, room);
     if (result.error) {
       return { error: result.error };
     }
