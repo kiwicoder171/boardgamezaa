@@ -91,7 +91,18 @@ const GEM_COLORS: GemColor[] = ['diamond', 'sapphire', 'emerald', 'ruby', 'onyx'
 
 const GEM_CONFIG: Record<
   TokenType,
-  { label: string; icon: string; bg: string; border: string; text: string; chipBg: string }
+  {
+    label: string;
+    icon: string;
+    bg: string;
+    border: string;
+    text: string;
+    chipBg: string;
+    cardBg: string;
+    cardBorder: string;
+    cardHeader: string;
+    costPill: string;
+  }
 > = {
   diamond: {
     label: 'Diamond',
@@ -100,6 +111,10 @@ const GEM_CONFIG: Record<
     border: 'border-slate-300',
     text: 'text-slate-900',
     chipBg: 'from-slate-100 to-slate-300 border-slate-400 text-slate-800',
+    cardBg: 'bg-[#181d26]',
+    cardBorder: 'border-slate-300/80',
+    cardHeader: 'bg-gradient-to-r from-slate-200 via-white to-slate-200 text-slate-950 font-black',
+    costPill: 'bg-white border-2 border-slate-300 text-slate-950 font-black shadow-sm',
   },
   sapphire: {
     label: 'Sapphire',
@@ -108,6 +123,10 @@ const GEM_CONFIG: Record<
     border: 'border-blue-400',
     text: 'text-white',
     chipBg: 'from-blue-600 to-blue-800 border-blue-400 text-white',
+    cardBg: 'bg-[#0e1d38]',
+    cardBorder: 'border-blue-500/80',
+    cardHeader: 'bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white font-black',
+    costPill: 'bg-blue-600 border border-blue-300 text-white font-black shadow-sm',
   },
   emerald: {
     label: 'Emerald',
@@ -116,6 +135,10 @@ const GEM_CONFIG: Record<
     border: 'border-emerald-400',
     text: 'text-white',
     chipBg: 'from-emerald-600 to-emerald-800 border-emerald-400 text-white',
+    cardBg: 'bg-[#0a261a]',
+    cardBorder: 'border-emerald-500/80',
+    cardHeader: 'bg-gradient-to-r from-emerald-700 via-emerald-600 to-teal-700 text-white font-black',
+    costPill: 'bg-emerald-600 border border-emerald-300 text-white font-black shadow-sm',
   },
   ruby: {
     label: 'Ruby',
@@ -124,14 +147,22 @@ const GEM_CONFIG: Record<
     border: 'border-rose-400',
     text: 'text-white',
     chipBg: 'from-rose-600 to-rose-800 border-rose-400 text-white',
+    cardBg: 'bg-[#290d15]',
+    cardBorder: 'border-rose-500/80',
+    cardHeader: 'bg-gradient-to-r from-rose-700 via-red-600 to-rose-800 text-white font-black',
+    costPill: 'bg-rose-600 border border-rose-300 text-white font-black shadow-sm',
   },
   onyx: {
     label: 'Onyx',
     icon: '⚫',
-    bg: 'bg-stone-900',
-    border: 'border-stone-700',
+    bg: 'bg-zinc-900',
+    border: 'border-zinc-500',
     text: 'text-white',
-    chipBg: 'from-stone-850 to-stone-950 border-stone-600 text-stone-200',
+    chipBg: 'from-zinc-800 to-zinc-950 border-zinc-500 text-zinc-100',
+    cardBg: 'bg-[#141518]',
+    cardBorder: 'border-zinc-500/90',
+    cardHeader: 'bg-gradient-to-r from-zinc-800 via-zinc-900 to-zinc-800 text-zinc-100 border-b border-zinc-600 font-black',
+    costPill: 'bg-zinc-950 border-2 border-zinc-400 text-zinc-100 font-black shadow-md',
   },
   gold: {
     label: 'Gold Joker',
@@ -140,8 +171,13 @@ const GEM_CONFIG: Record<
     border: 'border-amber-300',
     text: 'text-stone-900',
     chipBg: 'from-amber-400 to-amber-600 border-amber-300 text-stone-950',
+    cardBg: 'bg-[#2b2108]',
+    cardBorder: 'border-amber-400/80',
+    cardHeader: 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-stone-950 font-black',
+    costPill: 'bg-amber-400 border border-amber-300 text-stone-950 font-black shadow-sm',
   },
 };
+
 
 export const SplendorBoard: React.FC<SplendorBoardProps> = ({
   state,
@@ -377,17 +413,20 @@ export const SplendorBoard: React.FC<SplendorBoardProps> = ({
                         </span>
                         <span className="text-sm">{noble.avatar}</span>
                       </div>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {Object.entries(noble.requirements).map(([c, count]) => (
-                          <div
-                            key={c}
-                            className={`w-5 h-6 rounded flex items-center justify-center text-[10px] font-bold shadow ${
-                              GEM_CONFIG[c as GemColor].bg
-                            } ${GEM_CONFIG[c as GemColor].text}`}
-                          >
-                            {count}
-                          </div>
-                        ))}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {Object.entries(noble.requirements).map(([c, count]) => {
+                          const col = c as GemColor;
+                          const cfg = GEM_CONFIG[col];
+                          return (
+                            <div
+                              key={c}
+                              className={`px-1.5 py-0.5 rounded-lg border font-mono text-[11px] font-black shadow-sm flex items-center gap-1 ${cfg.costPill}`}
+                            >
+                              <span className="text-[10px]">{cfg.icon}</span>
+                              <span>{count}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -432,50 +471,59 @@ export const SplendorBoard: React.FC<SplendorBoardProps> = ({
                       }
 
                       const canBuy = me ? canAffordCard(me, card) : false;
+                      const gemCfg = GEM_CONFIG[card.gemBonus];
 
                       return (
                         <div
                           key={card.id}
-                          className={`group relative aspect-[5/7] rounded-2xl bg-gradient-to-b from-stone-800 to-stone-950 border-2 transition-all duration-200 shadow-lg flex flex-col justify-between p-2.5 ${
+                          className={`group relative aspect-[5/7] rounded-2xl ${gemCfg.cardBg} border-2 ${gemCfg.cardBorder} transition-all duration-200 shadow-xl flex flex-col justify-between p-2.5 overflow-hidden ${
                             canBuy && isMyTurn
-                              ? 'border-amber-400/80 hover:scale-[1.03] shadow-amber-500/10'
-                              : 'border-stone-700 hover:border-stone-500'
+                              ? 'ring-2 ring-amber-400 shadow-amber-500/25 hover:scale-[1.03] cursor-pointer'
+                              : 'hover:border-stone-400'
                           }`}
                         >
-                          {/* Card Top: Prestige & Gem Bonus */}
-                          <div className="flex items-start justify-between">
-                            <span className="text-lg font-black font-serif text-amber-300">
-                              {card.prestige > 0 ? card.prestige : ''}
-                            </span>
-                            <div
-                              className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold shadow-md border ${
-                                GEM_CONFIG[card.gemBonus].bg
-                              } ${GEM_CONFIG[card.gemBonus].border} ${GEM_CONFIG[card.gemBonus].text}`}
-                            >
-                              {GEM_CONFIG[card.gemBonus].icon}
+                          {/* Card Top Banner: Prestige Plaque & Large Gem Bonus Emblem */}
+                          <div className={`-mx-2.5 -mt-2.5 mb-1 px-2.5 py-1.5 ${gemCfg.cardHeader} flex items-center justify-between shadow-sm`}>
+                            <div className="flex items-center gap-1 min-h-[22px]">
+                              {card.prestige > 0 ? (
+                                <span className="text-xl font-black font-serif text-inherit drop-shadow leading-none">
+                                  {card.prestige}
+                                </span>
+                              ) : (
+                                <span className="text-xs opacity-50 font-mono">•</span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full border border-white/20 shadow-inner">
+                              <span className="text-sm leading-none">{gemCfg.icon}</span>
+                              <span className="text-[10px] font-black text-white font-mono leading-none">1</span>
                             </div>
                           </div>
 
+                          {/* Center Subtle Gem Motif / Watermark */}
+                          <div className="my-auto flex items-center justify-center opacity-15 pointer-events-none select-none text-4xl">
+                            {gemCfg.icon}
+                          </div>
+
                           {/* Card Bottom: Gem Costs */}
-                          <div className="flex flex-col gap-1">
-                            <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-col gap-1.5 z-10">
+                            <div className="flex flex-wrap gap-1 items-center">
                               {Object.entries(card.cost).map(([c, amount]) => {
                                 const color = c as GemColor;
                                 const discount = myBonuses[color] || 0;
                                 const effectiveCost = Math.max(0, (amount || 0) - discount);
+                                const costCfg = GEM_CONFIG[color];
+
                                 return (
                                   <div
                                     key={c}
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold shadow flex items-center gap-1 ${
-                                      GEM_CONFIG[color].bg
-                                    } ${GEM_CONFIG[color].text}`}
+                                    className={`px-1.5 py-0.5 rounded-full text-[11px] font-black shadow-md flex items-center gap-1 ${costCfg.costPill} ${
+                                      effectiveCost === 0 ? 'opacity-40 line-through' : ''
+                                    }`}
+                                    title={`${costCfg.label}: ${amount}`}
                                   >
-                                    <span>{effectiveCost}</span>
-                                    {discount > 0 && (
-                                      <span className="line-through text-[9px] opacity-60">
-                                        {amount}
-                                      </span>
-                                    )}
+                                    <span className="text-[10px] leading-none">{costCfg.icon}</span>
+                                    <span className="leading-none">{effectiveCost}</span>
                                   </div>
                                 );
                               })}
@@ -483,11 +531,11 @@ export const SplendorBoard: React.FC<SplendorBoardProps> = ({
 
                             {/* Action Buttons overlay on hover */}
                             {isMyTurn && state.phase === 'action' && (
-                              <div className="mt-1 flex items-center gap-1 opacity-90 group-hover:opacity-100">
+                              <div className="mt-1 flex items-center gap-1 opacity-95 group-hover:opacity-100">
                                 {canBuy && (
                                   <button
                                     onClick={() => handleBuyCard(card)}
-                                    className="flex-1 py-1 bg-amber-500 hover:bg-amber-400 text-stone-950 text-[10px] font-bold rounded-lg shadow transition"
+                                    className="flex-1 py-1.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-[10px] font-black rounded-lg shadow-md transition uppercase tracking-wider"
                                   >
                                     Buy 🛒
                                   </button>
@@ -495,7 +543,7 @@ export const SplendorBoard: React.FC<SplendorBoardProps> = ({
                                 {me && me.reservedCards.length < 3 && (
                                   <button
                                     onClick={() => handleReserveCard(card)}
-                                    className="px-2 py-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-[10px] font-semibold rounded-lg shadow transition"
+                                    className="px-2.5 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-100 text-[10px] font-bold rounded-lg border border-stone-600 shadow transition"
                                     title="Reserve Card (+1 Gold Joker)"
                                   >
                                     📥
@@ -516,43 +564,41 @@ export const SplendorBoard: React.FC<SplendorBoardProps> = ({
                         return (
                           <div
                             key={card.id}
-                            className={`group relative aspect-[5/7] rounded-2xl bg-gradient-to-b from-red-950 to-stone-950 border-2 border-red-700 p-2.5 flex flex-col justify-between shadow-lg ${
-                              canBuy && isMyTurn ? 'ring-2 ring-amber-400' : ''
+                            className={`group relative aspect-[5/7] rounded-2xl bg-[#2a0e14] border-2 border-red-500/80 p-2.5 flex flex-col justify-between shadow-xl overflow-hidden ${
+                              canBuy && isMyTurn ? 'ring-2 ring-amber-400 shadow-amber-500/25 hover:scale-[1.03] cursor-pointer' : 'hover:border-red-400'
                             }`}
                           >
-                            <div className="flex items-start justify-between">
-                              <span className="text-lg font-black font-serif text-amber-300">
-                                {card.prestige > 0 ? card.prestige : ''}
+                            <div className="-mx-2.5 -mt-2.5 mb-1 px-2.5 py-1.5 bg-gradient-to-r from-red-700 via-rose-700 to-red-800 text-white flex items-center justify-between shadow-sm">
+                              <span className="text-xl font-black font-serif text-white drop-shadow leading-none">
+                                {card.prestige > 0 ? card.prestige : '•'}
                               </span>
-                              <div className="flex items-center gap-0.5">
+                              <div className="flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full border border-white/20 shadow-inner">
                                 <span className="text-xs">🏮</span>
-                                <div
-                                  className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold ${
-                                    GEM_CONFIG[card.gemBonus].bg
-                                  } ${GEM_CONFIG[card.gemBonus].text}`}
-                                >
+                                <span className="text-[10px] font-black text-white font-mono leading-none">
                                   {card.bonusCount || 2}
-                                </div>
+                                </span>
                               </div>
                             </div>
 
-                            <div className="flex flex-col gap-1">
-                              <div className="flex flex-wrap gap-1">
-                                {Object.entries(card.cost).map(([c, amount]) => (
-                                  <span
-                                    key={c}
-                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                                      GEM_CONFIG[c as GemColor].bg
-                                    } ${GEM_CONFIG[c as GemColor].text}`}
-                                  >
-                                    {amount}
-                                  </span>
-                                ))}
+                            <div className="flex flex-col gap-1.5 z-10">
+                              <div className="flex flex-wrap gap-1 items-center">
+                                {Object.entries(card.cost).map(([c, amount]) => {
+                                  const costCfg = GEM_CONFIG[c as GemColor];
+                                  return (
+                                    <div
+                                      key={c}
+                                      className={`px-1.5 py-0.5 rounded-full text-[11px] font-black shadow-md flex items-center gap-1 ${costCfg.costPill}`}
+                                    >
+                                      <span className="text-[10px] leading-none">{costCfg.icon}</span>
+                                      <span className="leading-none">{amount}</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                               {isMyTurn && canBuy && (
                                 <button
                                   onClick={() => handleBuyCard(card)}
-                                  className="mt-1 py-1 bg-amber-500 hover:bg-amber-400 text-stone-950 text-[10px] font-bold rounded-lg shadow"
+                                  className="mt-1 py-1.5 bg-amber-400 hover:bg-amber-300 text-stone-950 text-[10px] font-black rounded-lg shadow uppercase tracking-wider"
                                 >
                                   Buy 🏮
                                 </button>

@@ -49,11 +49,119 @@ export default function BombBustersBoard({
     slotIndex: number;
   } | null>(null);
 
+  const [guessedCallValue, setGuessedCallValue] = useState<number>(1);
   const [scannerModalOpen, setScannerModalOpen] = useState(false);
   const [scannerTargetPlayerId, setScannerTargetPlayerId] = useState<string>('');
   const [scannerValue, setScannerValue] = useState<number>(1);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showManual, setShowManual] = useState(false);
+
+  // Auto Bot Turn Runner: ensures bot players never freeze or stall
+  useEffect(() => {
+    if (state.phase !== 'in_progress') return;
+    if (!state.currentTurnPlayerId || !state.currentTurnPlayerId.startsWith('bot_')) return;
+    if (!isHost) return;
+
+    const timer = setTimeout(() => {
+      const botId = state.currentTurnPlayerId;
+      const botStand = state.stands[botId] || [];
+      const uncutBotWires = botStand.filter((w) => !w.isCut && w.value !== 'RED');
+
+      // 1. Duo Cut with any teammate who has a visible infoToken or known clue matching a bot wire
+      for (const bWire of uncutBotWires) {
+        if (typeof bWire.value !== 'number') continue;
+        for (const [pId, wires] of Object.entries(state.stands)) {
+          if (pId === botId) continue;
+          const targetWire = wires.find(
+            (w) => !w.isCut && (w.infoToken === bWire.value || (w.value != null && w.value === bWire.value))
+          );
+          if (targetWire) {
+            onAction({
+              type: 'CUT_WIRE',
+              myWireId: bWire.id,
+              targetPlayerId: pId,
+              targetWireId: targetWire.id,
+            });
+            return;
+          }
+        }
+      }
+
+      // 2. Solo Cut if bot holds 2 identical copies and no other player holds it
+      const valueCounts: Record<number, typeof botStand> = {};
+      uncutBotWires.forEach((w) => {
+        if (typeof w.value === 'number') {
+          if (!valueCounts[w.value]) valueCounts[w.value] = [];
+          valueCounts[w.value].push(w);
+        }
+      });
+      for (const [val, group] of Object.entries(valueCounts)) {
+        if (group.length >= 2) {
+          const v = Number(val);
+          const track = state.validationTrack[v];
+          if (track && track.cut + group.length >= track.total) {
+            onAction({
+              type: 'SOLO_CUT',
+              wireId1: group[0].id,
+              wireId2: group[1].id,
+            });
+            return;
+          }
+        }
+      }
+
+      // 3. Give clue by placing an Info Token on an unclued blue wire
+      const uncluedBlue = uncutBotWires.find((w) => w.color === 'blue' && w.infoToken == null);
+      if (uncluedBlue) {
+        onAction({
+          type: 'PLACE_INFO_TOKEN',
+          wireId: uncluedBlue.id,
+        });
+        return;
+      }
+
+      // 4. If bot has uncut wires, attempt a reasonable Duo Cut with first teammate
+      if (uncutBotWires.length > 0) {
+        const myWire = uncutBotWires[0];
+        for (const [pId, wires] of Object.entries(state.stands)) {
+          if (pId === botId) continue;
+          const targetWire = wires.find((w) => !w.isCut);
+          if (targetWire) {
+            onAction({
+              type: 'CUT_WIRE',
+              myWireId: myWire.id,
+              targetPlayerId: pId,
+              targetWireId: targetWire.id,
+            });
+            return;
+          }
+        }
+      }
+
+      // 5. Bot has NO uncut wires remaining! Make an Operative Call or pass turn
+      for (const [pId, wires] of Object.entries(state.stands)) {
+        if (pId === botId) continue;
+        const targetWire = wires.find((w) => !w.isCut);
+        if (targetWire) {
+          const guessVal = targetWire.infoToken
+            ? Number(targetWire.infoToken)
+            : Math.floor(Math.random() * (state.numberRange || 12)) + 1;
+          onAction({
+            type: 'OPERATIVE_CALL',
+            targetPlayerId: pId,
+            targetWireId: targetWire.id,
+            guessedValue: guessVal,
+          });
+          return;
+        }
+      }
+
+      // Fallback: pass turn
+      onAction({ type: 'PASS_TURN' });
+    }, 1300);
+
+    return () => clearTimeout(timer);
+  }, [state.currentTurnPlayerId, state.phase, isHost, state.stands, state.validationTrack, state.numberRange, onAction]);
 
   // Victory / Defeat audio triggers
   useEffect(() => {
@@ -80,6 +188,7 @@ export default function BombBustersBoard({
     selectedMyWires[0].value !== 'RED';
 
   const progressPercent = Math.round((state.cutWiresCount / state.totalWiresToCut) * 100);
+
 
   const getWireColor = (value: number | 'RED' | null, color?: string) => {
     if (value === 'RED' || color === 'red') {
@@ -168,6 +277,36 @@ export default function BombBustersBoard({
     soundFX.playClick();
     onAction({ type: 'USE_STABILIZER' });
   };
+
+  const handlePlaceInfoToken = (wireId: string) => {
+    soundFX.playClick();
+    onAction({
+      type: 'PLACE_INFO_TOKEN',
+      wireId,
+    });
+    setSelectedMyWireIds([]);
+    setTargetSelection(null);
+  };
+
+  const handleOperativeCall = (guessedValue: number) => {
+    if (!targetSelection) return;
+    soundFX.playWireSnip();
+    onAction({
+      type: 'OPERATIVE_CALL',
+      targetPlayerId: targetSelection.playerId,
+      targetWireId: targetSelection.wireId,
+      guessedValue,
+    });
+    setTargetSelection(null);
+  };
+
+  const handlePassTurn = () => {
+    soundFX.playClick();
+    onAction({ type: 'PASS_TURN' });
+    setSelectedMyWireIds([]);
+    setTargetSelection(null);
+  };
+
 
   const toggleSound = () => {
     const next = !soundEnabled;
@@ -444,6 +583,53 @@ export default function BombBustersBoard({
             </div>
           )}
 
+          {/* CENTER INFO TOKEN SUPPLY TRAY (โทเคนใบ้ตรงกลาง) */}
+          <div className="bg-black/40 border border-amber-900/40 rounded-2xl p-3.5 space-y-2 shadow-inner">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-[11px] font-mono uppercase tracking-wider text-amber-300 flex items-center gap-2 font-bold">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span>Center Clue Token Supply (โทเคนใบ้ตรงกลาง):</span>
+              </div>
+              <span className="text-[10px] text-amber-300/70 font-mono">
+                Click a token to clue your matching wire, or click &quot;💡 Clue&quot; on your stand
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {Array.from({ length: state.numberRange || 12 }, (_, i) => i + 1).map((val) => {
+                const uncluedTile = myStand.find(
+                  (w) => !w.isCut && w.value === val && w.infoToken == null
+                );
+                const canUseThisToken = isMyTurn && Boolean(uncluedTile);
+
+                return (
+                  <button
+                    key={val}
+                    type="button"
+                    disabled={!canUseThisToken}
+                    onClick={() => {
+                      if (uncluedTile) {
+                        handlePlaceInfoToken(uncluedTile.id);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-mono text-xs font-black transition flex items-center gap-1.5 border shadow-sm ${
+                      canUseThisToken
+                        ? 'bg-amber-500/25 border-amber-400 text-amber-200 hover:bg-amber-400 hover:text-slate-950 cursor-pointer shadow-amber-900/40 scale-100 hover:scale-105 active:scale-95'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                    }`}
+                    title={
+                      canUseThisToken
+                        ? `Place Info Token #${val} on your rack wire`
+                        : `Info Token #${val}`
+                    }
+                  >
+                    <span>#{val}</span>
+                    {canUseThisToken && <span className="text-[10px]">💡</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/80 pb-4">
             {/* Detonator Stability Analog / LED Meter */}
             <div className="flex items-center gap-3">
@@ -519,7 +705,7 @@ export default function BombBustersBoard({
             </div>
           </div>
 
-          {/* ACTIVE SNIP ACTION BENCH (DUO CUT OR SOLO CUT) */}
+          {/* ACTIVE SNIP ACTION BENCH (DUO CUT, SOLO CUT, OR OPERATIVE DEDUCTION CALL) */}
           {isMyTurn && (
             <div className="bg-black/50 border border-slate-700 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-inner">
               {/* Option A: Solo Cut Ready */}
@@ -548,8 +734,70 @@ export default function BombBustersBoard({
                     <span>EXECUTE SOLO CUT! ✂️</span>
                   </button>
                 </div>
+              ) : myStand.filter((w) => !w.isCut).length === 0 ? (
+                /* Option B: All Wires Cut! Operative Deduction Call or Pass */
+                <div className="flex flex-col w-full gap-3">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-b border-slate-700 pb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">⚡</span>
+                      <div>
+                        <div className="font-bold text-emerald-400 text-xs sm:text-sm">
+                          ALL YOUR WIRES ARE DEFUSED! OPERATIVE CALL ACTIVE
+                        </div>
+                        <div className="text-[11px] text-slate-400">
+                          Pick a teammate&apos;s uncut wire above, choose a guessed number, or pass turn.
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handlePassTurn}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl border border-slate-700 transition"
+                    >
+                      Pass Turn ⏭️
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400 font-sans">Target:</span>
+                      {targetSelection ? (
+                        <span className="px-3 py-1 bg-cyan-500/20 border border-cyan-400/50 rounded-xl font-mono text-xs font-black text-cyan-300">
+                          Slot #{targetSelection.slotIndex + 1}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-cyan-400 italic">
+                          Click a teammate&apos;s tile above
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs text-slate-400">Call Value:</span>
+                      <select
+                        value={guessedCallValue}
+                        onChange={(e) => setGuessedCallValue(Number(e.target.value))}
+                        className="bg-slate-900 border border-slate-700 text-amber-300 font-mono font-bold text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-amber-400"
+                      >
+                        {Array.from({ length: state.numberRange || 12 }, (_, i) => i + 1).map((val) => (
+                          <option key={val} value={val}>
+                            #{val}
+                          </option>
+                        ))}
+                      </select>
+
+                      <button
+                        disabled={!targetSelection}
+                        onClick={() => handleOperativeCall(guessedCallValue)}
+                        className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs rounded-xl transition shadow-md disabled:opacity-40"
+                      >
+                        Call Wire #{guessedCallValue}! 🎯
+                      </button>
+                    </div>
+                  </div>
+                </div>
               ) : (
-                /* Option B: Standard Duo Cut */
+                /* Option C: Standard Duo Cut */
                 <div className="flex flex-col md:flex-row items-center justify-between w-full gap-4">
                   <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold flex-wrap">
                     <div className="flex items-center gap-2">
@@ -581,14 +829,16 @@ export default function BombBustersBoard({
                     </div>
                   </div>
 
-                  <button
-                    disabled={selectedMyWires.length !== 1 || !targetSelection}
-                    onClick={handleDuoSnip}
-                    className="w-full md:w-auto px-7 py-3.5 bg-gradient-to-r from-rose-600 via-amber-600 to-rose-600 hover:from-rose-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-xl shadow-rose-950/60 disabled:opacity-40 flex items-center justify-center gap-2 transform active:scale-95"
-                  >
-                    <Scissors className="w-4 h-4" />
-                    <span>SNIP WIRE! ✂️</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={selectedMyWires.length !== 1 || !targetSelection}
+                      onClick={handleDuoSnip}
+                      className="w-full md:w-auto px-7 py-3.5 bg-gradient-to-r from-rose-600 via-amber-600 to-rose-600 hover:from-rose-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-xl shadow-rose-950/60 disabled:opacity-40 flex items-center justify-center gap-2 transform active:scale-95"
+                    >
+                      <Scissors className="w-4 h-4" />
+                      <span>SNIP WIRE! ✂️</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -694,12 +944,25 @@ export default function BombBustersBoard({
                     )}
                   </div>
 
-                  {/* INFO TOKEN PINNED AT BASE OF TILE */}
-                  {hasInfoToken && !isCut && (
+                  {/* INFO TOKEN PINNED AT BASE OF TILE OR CLUE BUTTON */}
+                  {hasInfoToken && !isCut ? (
                     <div className="absolute -bottom-2.5 z-20 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 border-2 border-amber-600 shadow-lg flex items-center justify-center font-mono text-[9px] font-black text-amber-950">
                       #{wire.infoToken}
                     </div>
-                  )}
+                  ) : !isCut && isMyTurn ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePlaceInfoToken(wire.id);
+                      }}
+                      className="absolute -bottom-3 z-20 px-2 py-0.5 rounded-full bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-black text-[9px] shadow-lg border border-amber-500 uppercase tracking-wider flex items-center gap-0.5 transition cursor-pointer"
+                      title={`Place Info Token #${wire.value} on this wire`}
+                    >
+                      <span>💡</span>
+                      <span>Clue</span>
+                    </button>
+                  ) : null}
                 </div>
               );
             })}

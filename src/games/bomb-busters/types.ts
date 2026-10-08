@@ -58,6 +58,7 @@ export interface BombBustersState {
     time: number;
     type: 'success' | 'error' | 'boom' | 'info';
   }[];
+  numberRange: number;
 }
 
 export type BombBustersAction =
@@ -71,6 +72,19 @@ export type BombBustersAction =
       type: 'SOLO_CUT';
       wireId1: string;
       wireId2: string;
+    }
+  | {
+      type: 'PLACE_INFO_TOKEN';
+      wireId: string;
+    }
+  | {
+      type: 'OPERATIVE_CALL';
+      targetPlayerId: string;
+      targetWireId: string;
+      guessedValue: number;
+    }
+  | {
+      type: 'PASS_TURN';
     }
   | {
       type: 'USE_SCANNER';
@@ -105,5 +119,7 @@ export interface BombBustersClientState {
     time: number;
     type: 'success' | 'error' | 'boom' | 'info';
   }[];
+  numberRange: number;
   allRevealed?: boolean;
 }
+

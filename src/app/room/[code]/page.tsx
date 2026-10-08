@@ -227,6 +227,22 @@ export default function RoomPage({ params }: RoomPageProps) {
     }
   };
 
+  const handleKickPlayer = (targetPlayerId: string) => {
+    soundFX.playClick();
+    setRoom((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        players: prev.players.filter((p) => p.id !== targetPlayerId),
+      };
+    });
+    if (socket && socket.connected) {
+      socket.emit('kick_player', { code: roomCode, targetPlayerId });
+    } else {
+      postRoomAction('kick_player', { targetPlayerId });
+    }
+  };
+
   const handleStartGame = () => {
     soundFX.playStart();
     if (socket && socket.connected) {
@@ -419,6 +435,7 @@ export default function RoomPage({ params }: RoomPageProps) {
                 onToggleReady={handleToggleReady}
                 onStartGame={handleStartGame}
                 onAddBotPlayer={handleAddBotPlayer}
+                onKickPlayer={handleKickPlayer}
               />
             ) : (
               <GameRenderer

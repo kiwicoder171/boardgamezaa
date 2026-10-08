@@ -128,6 +128,13 @@ export async function POST(req: Request, context: RouteContext) {
         break;
       }
 
+      case 'kick_player': {
+        const res = await roomManager.kickPlayerAsync(normalizedCode, playerId, payload.targetPlayerId);
+        if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
+        if (res.room) updatedRoom = res.room;
+        break;
+      }
+
       default:
         return NextResponse.json({ error: 'Unknown action type' }, { status: 400 });
     }

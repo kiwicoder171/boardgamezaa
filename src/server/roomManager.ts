@@ -210,6 +210,34 @@ class RoomManager {
     return res;
   }
 
+  public kickPlayer(code: string, hostId: string, targetPlayerId: string): { room?: Room; error?: string } {
+    const room = this.getRoom(code);
+    if (!room) return { error: 'Room not found' };
+    if (room.hostId !== hostId) return { error: 'Only the host can kick players.' };
+    if (targetPlayerId === hostId) return { error: 'Host cannot kick themselves.' };
+
+    const playerIndex = room.players.findIndex((p) => p.id === targetPlayerId);
+    if (playerIndex < 0) return { error: 'Player not found in room.' };
+
+    const kickedPlayer = room.players[playerIndex];
+    room.players.splice(playerIndex, 1);
+
+    this.addSystemMessage(room, `${kickedPlayer.name} was removed from the lobby by the host.`);
+    room.lastActivity = Date.now();
+    return { room };
+  }
+
+  public async kickPlayerAsync(code: string, hostId: string, targetPlayerId: string): Promise<{ room?: Room; error?: string }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return { error: 'Room not found' };
+
+    const res = this.kickPlayer(code, hostId, targetPlayerId);
+    if (res.room) {
+      await this.saveRoomAsync(res.room);
+    }
+    return res;
+  }
+
   public setPlayerReady(code: string, playerId: string, isReady: boolean): Room | undefined {
     const room = this.getRoom(code);
     if (!room) return undefined;
