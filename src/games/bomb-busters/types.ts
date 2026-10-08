@@ -93,6 +93,10 @@ export type BombBustersAction =
     }
   | {
       type: 'USE_STABILIZER';
+    }
+  | {
+      type: 'BOT_AUTO_TURN';
+      botId: string;
     };
 
 export interface BombBustersClientState {

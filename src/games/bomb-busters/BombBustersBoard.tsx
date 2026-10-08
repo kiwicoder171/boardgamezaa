@@ -56,113 +56,20 @@ export default function BombBustersBoard({
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showManual, setShowManual] = useState(false);
 
-  // Auto Bot Turn Runner: ensures bot players never freeze or stall
+  // Auto Bot Turn Runner: Host triggers the server-side bot AI so bot secret wire values remain 100% hidden
   useEffect(() => {
     if (state.phase !== 'in_progress') return;
     if (!state.currentTurnPlayerId || !state.currentTurnPlayerId.startsWith('bot_')) return;
     if (!isHost) return;
 
+    const botId = state.currentTurnPlayerId;
     const timer = setTimeout(() => {
-      const botId = state.currentTurnPlayerId;
-      const botStand = state.stands[botId] || [];
-      const uncutBotWires = botStand.filter((w) => !w.isCut && w.value !== 'RED');
-      const botAction = (act: any) => onAction({ ...act, _asPlayerId: botId });
-
-      // 1. Duo Cut with any teammate who has a visible infoToken or known clue matching a bot wire
-      for (const bWire of uncutBotWires) {
-        if (typeof bWire.value !== 'number') continue;
-        for (const [pId, wires] of Object.entries(state.stands)) {
-          if (pId === botId) continue;
-          const targetWire = wires.find(
-            (w) => !w.isCut && (w.infoToken === bWire.value || (w.value != null && w.value === bWire.value))
-          );
-          if (targetWire) {
-            botAction({
-              type: 'CUT_WIRE',
-              myWireId: bWire.id,
-              targetPlayerId: pId,
-              targetWireId: targetWire.id,
-            });
-            return;
-          }
-        }
-      }
-
-      // 2. Solo Cut if bot holds 2 identical copies and no other player holds it
-      const valueCounts: Record<number, typeof botStand> = {};
-      uncutBotWires.forEach((w) => {
-        if (typeof w.value === 'number') {
-          if (!valueCounts[w.value]) valueCounts[w.value] = [];
-          valueCounts[w.value].push(w);
-        }
-      });
-      for (const [val, group] of Object.entries(valueCounts)) {
-        if (group.length >= 2) {
-          const v = Number(val);
-          const track = state.validationTrack[v];
-          if (track && track.cut + group.length >= track.total) {
-            botAction({
-              type: 'SOLO_CUT',
-              wireId1: group[0].id,
-              wireId2: group[1].id,
-            });
-            return;
-          }
-        }
-      }
-
-      // 3. Give clue by placing an Info Token on an unclued blue wire
-      const uncluedBlue = uncutBotWires.find((w) => w.color === 'blue' && w.infoToken == null);
-      if (uncluedBlue) {
-        botAction({
-          type: 'PLACE_INFO_TOKEN',
-          wireId: uncluedBlue.id,
-        });
-        return;
-      }
-
-      // 4. If bot has uncut wires, attempt a reasonable Duo Cut with first teammate
-      if (uncutBotWires.length > 0) {
-        const myWire = uncutBotWires[0];
-        for (const [pId, wires] of Object.entries(state.stands)) {
-          if (pId === botId) continue;
-          const targetWire = wires.find((w) => !w.isCut);
-          if (targetWire) {
-            botAction({
-              type: 'CUT_WIRE',
-              myWireId: myWire.id,
-              targetPlayerId: pId,
-              targetWireId: targetWire.id,
-            });
-            return;
-          }
-        }
-      }
-
-      // 5. Bot has NO uncut wires remaining! Make an Operative Call or pass turn
-      for (const [pId, wires] of Object.entries(state.stands)) {
-        if (pId === botId) continue;
-        const targetWire = wires.find((w) => !w.isCut);
-        if (targetWire) {
-          const guessVal = targetWire.infoToken
-            ? Number(targetWire.infoToken)
-            : Math.floor(Math.random() * (state.numberRange || 12)) + 1;
-          botAction({
-            type: 'OPERATIVE_CALL',
-            targetPlayerId: pId,
-            targetWireId: targetWire.id,
-            guessedValue: guessVal,
-          });
-          return;
-        }
-      }
-
-      // Fallback: pass turn
-      botAction({ type: 'PASS_TURN' });
+      onAction({ type: 'BOT_AUTO_TURN', botId } as any);
+      soundFX.playClick();
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [state.currentTurnPlayerId, state.phase, isHost, state.stands, state.validationTrack, state.numberRange, onAction]);
+  }, [state.currentTurnPlayerId, state.phase, isHost, onAction]);
 
   // Victory / Defeat audio triggers
   useEffect(() => {
@@ -830,15 +737,29 @@ export default function BombBustersBoard({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       disabled={selectedMyWires.length !== 1 || !targetSelection}
                       onClick={handleDuoSnip}
-                      className="w-full md:w-auto px-7 py-3.5 bg-gradient-to-r from-rose-600 via-amber-600 to-rose-600 hover:from-rose-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-xl shadow-rose-950/60 disabled:opacity-40 flex items-center justify-center gap-2 transform active:scale-95"
+                      className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-rose-600 via-amber-600 to-rose-600 hover:from-rose-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-xl shadow-rose-950/60 disabled:opacity-40 flex items-center justify-center gap-2 transform active:scale-95"
                     >
                       <Scissors className="w-4 h-4" />
                       <span>SNIP WIRE! ✂️</span>
                     </button>
+
+                    {selectedMyWires.length === 1 &&
+                      !selectedMyWires[0].isCut &&
+                      selectedMyWires[0].infoToken === null && (
+                        <button
+                          type="button"
+                          onClick={() => handlePlaceInfoToken(selectedMyWires[0].id)}
+                          className="w-full sm:w-auto px-5 py-3.5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-lg flex items-center justify-center gap-2 transform active:scale-95"
+                          title="Place Info Token from center onto this wire to give your team a clue"
+                        >
+                          <span>💡</span>
+                          <span>PLACE INFO TOKEN (#{selectedMyWires[0].value})</span>
+                        </button>
+                      )}
                   </div>
                 </div>
               )}

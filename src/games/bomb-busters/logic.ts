@@ -30,7 +30,13 @@ export function initBombBustersGame(
 
   const range = mission.numberRange;
   const copies = mission.wiresPerNumber || 2;
-  const lives = mission.detonatorLives;
+  // Official allowed mistakes (detonator stability cells):
+  // Formula: Number of players - 1 (e.g. 2p: 1 strike, 3p: 2 strikes, 4p: 3 strikes)
+  const formulaLives = Math.max(1, players.length - 1);
+  const lives =
+    settings.detonatorLives && settings.detonatorLives > 0
+      ? settings.detonatorLives
+      : formulaLives;
   const redCount = mission.redWiresCount;
   const yellowDecimals = mission.yellowDecimals || [];
 
@@ -157,11 +163,27 @@ export function handleBombBustersAction(
     return { newState: state, error: 'The mission has already concluded.' };
   }
 
-  if (state.currentTurnPlayerId !== effectivePlayerId && action.type !== 'USE_STABILIZER') {
+  if (
+    state.currentTurnPlayerId !== effectivePlayerId &&
+    action.type !== 'USE_STABILIZER' &&
+    action.type !== 'BOT_AUTO_TURN'
+  ) {
     return { newState: state, error: 'It is not your turn to cut wires.' };
   }
 
   switch (action.type) {
+    case 'BOT_AUTO_TURN': {
+      const botId = action.botId;
+      if (state.currentTurnPlayerId !== botId) {
+        return { newState: state };
+      }
+      const botAction = getBombBustersBotAction(state, botId);
+      if (!botAction) {
+        return handleBombBustersAction(state, { type: 'PASS_TURN' }, botId, room);
+      }
+      return handleBombBustersAction(state, botAction, botId, room);
+    }
+
     case 'CUT_WIRE': {
       const myStand = state.stands[effectivePlayerId];
       const targetStand = state.stands[action.targetPlayerId];
@@ -605,17 +627,22 @@ export function sanitizeBombBustersState(
 
   Object.entries(state.stands).forEach(([pId, wires]) => {
     const isOwner = pId === playerId;
-    const isBot = pId.startsWith('bot_');
 
     sanitizedStands[pId] = wires.map((wire) => {
       const hasInfoToken = wire.infoToken !== null;
-      // Include bot wires so the host's bot AI engine can make valid moves
-      const canSeeValue = isGameOver || isOwner || wire.isCut || hasInfoToken || isBot;
+      // Absolute Fog-of-War:
+      // A wire's value is visible ONLY IF:
+      // 1. The game has concluded (victory or exploded)
+      // 2. The viewer is the owner of this stand
+      // 3. The wire has already been cut
+      // 4. An Info Token has been placed on this wire
+      // BOTS AND TEAMMATES ARE COMPLETELY MASKED from all human players!
+      const canSeeValue = isGameOver || isOwner || wire.isCut || hasInfoToken;
 
       return {
         id: wire.id,
         value: canSeeValue ? wire.value : null,
-        color: wire.color,
+        color: canSeeValue ? wire.color : 'blue',
         isCut: wire.isCut,
         infoToken: wire.infoToken,
         clues: wire.clues,
@@ -642,4 +669,108 @@ export function sanitizeBombBustersState(
     numberRange: state.numberRange || 12,
     allRevealed: isGameOver,
   };
+}
+
+/**
+ * Autonomous Server-Side Bot AI for Bomb Busters:
+ * Operates with the server's true state without exposing unmasked wires to clients.
+ */
+export function getBombBustersBotAction(
+  state: BombBustersState,
+  botPlayerId: string
+): BombBustersAction | null {
+  const botStand = state.stands[botPlayerId];
+  if (!botStand) return null;
+
+  const uncutBotWires = botStand.filter((w) => !w.isCut && w.value !== 'RED');
+
+  // If bot has no uncut wires remaining, make an operative call or pass
+  if (uncutBotWires.length === 0) {
+    for (const [pId, wires] of Object.entries(state.stands)) {
+      if (pId === botPlayerId) continue;
+      const targetWire = wires.find((w) => !w.isCut && w.infoToken !== null);
+      if (targetWire) {
+        return {
+          type: 'OPERATIVE_CALL',
+          targetPlayerId: pId,
+          targetWireId: targetWire.id,
+          guessedValue: Number(targetWire.infoToken),
+        };
+      }
+    }
+    return { type: 'PASS_TURN' };
+  }
+
+  // 1. Guaranteed Duo Cut: Check if any teammate has an Info Token matching one of bot's wires
+  for (const bWire of uncutBotWires) {
+    if (typeof bWire.value !== 'number') continue;
+    for (const [pId, wires] of Object.entries(state.stands)) {
+      if (pId === botPlayerId) continue;
+      const targetWire = wires.find(
+        (w) => !w.isCut && w.infoToken === bWire.value
+      );
+      if (targetWire) {
+        return {
+          type: 'CUT_WIRE',
+          myWireId: bWire.id,
+          targetPlayerId: pId,
+          targetWireId: targetWire.id,
+        };
+      }
+    }
+  }
+
+  // 2. Solo Cut: If bot holds 2 copies of identical value and no other player holds it
+  const valueCounts: Record<number, WireTile[]> = {};
+  uncutBotWires.forEach((w) => {
+    if (typeof w.value === 'number') {
+      if (!valueCounts[w.value]) valueCounts[w.value] = [];
+      valueCounts[w.value].push(w);
+    }
+  });
+  for (const [val, group] of Object.entries(valueCounts)) {
+    if (group.length >= 2) {
+      const v = Number(val);
+      const track = state.validationTrack[v];
+      if (track && track.cut + group.length >= track.total) {
+        return {
+          type: 'SOLO_CUT',
+          wireId1: group[0].id,
+          wireId2: group[1].id,
+        };
+      }
+    }
+  }
+
+  // 3. Give Clue: Place an Info Token on an unclued blue wire to help the team deduce
+  const uncluedBlue = uncutBotWires.find(
+    (w) => w.color === 'blue' && w.infoToken === null
+  );
+  if (uncluedBlue) {
+    return {
+      type: 'PLACE_INFO_TOKEN',
+      wireId: uncluedBlue.id,
+    };
+  }
+
+  // 4. Deduction Duo Cut: find candidate wire that hasn't been ruled out
+  for (const bWire of uncutBotWires) {
+    if (typeof bWire.value !== 'number') continue;
+    for (const [pId, wires] of Object.entries(state.stands)) {
+      if (pId === botPlayerId) continue;
+      const candidate = wires.find(
+        (w) => !w.isCut && !w.clues.includes(`≠${bWire.value}`)
+      );
+      if (candidate) {
+        return {
+          type: 'CUT_WIRE',
+          myWireId: bWire.id,
+          targetPlayerId: pId,
+          targetWireId: candidate.id,
+        };
+      }
+    }
+  }
+
+  return { type: 'PASS_TURN' };
 }

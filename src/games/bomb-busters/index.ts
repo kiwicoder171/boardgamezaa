@@ -1,5 +1,5 @@
 import { GameDefinition } from '@/types/game';
-import { handleBombBustersAction, initBombBustersGame, sanitizeBombBustersState } from './logic';
+import { handleBombBustersAction, initBombBustersGame, sanitizeBombBustersState, getBombBustersBotAction } from './logic';
 import { BombBustersAction, BombBustersSettings, BombBustersState } from './types';
 import { BOMB_BUSTERS_MISSIONS } from './missions';
 
@@ -66,10 +66,26 @@ export const bombBustersGameDefinition: GameDefinition<
       })),
       default: 1,
     },
+    {
+      key: 'detonatorLives',
+      label: 'Detonator Stability (Allowed Strikes)',
+      description: 'Default is Players - 1 (e.g. 3 strikes for 4 players). 0 stability = boom!',
+      type: 'select',
+      options: [
+        { label: 'Official Rule: Players - 1 strikes', value: 0 },
+        { label: '1 Strike (Hardcore)', value: 1 },
+        { label: '2 Strikes', value: 2 },
+        { label: '3 Strikes', value: 3 },
+        { label: '4 Strikes', value: 4 },
+        { label: '5 Strikes (Forgiving)', value: 5 },
+      ],
+      default: 0,
+    },
   ],
   initGame: initBombBustersGame,
   handleAction: handleBombBustersAction,
   sanitizeState: sanitizeBombBustersState,
+  getBotAction: getBombBustersBotAction,
   checkGameOver: (state) => {
     if (state.phase === 'victory') {
       return {
