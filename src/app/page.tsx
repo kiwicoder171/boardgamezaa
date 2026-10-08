@@ -194,212 +194,162 @@ export default function HomePage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#090604] text-[#ffedd7] flex flex-col selection:bg-[#dc5000] selection:text-white relative">
-      {/* Tabletop Atmosphere: Cozy ambient fireplace embers & spotlight over dark walnut */}
-      <div className="tabletop-atmosphere" />
-
-      {/* Tabletop Header Rim: Polished Walnut with Brass Accent */}
-      <header className="relative z-20 border-b border-[#382416] bg-[#140d07]/90 backdrop-blur-md px-6 py-4 shadow-2xl">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#dc5000] to-[#9a3412] flex items-center justify-center text-2xl shadow-md border border-[#f59e0b]/40">
-              🎲
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-2xl tracking-tight bg-gradient-to-r from-[#ffedd7] via-[#fde68a] to-[#f59e0b] bg-clip-text text-transparent font-serifDisplay">
-                  BoardgameZaa
-                </span>
-                <span className="text-[10px] font-black uppercase tracking-widest bg-[#dc5000]/15 text-[#fbbf24] border border-[#dc5000]/40 px-2.5 py-0.5 rounded-full">
-                  Online Tabletop Parlor
-                </span>
-              </div>
-              <p className="text-[11px] text-[#cdcdc9] hidden sm:block">
-                Gather around the virtual table with friends for instant multiplayer tabletop games
-              </p>
-            </div>
+    <div className="min-h-screen bg-[#090a0c] text-[#f4f4f5] flex flex-col selection:bg-white selection:text-black">
+      {/* Minimalist Header */}
+      <header className="border-b border-[#1e2025] bg-[#090a0c]/80 backdrop-blur sticky top-0 z-30 px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">🎲</span>
+            <span className="font-bold text-lg tracking-tight text-white">
+              BoardgameZaa
+            </span>
+            <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 border border-zinc-800 px-2 py-0.5 rounded-md hidden sm:inline-block">
+              Free • Multiplayer
+            </span>
           </div>
 
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-1">
             <button
               onClick={() => {
                 soundFX.playClick();
                 setActiveTab('play');
               }}
-              className={`btn-tactile px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+              className={`btn-tactile px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                 activeTab === 'play'
-                  ? 'bg-gradient-to-r from-[#dc5000] to-[#ea580c] text-white shadow-md shadow-[#dc5000]/30 font-black border border-[#f97316]/40'
-                  : 'text-[#cdcdc9] hover:text-[#ffedd7] hover:bg-[#281b12]'
+                  ? 'bg-zinc-100 text-zinc-950 font-bold'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <Gamepad2 className="w-4 h-4" />
-              Game Vault
+              Games
             </button>
             <button
               onClick={() => {
                 soundFX.playClick();
                 setActiveTab('guide');
               }}
-              className={`btn-tactile px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+              className={`btn-tactile px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
                 activeTab === 'guide'
-                  ? 'bg-gradient-to-r from-[#dc5000] to-[#ea580c] text-white shadow-md shadow-[#dc5000]/30 font-black border border-[#f97316]/40'
-                  : 'text-[#cdcdc9] hover:text-[#ffedd7] hover:bg-[#281b12]'
+                  ? 'bg-zinc-100 text-zinc-950 font-bold'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <Code2 className="w-4 h-4" />
-              Developer API
+              Developer Docs
             </button>
           </nav>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-12">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-12">
         {activeTab === 'play' ? (
           <>
-            {/* Tabletop Hero & Callout Banner */}
-            <section className="text-center space-y-4 pt-2 sm:pt-6">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#281b12]/80 border border-[#40372e] text-[#fde68a] text-xs font-bold tracking-wide shadow-sm">
-                <Sparkles className="w-3.5 h-3.5 text-[#dc5000]" />
-                <span>Zero Installs • Instant Table Link • No Accounts Needed</span>
-              </div>
-              <h1 className="text-4xl sm:text-6xl font-black text-[#ffedd7] tracking-tight leading-tight">
-                Your Living Room Board Game Night, <br className="hidden sm:inline" />
-                <span className="font-serifDisplay italic bg-gradient-to-r from-[#fbbf24] via-[#f59e0b] to-[#ea580c] bg-clip-text text-transparent">
-                  Anywhere In The World.
-                </span>
+            {/* Minimalist Hero Section */}
+            <section className="pt-6 sm:pt-10 pb-4 space-y-4 max-w-3xl">
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+                Play board games with friends online.
               </h1>
-              <p className="text-sm sm:text-base text-[#d6d3d1] max-w-2xl mx-auto leading-relaxed">
-                Connect on voice chat with friends, open a table link, and jump right into authentic tabletop classics and modern favorites—rendered with tangible wood, resin, and cardstock textures.
+              <p className="text-base text-zinc-400 leading-relaxed">
+                Direct room links. Instant setup with no downloads or sign-ups required. Open a table, share the code, and start playing.
               </p>
             </section>
 
-            {/* Quick Profile & Table Entrance Lounge */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              {/* Player Badge Dossier */}
-              <div className="bg-[#150d08]/90 border border-[#382416] rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden backdrop-blur-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#f59e0b] uppercase tracking-wider flex items-center gap-1.5">
-                    <span>👤</span> Player Identity
-                  </span>
-                  <span className="text-[11px] text-slate-500">Persistent across rooms</span>
-                </div>
-
-                <div className="flex items-center gap-4">
+            {/* Quick Actions Strip: Compact Profile + Direct Host/Join */}
+            <section className="bg-[#111215] border border-[#222429] rounded-2xl p-5 sm:p-6 shadow-sm">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                {/* Profile Identity (4 Cols) */}
+                <div className="lg:col-span-5 flex items-center gap-3">
                   <div className="relative">
                     <button
                       onClick={() => setAvatarPickerOpen(!avatarPickerOpen)}
-                      className="btn-tactile w-16 h-16 rounded-2xl bg-[#26180e] hover:bg-[#382416] border border-[#dc5000]/40 flex items-center justify-center text-3xl shadow-inner"
-                      title="Click to select your avatar token"
+                      className="btn-tactile w-12 h-12 rounded-xl bg-[#18191e] hover:bg-[#202228] border border-[#272930] flex items-center justify-center text-2xl transition"
+                      title="Select avatar"
                     >
                       {profile.avatar}
                     </button>
-                    <span className="absolute -bottom-1 -right-1 text-[10px] bg-[#dc5000] text-white font-black rounded-full px-1.5 shadow">
-                      ✎
-                    </span>
                   </div>
 
                   <div className="flex-1 space-y-1">
-                    <label className="text-[11px] font-bold text-[#ffedd7] uppercase tracking-wider">
-                      Table Nickname
+                    <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block">
+                      Your Nickname
                     </label>
                     <input
                       type="text"
                       value={profile.name}
                       maxLength={18}
-                      placeholder="Enter player name..."
+                      placeholder="Player name..."
                       onChange={(e) => handleNameChange(e.target.value)}
-                      className="w-full bg-[#0a0705] border border-[#382416] rounded-xl px-3.5 py-2 text-sm text-[#ffedd7] placeholder-[#84847e] focus:outline-none focus:border-[#f59e0b]"
+                      className="w-full bg-[#18191e] border border-[#272930] rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-400"
                     />
                   </div>
                 </div>
 
-                {/* Avatar Picker Drawer */}
-                {avatarPickerOpen && (
-                  <div className="p-3 bg-[#0a0705] rounded-2xl border border-[#382416] flex flex-wrap gap-2 justify-center animate-in fade-in">
-                    {DEFAULT_AVATARS.map((emoji) => (
-                      <button
-                        key={emoji}
-                        onClick={() => handleAvatarSelect(emoji)}
-                        className={`text-2xl p-2 rounded-xl transition btn-tactile ${
-                          profile.avatar === emoji
-                            ? 'bg-[#dc5000]/30 border border-[#dc5000]'
-                            : 'hover:bg-[#26180e]'
-                        }`}
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                {/* Vertical Divider for large screens */}
+                <div className="hidden lg:block lg:col-span-1 border-l border-[#222429] h-10 mx-auto" />
 
-              {/* Instant Room Dispatcher */}
-              <div className="bg-[#150d08]/90 border border-[#382416] rounded-3xl p-6 space-y-4 shadow-2xl flex flex-col justify-between backdrop-blur-sm">
-                <div>
-                  <h3 className="font-bold text-sm text-[#ffedd7] flex items-center gap-2">
-                    <Flame className="w-4 h-4 text-[#dc5000]" />
-                    <span>Host or Enter a Table</span>
-                  </h3>
-                  <p className="text-xs text-[#cdcdc9] mt-0.5">
-                    Spin up a private game room or join an invite code.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
+                {/* Host & Join Code Actions (6 Cols) */}
+                <div className="lg:col-span-6 flex flex-col sm:flex-row gap-3 items-center">
                   <button
                     disabled={isCreating}
                     onClick={() => handleCreateRoomWithGame('sky-team')}
-                    className="btn-tactile w-full py-3.5 bg-gradient-to-r from-[#dc5000] via-[#ea580c] to-[#c2410c] hover:from-[#ea580c] hover:to-[#dc5000] text-white font-black rounded-2xl text-sm shadow-xl shadow-[#dc5000]/25 flex items-center justify-center gap-2 border border-[#f97316]/50"
+                    className="btn-tactile w-full sm:w-auto px-5 py-2.5 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-lg text-sm transition flex items-center justify-center gap-2 flex-shrink-0"
                   >
-                    <PlusCircle className="w-5 h-5" />
-                    <span>{isCreating ? 'Setting Up Table...' : 'Host New Game Table'}</span>
+                    <PlusCircle className="w-4 h-4" />
+                    <span>{isCreating ? 'Creating Table...' : 'Host New Table'}</span>
                   </button>
 
-                  <div className="relative flex py-0.5 items-center">
-                    <div className="flex-grow border-t border-[#382416]" />
-                    <span className="flex-shrink mx-3 text-[10px] uppercase font-bold tracking-widest text-[#84847e]">
-                      Or Join with Code
-                    </span>
-                    <div className="flex-grow border-t border-[#382416]" />
-                  </div>
-
-                  <form onSubmit={handleJoinRoom} className="flex gap-2">
+                  <form onSubmit={handleJoinRoom} className="flex gap-2 w-full">
                     <input
                       type="text"
                       maxLength={6}
-                      placeholder="ENTER 4-LETTER CODE"
+                      placeholder="ROOM CODE"
                       value={roomCodeInput}
                       onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
-                      className="flex-1 bg-[#0a0705] border border-[#382416] rounded-xl px-4 py-2 text-sm text-[#ffedd7] font-mono tracking-widest text-center uppercase focus:outline-none focus:border-[#f59e0b]"
+                      className="flex-1 bg-[#18191e] border border-[#272930] rounded-lg px-3 py-2 text-sm text-white font-mono tracking-wider text-center uppercase placeholder-zinc-500 focus:outline-none focus:border-zinc-400"
                     />
                     <button
                       type="submit"
                       disabled={!roomCodeInput.trim()}
-                      className="btn-tactile px-5 py-2 bg-[#281b12] hover:bg-[#382416] text-[#fde68a] disabled:opacity-40 font-bold text-xs rounded-xl border border-[#40372e]"
+                      className="btn-tactile px-4 py-2 bg-[#202228] hover:bg-[#282a32] text-white disabled:opacity-30 font-semibold text-xs rounded-lg border border-[#272930] transition"
                     >
-                      Enter 🚪
+                      Join
                     </button>
                   </form>
                 </div>
               </div>
+
+              {/* Avatar Picker Drawer */}
+              {avatarPickerOpen && (
+                <div className="mt-4 pt-4 border-t border-[#222429] flex flex-wrap gap-2 animate-in fade-in">
+                  {DEFAULT_AVATARS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => handleAvatarSelect(emoji)}
+                      className={`text-xl p-2 rounded-lg transition btn-tactile ${
+                        profile.avatar === emoji
+                          ? 'bg-zinc-800 border border-zinc-600'
+                          : 'hover:bg-zinc-800'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
 
-            {/* Game Catalog & Thematic Materials Showcase */}
-            <section className="space-y-6 pt-6">
-              {/* Filter Tabs & Header */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#382416] pb-4">
+            {/* Game Catalog */}
+            <section className="space-y-6 pt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222429] pb-4">
                 <div>
-                  <h2 className="text-2xl font-black text-[#ffedd7] flex items-center gap-2 font-serifDisplay">
-                    <Sparkles className="w-6 h-6 text-[#dc5000]" />
-                    <span>The Tabletop Vault ({filteredGames.length} Titles)</span>
+                  <h2 className="text-xl font-bold text-white">
+                    Available Titles ({filteredGames.length})
                   </h2>
-                  <p className="text-xs text-[#cdcdc9]">
-                    Tactile digital board games crafted for real-time play with friends over Discord or in person.
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Select any game to host a private match with your rules.
                   </p>
                 </div>
 
-                {/* Genre Filter Pills */}
+                {/* Filter Pills */}
                 <div className="flex flex-wrap gap-1.5">
                   {filterTags.map((tag) => (
                     <button
@@ -408,10 +358,10 @@ export default function HomePage() {
                         soundFX.playClick();
                         setSelectedTag(tag);
                       }}
-                      className={`btn-tactile text-xs px-3.5 py-1.5 rounded-xl font-bold transition ${
+                      className={`btn-tactile text-xs px-3 py-1 rounded-md transition ${
                         selectedTag === tag
-                          ? 'bg-gradient-to-r from-[#dc5000] to-[#ea580c] text-white shadow-sm border border-[#f97316]/50'
-                          : 'bg-[#150d08] text-[#cdcdc9] hover:text-[#ffedd7] border border-[#382416] hover:bg-[#281b12]'
+                          ? 'bg-white text-zinc-950 font-bold'
+                          : 'bg-[#141518] text-zinc-400 hover:text-white border border-[#222429]'
                       }`}
                     >
                       {tag}
@@ -420,134 +370,78 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Thematic Game Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Clean Minimalist Game Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredGames.map((g) => {
                   const theme = GAME_THEMES[g.id] || {
                     genre: 'Tabletop Game',
                     fontFamily: 'font-sans',
-                    accentColor: 'from-indigo-600 to-purple-800',
-                    containerClass: 'bg-slate-900 text-slate-100',
-                    badgeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40',
-                    materials: ['🎲 Dice', '🃏 Cards', '🪵 Board'],
                     quickRule: g.description,
-                    tactileHighlight: 'Handcrafted digital tabletop components',
                   };
 
                   const isExpanded = expandedGameRule === g.id;
 
                   return (
-                    <Card3DTilt key={g.id} className="h-full">
-                      <div
-                        className={`relative h-full rounded-3xl p-6 shadow-xl hover:shadow-2xl flex flex-col justify-between gap-5 transition-all duration-200 ${theme.containerClass}`}
-                      >
-                        {/* Top Bar: Icon, Genre Badge & Ready Indicator */}
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="w-14 h-14 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
-                              {g.icon}
-                            </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <span
-                                className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${theme.badgeClass}`}
-                              >
-                                {theme.genre}
-                              </span>
-                              <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
-                                <Check className="w-3 h-3" /> Ready to Play
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Title and Thematic Heading Font */}
-                          <div>
-                            <h3 className={`text-2xl font-black tracking-tight ${theme.fontFamily}`}>
-                              {g.name}
-                            </h3>
-                            <p className="text-xs opacity-80 mt-1 leading-relaxed">
-                              {g.description}
-                            </p>
-                          </div>
-
-                          {/* Physical Materials Inventory Strip */}
-                          <div className="p-3 rounded-2xl bg-black/30 border border-white/5 space-y-1.5">
-                            <div className="text-[10px] font-bold tracking-widest uppercase opacity-60 flex items-center gap-1">
-                              <Layers className="w-3 h-3" /> Tangible Components
-                            </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {theme.materials.map((m) => (
-                                <span
-                                  key={m}
-                                  className="text-[11px] font-medium bg-black/40 px-2 py-0.5 rounded-md border border-white/10"
-                                >
-                                  {m}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Accordion Bite-Sized Rule Overview */}
-                          <div className="border-t border-white/10 pt-3">
-                            <button
-                              onClick={() => {
-                                soundFX.playClick();
-                                setExpandedGameRule(isExpanded ? null : g.id);
-                              }}
-                              className="w-full flex items-center justify-between text-xs font-bold opacity-80 hover:opacity-100 transition py-1"
-                            >
-                              <span className="flex items-center gap-1.5">
-                                <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                                <span>How It Works & Playstyle</span>
-                              </span>
-                              {isExpanded ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-
-                            {isExpanded && (
-                              <div className="mt-2 text-xs opacity-90 p-3 rounded-xl bg-black/50 border border-white/10 space-y-2 animate-in fade-in leading-relaxed">
-                                <p>{theme.quickRule}</p>
-                                <div className="text-[10px] opacity-75 pt-1 border-t border-white/10">
-                                  <span className="font-bold text-amber-400">Tactile Feel: </span>
-                                  {theme.tactileHighlight}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                    <div
+                      key={g.id}
+                      className="bg-[#111215] border border-[#222429] hover:border-[#383b44] rounded-2xl p-5 flex flex-col justify-between gap-4 transition duration-150"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-3xl">{g.icon}</span>
+                          <span className="text-[11px] font-mono text-zinc-400 border border-[#272930] px-2 py-0.5 rounded-md">
+                            {theme.genre}
+                          </span>
                         </div>
 
-                        {/* Bottom Actions: Specs & Host Button */}
-                        <div className="space-y-3 pt-3 border-t border-white/10">
-                          <div className="flex items-center justify-between text-xs opacity-75">
-                            <span className="flex items-center gap-1">
-                              <Users className="w-3.5 h-3.5" />
-                              {g.minPlayers} - {g.maxPlayers} Players
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5" />
-                              {g.durationMinutes}
-                            </span>
-                          </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-white tracking-tight">
+                            {g.name}
+                          </h3>
+                          <p className="text-xs text-zinc-400 mt-1 leading-relaxed line-clamp-2">
+                            {g.description}
+                          </p>
+                        </div>
 
-                          {/* High-Affordance Button to Launch Game */}
+                        {/* Quick Rule Accordion */}
+                        <div>
                           <button
-                            disabled={isCreating}
-                            onClick={() => handleCreateRoomWithGame(g.id)}
-                            className="btn-tactile w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md shadow-black/50 flex items-center justify-center gap-1.5"
+                            onClick={() => {
+                              soundFX.playClick();
+                              setExpandedGameRule(isExpanded ? null : g.id);
+                            }}
+                            className="text-[11px] text-zinc-400 hover:text-zinc-200 transition flex items-center gap-1 font-medium"
                           >
-                            <Gamepad2 className="w-4 h-4" />
-                            <span>
-                              {creatingGameId === g.id
-                                ? 'Launching...'
-                                : `Host ${g.name}`}
-                            </span>
-                            <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
+                            <span>{isExpanded ? 'Hide rules' : 'How it works'}</span>
+                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                           </button>
+
+                          {isExpanded && (
+                            <div className="mt-2 text-xs text-zinc-300 p-3 rounded-lg bg-[#18191e] border border-[#272930] leading-relaxed animate-in fade-in">
+                              {theme.quickRule}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </Card3DTilt>
+
+                      {/* Card Footer: Metadata + Host Button */}
+                      <div className="pt-3 border-t border-[#1e2025] flex items-center justify-between">
+                        <div className="text-xs text-zinc-500 font-mono flex items-center gap-2">
+                          <span>{g.minPlayers}-{g.maxPlayers}p</span>
+                          <span>•</span>
+                          <span>{g.durationMinutes}</span>
+                        </div>
+
+                        <button
+                          disabled={isCreating}
+                          onClick={() => handleCreateRoomWithGame(g.id)}
+                          className="btn-tactile px-3.5 py-1.5 bg-[#1f2026] hover:bg-white hover:text-zinc-950 text-white font-semibold text-xs rounded-lg border border-[#2a2c35] transition flex items-center gap-1.5"
+                        >
+                          <span>{creatingGameId === g.id ? 'Loading...' : 'Play'}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>

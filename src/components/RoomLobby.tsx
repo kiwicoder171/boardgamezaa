@@ -80,53 +80,52 @@ export default function RoomLobby({
     : false;
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8">
-      {/* Top Invite Banner with Wood & Felt Table Trim */}
-      <div className="bg-[#150d08]/95 border-2 border-[#382416] rounded-3xl p-6 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden backdrop-blur-md">
-        <div className="space-y-1.5 text-center md:text-left">
-          <div className="text-xs font-black tracking-widest text-[#dc5000] uppercase flex items-center justify-center md:justify-start gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Private Table Dispatcher</span>
+    <div className="w-full max-w-6xl mx-auto space-y-6">
+      {/* Top Invite Banner */}
+      <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-5">
+        <div className="space-y-1 text-center md:text-left">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+            Room Code
           </div>
           <div className="flex items-center gap-3 justify-center md:justify-start">
-            <h1 className="text-4xl sm:text-5xl font-black text-[#ffedd7] font-mono tracking-widest bg-[#0a0705] px-4 py-1 rounded-2xl border border-[#382416] shadow-inner">
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-mono tracking-widest bg-[#18191e] px-4 py-1 rounded-xl border border-[#272930]">
               {room.code}
             </h1>
             <button
               onClick={copyRoomCode}
-              className="btn-tactile p-3 bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] rounded-2xl border border-[#40372e] shadow-md"
+              className="btn-tactile p-2.5 bg-[#18191e] hover:bg-[#22242a] text-zinc-300 rounded-xl border border-[#272930] transition"
               title="Copy Room Code"
               aria-label="Copy Room Code"
             >
-              {copiedCode ? <Check className="w-5 h-5 text-emerald-400" /> : <Copy className="w-5 h-5" />}
+              {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
-          <p className="text-xs text-[#cdcdc9]">
-            Share this 4-letter room code or link with friends to seat them at the table.
+          <p className="text-xs text-zinc-500">
+            Share code or invite link to join this room.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 justify-center">
+        <div className="flex flex-wrap items-center gap-2.5 justify-center">
           <button
             onClick={copyRoomLink}
-            className="btn-tactile px-4 py-2.5 rounded-2xl bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] border border-[#40372e] font-bold text-xs flex items-center gap-2 shadow-sm"
+            className="btn-tactile px-3.5 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-200 border border-[#272930] font-medium text-xs flex items-center gap-2 transition"
           >
             {copiedLink ? (
-              <Check className="w-4 h-4 text-emerald-400" />
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
             ) : (
-              <Share2 className="w-4 h-4 text-[#dc5000]" />
+              <Share2 className="w-3.5 h-3.5 text-zinc-400" />
             )}
-            <span>{copiedLink ? 'Link Copied!' : 'Copy Invite Link'}</span>
+            <span>{copiedLink ? 'Link Copied!' : 'Copy Link'}</span>
           </button>
 
           {onAddBotPlayer && isHost && (
             <button
               onClick={onAddBotPlayer}
-              className="btn-tactile px-4 py-2.5 rounded-2xl bg-[#dc5000]/15 hover:bg-[#dc5000]/25 text-[#fde68a] border border-[#dc5000]/40 font-bold text-xs flex items-center gap-2 shadow-sm"
+              className="btn-tactile px-3.5 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] font-medium text-xs flex items-center gap-1.5 transition"
               title="Add a test player to easily verify multi-seat gameplay"
             >
-              <Bot className="w-4 h-4 text-[#dc5000]" />
-              <span>+ Add Test Player</span>
+              <Bot className="w-3.5 h-3.5 text-zinc-400" />
+              <span>+ Add Bot</span>
             </button>
           )}
 
@@ -135,10 +134,10 @@ export default function RoomLobby({
               soundFX.playClick();
               setShowRulesModal(true);
             }}
-            className="btn-tactile px-4 py-2.5 rounded-2xl bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] border border-[#40372e] font-bold text-xs flex items-center gap-2 shadow-sm"
+            className="btn-tactile px-3.5 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-200 border border-[#272930] font-medium text-xs flex items-center gap-1.5 transition"
           >
-            <BookOpen className="w-4 h-4 text-[#f59e0b]" />
-            <span>📖 Rules & Materials</span>
+            <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
+            <span>Rules</span>
           </button>
         </div>
       </div>
@@ -147,24 +146,23 @@ export default function RoomLobby({
         {/* Left 2 Cols: Game Picker & Settings */}
         <div className="lg:col-span-2 space-y-6">
           {/* Game Selection */}
-          <div className="bg-[#150d08]/90 border border-[#382416] rounded-3xl p-6 space-y-4 shadow-xl backdrop-blur-sm">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-black text-[#ffedd7] flex items-center gap-2 font-serifDisplay">
-                  <span>🎲</span> Tabletop Title Selector
+                <h2 className="text-base font-bold text-white">
+                  Select Game
                 </h2>
-                <p className="text-xs text-[#cdcdc9]">
+                <p className="text-xs text-zinc-400">
                   {isHost
-                    ? 'As Table Host, choose which board game to play next.'
+                    ? 'As Table Host, choose which game to play.'
                     : 'The Table Host selects the active game.'}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {games.map((game) => {
                 const isSelected = game.id === room.selectedGameId;
-                const fontClass = GAME_FONTS[game.id] || 'text-[#ffedd7]';
                 return (
                   <div
                     key={game.id}
@@ -174,41 +172,33 @@ export default function RoomLobby({
                         onSelectGame(game.id);
                       }
                     }}
-                    className={`relative rounded-2xl p-5 border transition-all text-left flex flex-col justify-between gap-3 btn-tactile ${
+                    className={`rounded-xl p-4 border transition-all text-left flex flex-col justify-between gap-3 btn-tactile ${
                       isSelected
-                        ? 'bg-gradient-to-br from-[#2a170b] via-[#1c0f07] to-[#251409] border-[#dc5000] ring-2 ring-[#dc5000]/40 shadow-2xl'
+                        ? 'bg-[#18191e] border-white text-white shadow-sm ring-1 ring-white/20'
                         : isHost
-                        ? 'bg-[#1a110a] border-[#382416] hover:border-[#5a3a24] hover:bg-[#24170e] cursor-pointer'
-                        : 'bg-[#120a06] border-[#2b1b11] opacity-75'
+                        ? 'bg-[#141518] border-[#222429] hover:border-[#383b44] hover:bg-[#18191e] cursor-pointer'
+                        : 'bg-[#121316] border-[#1c1d22] opacity-70'
                     }`}
                   >
                     <div>
                       <div className="flex items-center justify-between">
-                        <div className="text-3xl p-2.5 rounded-xl bg-black/40 border border-white/10 inline-block shadow-inner">
-                          {game.icon}
-                        </div>
+                        <span className="text-2xl">{game.icon}</span>
                         {isSelected && (
-                          <span className="text-[10px] font-black uppercase tracking-wider bg-[#dc5000]/20 text-[#fde68a] border border-[#dc5000]/40 px-2.5 py-0.5 rounded-full shadow-sm">
-                            ★ Selected Game
+                          <span className="text-[10px] font-mono uppercase tracking-wider bg-white text-zinc-950 px-2 py-0.5 rounded font-bold">
+                            Selected
                           </span>
                         )}
                       </div>
 
-                      <h3 className={`text-xl font-black mt-3 ${fontClass}`}>{game.name}</h3>
-                      <p className="text-xs text-[#cdcdc9] mt-1 line-clamp-2 leading-relaxed">
+                      <h3 className="text-base font-bold text-white mt-2">{game.name}</h3>
+                      <p className="text-xs text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
                         {game.description}
                       </p>
                     </div>
 
-                    <div className="pt-3 border-t border-[#382416]/60 flex items-center justify-between text-xs text-[#84847e]">
-                      <span className="flex items-center gap-1 font-medium">
-                        <Users className="w-3.5 h-3.5 text-[#84847e]" />
-                        {game.minPlayers} - {game.maxPlayers} players
-                      </span>
-                      <span className="flex items-center gap-1 font-medium">
-                        <Clock className="w-3.5 h-3.5 text-[#84847e]" />
-                        {game.durationMinutes}
-                      </span>
+                    <div className="pt-2.5 border-t border-[#1e2025] flex items-center justify-between text-xs text-zinc-500 font-mono">
+                      <span>{game.minPlayers}-{game.maxPlayers} players</span>
+                      <span>{game.durationMinutes}</span>
                     </div>
                   </div>
                 );
@@ -218,13 +208,12 @@ export default function RoomLobby({
 
           {/* Game Settings Customization */}
           {selectedGame && selectedGame.settingsSchema.length > 0 && (
-            <div className="bg-[#0e1524] border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Settings className="w-5 h-5 text-amber-400" />
-                <span>{selectedGame.name} Table Rules & Expansions</span>
+            <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-4 shadow-sm">
+              <h2 className="text-sm font-bold text-white">
+                {selectedGame.name} Options
               </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {selectedGame.settingsSchema.map((field) => {
                   const currentValue =
                     room.gameSettings[field.key] ?? field.default;
@@ -232,18 +221,18 @@ export default function RoomLobby({
                   return (
                     <div
                       key={field.key}
-                      className="bg-[#141b2a] rounded-2xl p-4 border border-slate-800 space-y-2 shadow-inner"
+                      className="bg-[#16171b] rounded-xl p-3.5 border border-[#222429] space-y-2"
                     >
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-slate-200">
+                        <label className="text-xs font-medium text-zinc-300">
                           {field.label}
                         </label>
-                        <span className="text-xs font-mono font-bold text-amber-400">
+                        <span className="text-xs font-mono font-bold text-white">
                           {currentValue}
                         </span>
                       </div>
                       {field.description && (
-                        <p className="text-[11px] text-slate-400">{field.description}</p>
+                        <p className="text-[11px] text-zinc-500">{field.description}</p>
                       )}
 
                       {field.type === 'number' && (
@@ -318,48 +307,48 @@ export default function RoomLobby({
 
         {/* Right Col: Player Roster & Start Button */}
         <div className="space-y-6">
-          <div className="bg-[#150d08]/90 border border-[#382416] rounded-3xl p-6 space-y-4 shadow-xl backdrop-blur-sm">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-[#ffedd7] flex items-center gap-2">
-                <Users className="w-5 h-5 text-[#dc5000]" />
-                <span>Players Seated ({room.players.length})</span>
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <Users className="w-4 h-4 text-zinc-400" />
+                <span>Players ({room.players.length})</span>
               </h2>
               {selectedGame && (
-                <span className="text-xs text-[#cdcdc9] font-mono">
+                <span className="text-xs text-zinc-500 font-mono">
                   Min: {selectedGame.minPlayers}
                 </span>
               )}
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {room.players.map((player) => {
                 const isMe = player.id === currentPlayerId;
                 return (
                   <div
                     key={player.id}
-                    className={`flex items-center justify-between p-3 rounded-2xl border transition ${
+                    className={`flex items-center justify-between p-3 rounded-xl border transition ${
                       isMe
-                        ? 'bg-[#26180e] border-[#dc5000]/50 ring-1 ring-[#dc5000]/30'
-                        : 'bg-[#18110a] border-[#382416]'
+                        ? 'bg-[#18191e] border-zinc-700'
+                        : 'bg-[#141518] border-[#222429]'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-2xl p-1.5 bg-black/40 rounded-xl border border-white/5">
+                      <span className="text-xl">
                         {player.avatar}
                       </span>
                       <div className="min-w-0">
-                        <div className="font-bold text-xs text-[#ffedd7] truncate flex items-center gap-1.5">
+                        <div className="font-semibold text-xs text-white truncate flex items-center gap-1.5">
                           <span>{player.name}</span>
                           {isMe && (
-                            <span className="text-[10px] text-[#fde68a] bg-[#dc5000]/20 px-1.5 py-0.2 rounded font-bold">
+                            <span className="text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.2 rounded font-mono">
                               You
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-[#cdcdc9] flex items-center gap-1">
+                        <div className="text-[10px] text-zinc-500 flex items-center gap-1">
                           {player.isHost && (
-                            <span className="text-[#f59e0b] flex items-center gap-0.5 font-bold">
-                              <Crown className="w-3 h-3" /> Host
+                            <span className="text-zinc-400 flex items-center gap-0.5">
+                              <Crown className="w-3 h-3 text-amber-400" /> Host
                             </span>
                           )}
                         </div>
@@ -368,11 +357,11 @@ export default function RoomLobby({
 
                     <div className="flex items-center gap-2">
                       {player.isReady ? (
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold">
-                          Ready ✓
+                        <span className="text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                          Ready
                         </span>
                       ) : (
-                        <span className="text-[10px] bg-[#281b12] text-[#84847e] px-2.5 py-0.5 rounded-full border border-[#382416]">
+                        <span className="text-[10px] font-mono bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-md">
                           Waiting
                         </span>
                       )}
@@ -389,39 +378,38 @@ export default function RoomLobby({
                   soundFX.playClick();
                   onToggleReady(!me.isReady);
                 }}
-                className={`btn-tactile w-full py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition ${
+                className={`btn-tactile w-full py-2.5 rounded-xl font-semibold text-xs transition ${
                   me.isReady
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/40'
-                    : 'bg-[#281b12] hover:bg-[#382416] text-[#ffedd7] border border-[#40372e]'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                    : 'bg-[#1e2025] hover:bg-[#282a32] text-white border border-[#272930]'
                 }`}
               >
-                {me.isReady ? 'You Are Ready ✓' : 'Mark Ready'}
+                {me.isReady ? 'Ready ✓' : 'Mark Ready'}
               </button>
             )}
 
             {/* Big Start Game Button for Host */}
             {isHost && (
-              <div className="space-y-2 pt-2">
+              <div className="space-y-2 pt-1">
                 <button
                   disabled={!hasEnoughPlayers}
                   onClick={() => {
                     soundFX.playStart();
                     onStartGame();
                   }}
-                  className={`btn-tactile w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xl transition ${
+                  className={`btn-tactile w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition ${
                     hasEnoughPlayers
-                      ? 'bg-gradient-to-r from-[#dc5000] via-[#ea580c] to-[#c2410c] hover:from-[#ea580c] hover:to-[#dc5000] text-white shadow-[#dc5000]/30 cursor-pointer border border-[#f97316]/50'
-                      : 'bg-[#24170e] text-[#84847e] border border-[#382416] cursor-not-allowed opacity-60'
+                      ? 'bg-white hover:bg-zinc-200 text-zinc-950 shadow-sm cursor-pointer'
+                      : 'bg-[#18191e] text-zinc-500 border border-[#222429] cursor-not-allowed opacity-50'
                   }`}
                 >
-                  <Play className="w-5 h-5 fill-current" />
-                  <span>Begin Game Match</span>
+                  <Play className="w-4 h-4 fill-current" />
+                  <span>Start Match</span>
                 </button>
 
                 {!hasEnoughPlayers && selectedGame && (
-                  <p className="text-[11px] text-center text-[#fbbf24] font-medium">
-                    Need at least {selectedGame.minPlayers} players to start (currently{' '}
-                    {room.players.length}). Share the invite code or click &quot;+ Add Test Player&quot; above!
+                  <p className="text-[11px] text-center text-zinc-500 font-medium">
+                    Need {selectedGame.minPlayers} players to start (currently {room.players.length}).
                   </p>
                 )}
               </div>

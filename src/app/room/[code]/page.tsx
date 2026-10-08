@@ -349,12 +349,9 @@ export default function RoomPage({ params }: RoomPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#090604] text-[#ffedd7] flex flex-col relative selection:bg-[#dc5000] selection:text-white">
-      {/* Tabletop Atmosphere */}
-      <div className="tabletop-atmosphere" />
-
-      {/* Top Navbar: Polished Walnut Rim */}
-      <header className="border-b border-[#382416] bg-[#140d07]/90 backdrop-blur sticky top-0 z-30 px-4 py-3 shadow-xl">
+    <div className="min-h-screen bg-[#090a0c] text-[#f4f4f5] flex flex-col selection:bg-white selection:text-black">
+      {/* Top Navbar */}
+      <header className="border-b border-[#1e2025] bg-[#090a0c]/80 backdrop-blur sticky top-0 z-30 px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -362,24 +359,24 @@ export default function RoomPage({ params }: RoomPageProps) {
                 soundFX.playClick();
                 router.push('/');
               }}
-              className="btn-tactile p-2 rounded-xl bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] border border-[#40372e] transition"
+              className="btn-tactile p-2 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] transition"
               title="Leave Room & Go Home"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
-              <span className="text-2xl">🎲</span>
-              <span className="font-serifDisplay font-black text-lg tracking-tight bg-gradient-to-r from-[#ffedd7] via-[#fde68a] to-[#f59e0b] bg-clip-text text-transparent">
+              <span className="text-xl">🎲</span>
+              <span className="font-bold text-base tracking-tight text-white">
                 BoardgameZaa
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-2.5 text-xs">
             {profile && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#26180e] border border-[#40372e] shadow-sm">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-[#18191e] border border-[#272930]">
                 <span>{profile.avatar}</span>
-                <span className="font-semibold text-[#ffedd7]">{profile.name}</span>
+                <span className="font-medium text-zinc-300">{profile.name}</span>
               </div>
             )}
 
@@ -388,8 +385,8 @@ export default function RoomPage({ params }: RoomPageProps) {
                 soundFX.playClick();
                 setIsSettingsOpen(true);
               }}
-              className="btn-tactile p-2 rounded-xl bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] hover:text-[#fbbf24] border border-[#40372e] transition"
-              title="Table & Sound Preferences"
+              className="btn-tactile p-2 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-400 hover:text-white border border-[#272930] transition"
+              title="Preferences"
               aria-label="Table Preferences"
             >
               <Settings className="w-4 h-4" />
