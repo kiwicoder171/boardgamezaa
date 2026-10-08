@@ -6,6 +6,9 @@ import { werewolfGameDefinition } from './werewolf';
 import { cheeseThiefGameDefinition } from './cheese-thief';
 import { splendorGameDefinition } from './splendor';
 import { codenamesGameDefinition } from './codenames';
+import { wavelengthGameDefinition } from './wavelength';
+import { oneNightWerewolfGameDefinition } from './one-night-werewolf';
+import { forSaleGameDefinition } from './for-sale';
 
 // Central Registry of all games available on BoardgameZaa
 export const GAME_REGISTRY: Record<string, GameDefinition<any, any, any>> = {
@@ -16,6 +19,9 @@ export const GAME_REGISTRY: Record<string, GameDefinition<any, any, any>> = {
   [cheeseThiefGameDefinition.id]: cheeseThiefGameDefinition,
   [splendorGameDefinition.id]: splendorGameDefinition,
   [codenamesGameDefinition.id]: codenamesGameDefinition,
+  [wavelengthGameDefinition.id]: wavelengthGameDefinition,
+  [oneNightWerewolfGameDefinition.id]: oneNightWerewolfGameDefinition,
+  [forSaleGameDefinition.id]: forSaleGameDefinition,
 };
 
 export function getAllGames(): GameDefinition[] {

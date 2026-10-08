@@ -25,6 +25,13 @@ export async function GET(req: Request, context: RouteContext) {
 
     // Auto-join if playerId provided and not yet in room
     if (playerId) {
+      if (room.kickedPlayerIds?.includes(playerId)) {
+        return NextResponse.json(
+          { error: 'You have been removed from this room by the host.', kicked: true },
+          { status: 403 }
+        );
+      }
+
       const existing = room.players.find((p) => p.id === playerId);
       if (!existing && room.status === 'lobby') {
         const joinRes = await roomManager.joinRoomAsync(normalizedCode, {
@@ -145,6 +152,16 @@ export async function POST(req: Request, context: RouteContext) {
 
       case 'kick_player': {
         const res = await roomManager.kickPlayerAsync(normalizedCode, playerId, payload.targetPlayerId);
+        if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
+        if (res.room) updatedRoom = res.room;
+        break;
+      }
+
+      case 'update_profile': {
+        const res = await roomManager.updatePlayerAsync(normalizedCode, playerId, {
+          name: payload.name,
+          avatar: payload.avatar,
+        });
         if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
         if (res.room) updatedRoom = res.room;
         break;

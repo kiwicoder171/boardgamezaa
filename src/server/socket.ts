@@ -112,6 +112,33 @@ export function setupSocketServer(io: SocketIOServer) {
       }
     });
 
+    socket.on('kick_player', ({ code, targetPlayerId }: { code: string; targetPlayerId: string }) => {
+      if (!currentPlayerId || !targetPlayerId) return;
+      const room = roomManager.getRoom(code);
+      const targetPlayer = room?.players.find((p) => p.id === targetPlayerId);
+      const targetSocketId = targetPlayer?.socketId;
+
+      const result = roomManager.kickPlayer(code, currentPlayerId, targetPlayerId);
+      if (result.error) {
+        socket.emit('error_notification', { message: result.error });
+        return;
+      }
+      if (targetSocketId && io) {
+        io.to(targetSocketId).emit('kicked_notification', {
+          message: 'You were removed from the room by the host.',
+        });
+      }
+      roomManager.broadcastRoomState(result.room!);
+    });
+
+    socket.on('update_profile', ({ code, updates }: { code: string; updates: { name?: string; avatar?: string } }) => {
+      if (!currentPlayerId || !updates) return;
+      const result = roomManager.updatePlayer(code, currentPlayerId, updates);
+      if (result.room) {
+        roomManager.broadcastRoomState(result.room);
+      }
+    });
+
     socket.on('game_action', ({ code, action }: { code: string; action: any }) => {
       if (!currentPlayerId) return;
       const room = roomManager.getRoom(code);

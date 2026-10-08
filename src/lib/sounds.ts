@@ -3,6 +3,15 @@ class SoundFX {
   private ctx: AudioContext | null = null;
   private enabled: boolean = true;
 
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('bgz_sound_enabled');
+      if (saved !== null) {
+        this.enabled = saved === 'true';
+      }
+    }
+  }
+
   private getContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.ctx) {
@@ -19,10 +28,33 @@ class SoundFX {
 
   public setEnabled(enabled: boolean) {
     this.enabled = enabled;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bgz_sound_enabled', String(enabled));
+    }
   }
 
   public isEnabled(): boolean {
     return this.enabled;
+  }
+
+  // Pleasant bell chime when active turn passes to this player
+  public playTurnPing() {
+    if (!this.enabled) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [587.33, 880].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.08);
+      gain.gain.setValueAtTime(0.2, now + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + i * 0.08 + 0.35);
+    });
   }
 
   // Realistic wooden tile clack on tabletop felt

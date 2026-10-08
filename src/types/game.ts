@@ -29,6 +29,7 @@ export interface Room<TGameState = any, TSettings = any> {
   gameSettings: TSettings;
   gameState: TGameState | null;
   chatMessages: ChatMessage[];
+  kickedPlayerIds?: string[];
   createdAt: number;
   lastActivity: number;
 }
@@ -86,4 +87,6 @@ export interface GameDefinition<TState = any, TAction = any, TSettings = any> {
     newState: TState;
     triggeredGameOver?: boolean;
   };
+
+  getBotAction?: (state: TState, botPlayerId: string) => TAction | null;
 }

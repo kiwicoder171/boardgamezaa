@@ -18,7 +18,10 @@ import {
   Layers,
   ShieldAlert,
   UserX,
+  Pencil,
 } from 'lucide-react';
+import { DEFAULT_AVATARS } from '@/lib/storage';
+import RulesModal from '@/components/RulesModal';
 
 interface RoomLobbyProps {
   room: Room;
@@ -31,6 +34,7 @@ interface RoomLobbyProps {
   onStartGame: () => void;
   onAddBotPlayer?: () => void;
   onKickPlayer?: (playerId: string) => void;
+  onUpdateProfile?: (name: string, avatar: string) => void;
 }
 
 const GAME_FONTS: Record<string, string> = {
@@ -41,6 +45,9 @@ const GAME_FONTS: Record<string, string> = {
   'codenames': 'font-typewriter text-amber-200',
   'bomb-busters': 'font-scifi text-red-300',
   'spyfall': 'font-typewriter text-stone-200',
+  'wavelength': 'font-mono text-cyan-300',
+  'one-night-werewolf': 'font-fantasy text-purple-300',
+  'for-sale': 'font-mono text-emerald-400',
 };
 
 export default function RoomLobby({
@@ -54,22 +61,53 @@ export default function RoomLobby({
   onStartGame,
   onAddBotPlayer,
   onKickPlayer,
+  onUpdateProfile,
 }: RoomLobbyProps) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
-  const [rulesActiveTab, setRulesActiveTab] = useState<'summary' | 'sections'>('summary');
   const [optimisticGameId, setOptimisticGameId] = useState<string | null>(null);
+
+  // Category filter state
+  const CATEGORIES = ['All', 'Co-op', 'Social Deduction', 'Strategy', 'Party'] as const;
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   // Instant optimistic game selection
   const activeGameId = optimisticGameId || room.selectedGameId;
   const selectedGame = games.find((g) => g.id === activeGameId) || games[0];
   const me = room.players.find((p) => p.id === currentPlayerId);
 
+  // Inline profile editing state
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState(me?.name || '');
+  const [editAvatar, setEditAvatar] = useState(me?.avatar || '🎲');
+
+  React.useEffect(() => {
+    if (me && !isEditingProfile) {
+      setEditName(me.name);
+      setEditAvatar(me.avatar);
+    }
+  }, [me?.name, me?.avatar, isEditingProfile]);
+
+  const handleSaveProfile = () => {
+    const trimmed = editName.trim();
+    if (!trimmed) return;
+    soundFX.playClick();
+    onUpdateProfile?.(trimmed, editAvatar);
+    setIsEditingProfile(false);
+  };
+
   // Reset optimistic state when server room updates
   React.useEffect(() => {
     setOptimisticGameId(null);
   }, [room.selectedGameId]);
+
+  const filteredGames = games.filter((game) => {
+    if (selectedCategory === 'All') return true;
+    return game.tags.some((tag) =>
+      tag.toLowerCase().includes(selectedCategory.toLowerCase())
+    );
+  });
 
 
   const copyRoomCode = () => {
@@ -159,7 +197,7 @@ export default function RoomLobby({
         <div className="lg:col-span-2 space-y-6">
           {/* Game Selection */}
           <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold text-white">
                   Select Game
@@ -170,10 +208,31 @@ export default function RoomLobby({
                     : 'The Table Host selects the active game.'}
                 </p>
               </div>
+
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      soundFX.playClick();
+                      setSelectedCategory(cat);
+                    }}
+                    className={`btn-tactile px-2.5 py-1 rounded-lg text-[11px] font-medium transition whitespace-nowrap ${
+                      selectedCategory === cat
+                        ? 'bg-white text-zinc-950 font-bold shadow-xs'
+                        : 'bg-[#18191e] text-zinc-400 hover:text-white border border-[#272930]'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {games.map((game) => {
+              {filteredGames.map((game) => {
                 const isSelected = game.id === activeGameId;
                 return (
                   <div
@@ -263,7 +322,7 @@ export default function RoomLobby({
                               });
                             }
                           }}
-                          className="w-full accent-amber-500 disabled:opacity-50"
+                          className="w-full accent-white disabled:opacity-50"
                         />
                       )}
 
@@ -280,7 +339,7 @@ export default function RoomLobby({
                               });
                             }
                           }}
-                          className="w-full bg-[#0a0f19] border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 disabled:opacity-50"
+                          className="w-full bg-[#18191e] border border-[#272930] rounded-xl px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-zinc-500 disabled:opacity-50"
                         >
                           {field.options?.map((opt) => (
                             <option key={opt.value} value={opt.value}>
@@ -303,8 +362,8 @@ export default function RoomLobby({
                           }}
                           className={`btn-tactile w-full py-2 rounded-xl text-xs font-bold border transition ${
                             currentValue
-                              ? 'bg-amber-500 text-slate-950 border-amber-400'
-                              : 'bg-slate-800 text-slate-300 border-slate-700'
+                              ? 'bg-white text-zinc-950 border-white'
+                              : 'bg-[#18191e] text-zinc-400 border-[#272930] hover:text-white'
                           } disabled:opacity-50`}
                         >
                           {currentValue ? 'Enabled ✓' : 'Disabled ✗'}
@@ -346,9 +405,22 @@ export default function RoomLobby({
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-xl">
+                      <button
+                        type="button"
+                        disabled={!isMe || !onUpdateProfile}
+                        onClick={() => {
+                          if (isMe && onUpdateProfile) {
+                            soundFX.playClick();
+                            setEditName(player.name);
+                            setEditAvatar(player.avatar);
+                            setIsEditingProfile(true);
+                          }
+                        }}
+                        className={`text-xl ${isMe && onUpdateProfile ? 'hover:scale-110 cursor-pointer transition' : ''}`}
+                        title={isMe ? 'Change avatar' : undefined}
+                      >
                         {player.avatar}
-                      </span>
+                      </button>
                       <div className="min-w-0">
                         <div className="font-semibold text-xs text-white truncate flex items-center gap-1.5">
                           <span>{player.name}</span>
@@ -358,11 +430,26 @@ export default function RoomLobby({
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-zinc-500 flex items-center gap-1">
+                        <div className="text-[10px] text-zinc-500 flex items-center gap-2">
                           {player.isHost && (
                             <span className="text-zinc-400 flex items-center gap-0.5">
                               <Crown className="w-3 h-3 text-amber-400" /> Host
                             </span>
+                          )}
+                          {isMe && onUpdateProfile && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                soundFX.playClick();
+                                setEditName(player.name);
+                                setEditAvatar(player.avatar);
+                                setIsEditingProfile(true);
+                              }}
+                              className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-0.5 underline-offset-2 hover:underline cursor-pointer"
+                            >
+                              <Pencil className="w-2.5 h-2.5" />
+                              <span>Edit profile</span>
+                            </button>
                           )}
                         </div>
                       </div>
@@ -447,102 +534,92 @@ export default function RoomLobby({
         </div>
       </div>
 
-      {/* Minimalist Dark Zinc Rules Modal */}
-      {showRulesModal && selectedGame && (
+      {/* Inline Profile Editor Modal */}
+      {isEditingProfile && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-2xl w-full space-y-5 shadow-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between border-b border-[#222429] pb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl p-2.5 bg-[#18191e] rounded-xl border border-[#272930]">
-                  {selectedGame.icon}
-                </span>
-                <div>
-                  <h3 className="text-xl font-bold text-white tracking-tight">
-                    {selectedGame.name} Rules
-                  </h3>
-                  <div className="text-xs text-zinc-400 mt-0.5">{selectedGame.description}</div>
-                </div>
-              </div>
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-2 border-b border-[#222429]">
+              <h3 className="text-sm font-bold text-white">Edit Your Profile</h3>
               <button
-                onClick={() => setShowRulesModal(false)}
-                className="btn-tactile p-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-400 hover:text-white border border-[#272930] transition"
-                aria-label="Close Rules Manual"
+                type="button"
+                onClick={() => setIsEditingProfile(false)}
+                className="btn-tactile p-1 text-zinc-400 hover:text-white rounded-lg transition"
               >
                 ✕
               </button>
             </div>
 
-            {/* Tabbed Bite-Sized Information Selector */}
-            <div className="flex gap-2 border-b border-[#222429] pb-2">
-              <button
-                onClick={() => setRulesActiveTab('summary')}
-                className={`btn-tactile px-3.5 py-1.5 rounded-xl text-xs font-medium transition ${
-                  rulesActiveTab === 'summary'
-                    ? 'bg-white text-zinc-950 font-bold'
-                    : 'bg-[#18191e] text-zinc-400 hover:text-white border border-[#272930]'
-                }`}
-              >
-                Overview & Objective
-              </button>
-              <button
-                onClick={() => setRulesActiveTab('sections')}
-                className={`btn-tactile px-3.5 py-1.5 rounded-xl text-xs font-medium transition ${
-                  rulesActiveTab === 'sections'
-                    ? 'bg-white text-zinc-950 font-bold'
-                    : 'bg-[#18191e] text-zinc-400 hover:text-white border border-[#272930]'
-                }`}
-              >
-                Turn Guide & Rules ({selectedGame.rules.sections.length})
-              </button>
-            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveProfile();
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block mb-1.5">
+                  Display Name
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  maxLength={20}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full bg-[#18191e] border border-[#272930] focus:border-white focus:outline-none rounded-xl px-3.5 py-2 text-xs text-white"
+                  placeholder="Your nickname"
+                  autoFocus
+                />
+              </div>
 
-            <div className="overflow-y-auto space-y-3.5 pr-1 text-sm text-zinc-300">
-              {rulesActiveTab === 'summary' ? (
-                <div className="space-y-3.5">
-                  <div className="p-4 bg-[#141518] border border-[#222429] rounded-xl text-xs text-zinc-300 leading-relaxed">
-                    <span className="font-bold text-white font-mono uppercase text-[10px] block mb-1">
-                      Objective
-                    </span>
-                    {selectedGame.rules.summary}
-                  </div>
-
-                  <div className="p-4 bg-[#141518] border border-[#222429] rounded-xl space-y-1.5">
-                    <h4 className="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-zinc-400" />
-                      Tabletop Simulation
-                    </h4>
-                    <p className="text-xs text-zinc-400 leading-relaxed">
-                      All physical tokens, cards, and dice are simulated in real time with anti-cheat state masking. Secret roles and unplaced dice are concealed until legally revealed.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {selectedGame.rules.sections.map((sec, idx) => (
-                    <div key={idx} className="p-4 bg-[#141518] rounded-xl border border-[#222429] space-y-1.5">
-                      <h4 className="font-bold text-white text-xs font-mono uppercase tracking-wider">
-                        {sec.title}
-                      </h4>
-                      <p className="text-xs text-zinc-400 leading-relaxed">{sec.content}</p>
-                    </div>
+              <div>
+                <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block mb-1.5">
+                  Choose Avatar
+                </label>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {DEFAULT_AVATARS.map((av) => (
+                    <button
+                      key={av}
+                      type="button"
+                      onClick={() => setEditAvatar(av)}
+                      className={`text-xl p-2 rounded-xl transition ${
+                        editAvatar === av
+                          ? 'bg-[#22242a] ring-2 ring-white scale-105'
+                          : 'bg-[#18191e] hover:bg-[#22242a] border border-[#272930]'
+                      }`}
+                    >
+                      {av}
+                    </button>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="pt-3 border-t border-[#222429] flex items-center justify-between">
-              <span className="text-[11px] text-zinc-500 font-mono">
-                👥 {selectedGame.minPlayers}-{selectedGame.maxPlayers} players • ⏱️ {selectedGame.durationMinutes}
-              </span>
-              <button
-                onClick={() => setShowRulesModal(false)}
-                className="btn-tactile px-5 py-2 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs shadow-sm transition"
-              >
-                Close
-              </button>
-            </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-[#222429]">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingProfile(false)}
+                  className="btn-tactile flex-1 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-300 text-xs font-semibold border border-[#272930] transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-tactile flex-1 py-2 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition shadow-sm"
+                >
+                  Save Profile
+                </button>
+              </div>
+            </form>
           </div>
         </div>
+      )}
+
+      {/* Reusable Rules Modal */}
+      {selectedGame && (
+        <RulesModal
+          isOpen={showRulesModal}
+          onClose={() => setShowRulesModal(false)}
+          game={selectedGame}
+        />
       )}
     </div>
   );

@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { Room, Player } from '@/types/game';
 import { getAllGames } from '@/games/registry';
-import { getUserProfile, UserProfile } from '@/lib/storage';
+import { getUserProfile, saveUserProfile, UserProfile } from '@/lib/storage';
 import RoomLobby from '@/components/RoomLobby';
 import GameRenderer from '@/components/GameRenderer';
 import RoomChat from '@/components/RoomChat';
+import RulesModal from '@/components/RulesModal';
 import { soundFX } from '@/lib/sounds';
-import { AlertCircle, ArrowLeft, Loader2, Settings } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Loader2, Settings, Volume2, VolumeX, BookOpen } from 'lucide-react';
 import { GameSettingsModal } from '@/components/ui/GameSettingsModal';
 import { getSupabaseClient } from '@/lib/supabase';
 
@@ -30,6 +31,11 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isKicked, setIsKicked] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showInGameRules, setShowInGameRules] = useState(false);
+
+  const prevTurnRef = React.useRef<string | null>(null);
 
   // Fetch room via REST API for instant initial load and fallback
   const fetchRoomState = async (userProfile?: UserProfile | null) => {
@@ -41,9 +47,22 @@ export default function RoomPage({ params }: RoomPageProps) {
         avatar: u.avatar,
       });
       const res = await fetch(`/api/room/${roomCode}?${params.toString()}`);
+      if (res.status === 403) {
+        const errData = await res.json().catch(() => ({}));
+        if (errData.kicked) {
+          setIsKicked(true);
+          setLoading(false);
+          return null;
+        }
+      }
       if (res.ok) {
         const data = await res.json();
         if (data.room) {
+          if (u && data.room.kickedPlayerIds?.includes(u.id)) {
+            setIsKicked(true);
+            setLoading(false);
+            return null;
+          }
           setRoom(data.room);
           setLoading(false);
           setError(null);
@@ -94,9 +113,19 @@ export default function RoomPage({ params }: RoomPageProps) {
         });
 
         s.on('room_state_update', (updatedRoom: Room) => {
+          if (user && updatedRoom.kickedPlayerIds?.includes(user.id)) {
+            setIsKicked(true);
+            setLoading(false);
+            return;
+          }
           setRoom(updatedRoom);
           setLoading(false);
           setError(null);
+        });
+
+        s.on('kicked_notification', () => {
+          setIsKicked(true);
+          setLoading(false);
         });
 
         s.on('error_notification', ({ message }: { message: string }) => {
@@ -151,6 +180,53 @@ export default function RoomPage({ params }: RoomPageProps) {
       }
     };
   }, [roomCode]);
+
+  // Turn arrival chime detection
+  useEffect(() => {
+    if (room?.status === 'playing' && room?.gameState && profile?.id) {
+      const gs: any = room.gameState;
+      const currentTurn = gs.currentTurnPlayerId || gs.activePlayerId || (gs.turn ? gs.turn.playerId : null);
+      if (currentTurn && currentTurn === profile.id && prevTurnRef.current !== profile.id) {
+        soundFX.playTurnPing();
+      }
+      prevTurnRef.current = currentTurn || null;
+    } else {
+      prevTurnRef.current = null;
+    }
+  }, [room?.status, room?.gameState, profile?.id]);
+
+  // Audio preference sync
+  useEffect(() => {
+    setSoundEnabled(soundFX.isEnabled());
+  }, []);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    soundFX.setEnabled(next);
+    setSoundEnabled(next);
+    if (next) soundFX.playClick();
+  };
+
+  const handleUpdateProfile = (name: string, avatar: string) => {
+    const u = profile || getUserProfile();
+    saveUserProfile(name, avatar);
+    const updated = { ...u, name, avatar };
+    setProfile(updated);
+    setRoom((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        players: prev.players.map((p) =>
+          p.id === u.id ? { ...p, name, avatar } : p
+        ),
+      };
+    });
+    if (socket && socket.connected) {
+      socket.emit('update_profile', { code: roomCode, updates: { name, avatar } });
+    } else {
+      postRoomAction('update_profile', { name, avatar });
+    }
+  };
 
   // Dual Action Dispatcher (Socket.IO with HTTP POST fallback)
   const postRoomAction = async (type: string, payload: any = {}) => {
@@ -348,25 +424,53 @@ export default function RoomPage({ params }: RoomPageProps) {
   const allGames = getAllGames();
   const isHost = room?.hostId === profile?.id;
 
+  if (isKicked) {
+    return (
+      <div className="min-h-screen bg-[#090a0c] flex flex-col items-center justify-center p-4">
+        <div className="bg-[#111215] border border-rose-900/40 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl">
+          <div className="w-12 h-12 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center mx-auto text-xl">
+            🚪
+          </div>
+          <h2 className="text-xl font-bold text-white tracking-tight">Removed From Room</h2>
+          <p className="text-xs text-zinc-400 leading-relaxed">
+            You were removed from this room by the table host.
+          </p>
+          <button
+            onClick={() => {
+              soundFX.playClick();
+              router.push('/');
+            }}
+            className="btn-tactile w-full py-2.5 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl text-xs transition shadow-sm cursor-pointer"
+          >
+            Back to Home
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#090d16] flex flex-col items-center justify-center p-4">
-        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-4" />
-        <p className="text-slate-400 font-mono text-sm">Joining room {roomCode}...</p>
+      <div className="min-h-screen bg-[#090a0c] flex flex-col items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 text-zinc-400 animate-spin mb-4" />
+        <p className="text-zinc-500 font-mono text-xs">Joining room {roomCode}...</p>
       </div>
     );
   }
 
   if (error && !room) {
     return (
-      <div className="min-h-screen bg-[#090d16] flex flex-col items-center justify-center p-4">
-        <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl">
-          <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
-          <h2 className="text-xl font-bold text-white">Could Not Join Room</h2>
-          <p className="text-sm text-slate-400">{error}</p>
+      <div className="min-h-screen bg-[#090a0c] flex flex-col items-center justify-center p-4">
+        <div className="bg-[#111215] border border-[#222429] rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl">
+          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+          <h2 className="text-lg font-bold text-white">Could Not Join Room</h2>
+          <p className="text-xs text-zinc-400">{error}</p>
           <button
-            onClick={() => router.push('/')}
-            className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition"
+            onClick={() => {
+              soundFX.playClick();
+              router.push('/');
+            }}
+            className="btn-tactile w-full py-2.5 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-xl text-xs transition shadow-sm cursor-pointer"
           >
             Back to Home
           </button>
@@ -399,13 +503,46 @@ export default function RoomPage({ params }: RoomPageProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 text-xs">
+          <div className="flex items-center gap-2 text-xs">
             {profile && (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-[#18191e] border border-[#272930]">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-[#18191e] border border-[#272930]">
                 <span>{profile.avatar}</span>
                 <span className="font-medium text-zinc-300">{profile.name}</span>
               </div>
             )}
+
+            {/* In-game quick rules reference button */}
+            {room?.status === 'playing' && (
+              <button
+                onClick={() => {
+                  soundFX.playClick();
+                  setShowInGameRules(true);
+                }}
+                className="btn-tactile px-2.5 py-1.5 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-300 hover:text-white border border-[#272930] transition flex items-center gap-1.5 font-medium"
+                title="View Rules & Objectives"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="hidden sm:inline">Rules</span>
+              </button>
+            )}
+
+            {/* Global sound toggle */}
+            <button
+              onClick={toggleSound}
+              className={`btn-tactile p-2 rounded-lg border transition ${
+                soundEnabled
+                  ? 'bg-[#18191e] text-zinc-300 hover:text-white border-[#272930]'
+                  : 'bg-zinc-900/60 text-zinc-600 border-zinc-800'
+              }`}
+              title={soundEnabled ? 'Mute Sounds' : 'Unmute Sounds'}
+              aria-label="Toggle Sound Effects"
+            >
+              {soundEnabled ? (
+                <Volume2 className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-zinc-600" />
+              )}
+            </button>
 
             <button
               onClick={() => {
@@ -447,6 +584,7 @@ export default function RoomPage({ params }: RoomPageProps) {
                 onStartGame={handleStartGame}
                 onAddBotPlayer={handleAddBotPlayer}
                 onKickPlayer={handleKickPlayer}
+                onUpdateProfile={handleUpdateProfile}
               />
             ) : (
               <GameRenderer
@@ -474,6 +612,15 @@ export default function RoomPage({ params }: RoomPageProps) {
               roomCode={room.code}
               gameTitle={allGames.find((g) => g.id === room.selectedGameId)?.name}
             />
+
+            {/* Mid-game Rules Reference Modal */}
+            {showInGameRules && (
+              <RulesModal
+                isOpen={showInGameRules}
+                onClose={() => setShowInGameRules(false)}
+                game={allGames.find((g) => g.id === room.selectedGameId) || allGames[0]}
+              />
+            )}
           </>
         )}
       </main>

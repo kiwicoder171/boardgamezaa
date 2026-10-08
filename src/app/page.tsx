@@ -23,6 +23,9 @@ import {
   Flame,
   Award,
   Compass,
+  Volume2,
+  VolumeX,
+  X,
 } from 'lucide-react';
 import { Card3DTilt } from '@/components/ui/Card3DTilt';
 
@@ -122,14 +125,16 @@ export default function HomePage() {
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [creatingGameId, setCreatingGameId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'play' | 'guide'>('play');
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [expandedGameRule, setExpandedGameRule] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string>('All');
+  const [isDevDocsOpen, setIsDevDocsOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   useEffect(() => {
     const user = getUserProfile();
     setProfile(user);
+    setSoundEnabled(soundFX.isEnabled());
   }, []);
 
   const handleNameChange = (name: string) => {
@@ -208,32 +213,23 @@ export default function HomePage() {
             </span>
           </div>
 
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-2">
             <button
               onClick={() => {
-                soundFX.playClick();
-                setActiveTab('play');
+                const next = !soundEnabled;
+                soundFX.setEnabled(next);
+                setSoundEnabled(next);
+                if (next) soundFX.playClick();
               }}
-              className={`btn-tactile px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'play'
-                  ? 'bg-zinc-100 text-zinc-950 font-bold'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
-              }`}
+              className="btn-tactile p-2 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-400 hover:text-white border border-[#272930] transition flex items-center gap-1.5"
+              title={soundEnabled ? 'Mute Audio' : 'Unmute Audio'}
+              aria-label={soundEnabled ? 'Mute Audio' : 'Unmute Audio'}
             >
-              Games
-            </button>
-            <button
-              onClick={() => {
-                soundFX.playClick();
-                setActiveTab('guide');
-              }}
-              className={`btn-tactile px-3.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'guide'
-                  ? 'bg-zinc-100 text-zinc-950 font-bold'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
-              }`}
-            >
-              Developer Docs
+              {soundEnabled ? (
+                <Volume2 className="w-4 h-4 text-zinc-300" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-zinc-500" />
+              )}
             </button>
           </nav>
         </div>
@@ -241,8 +237,6 @@ export default function HomePage() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-12">
-        {activeTab === 'play' ? (
-          <>
             {/* Minimalist Hero Section */}
             <section className="pt-6 sm:pt-10 pb-4 space-y-4 max-w-3xl">
               <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
@@ -446,96 +440,6 @@ export default function HomePage() {
                 })}
               </div>
             </section>
-          </>
-        ) : (
-          /* Developer & Extensibility Guide Section */
-          <section className="space-y-8 animate-in fade-in">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
-                <Code2 className="w-3.5 h-3.5" />
-                <span>Extensible Game Engine</span>
-              </div>
-              <h2 className="text-3xl font-black text-white">
-                How to Code and Add Your Own Boardgame
-              </h2>
-              <p className="text-xs text-zinc-400 max-w-2xl">
-                The BoardgameZaa architecture is designed so you can create a new folder under{' '}
-                <code className="text-zinc-200 font-mono bg-[#18191e] px-1.5 py-0.5 rounded border border-[#272930]">src/games/</code>, define your game logic, and it
-                immediately becomes playable in the lobby!
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-3">
-                <div className="w-9 h-9 rounded-xl bg-[#18191e] text-zinc-200 border border-[#272930] flex items-center justify-center font-bold text-xs font-mono">
-                  01
-                </div>
-                <h3 className="font-bold text-white text-sm">Create Game Folder</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Create <code className="text-zinc-300 font-mono">src/games/my-game/</code> with:{' '}
-                  <code className="text-zinc-300 font-mono">index.ts</code>,{' '}
-                  <code className="text-zinc-300 font-mono">logic.ts</code>, and{' '}
-                  <code className="text-zinc-300 font-mono">MyGameBoard.tsx</code>.
-                </p>
-              </div>
-
-              <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-3">
-                <div className="w-9 h-9 rounded-xl bg-[#18191e] text-zinc-200 border border-[#272930] flex items-center justify-center font-bold text-xs font-mono">
-                  02
-                </div>
-                <h3 className="font-bold text-white text-sm">Implement Game Contract</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Implement <code className="text-zinc-300 font-mono">initGame()</code>,{' '}
-                  <code className="text-zinc-300 font-mono">handleAction()</code>, and{' '}
-                  <code className="text-zinc-300 font-mono">sanitizeState()</code> to hide secret info
-                  from opponents.
-                </p>
-              </div>
-
-              <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-3">
-                <div className="w-9 h-9 rounded-xl bg-[#18191e] text-zinc-200 border border-[#272930] flex items-center justify-center font-bold text-xs font-mono">
-                  03
-                </div>
-                <h3 className="font-bold text-white text-sm">Register in 2 Lines</h3>
-                <p className="text-xs text-zinc-400 leading-relaxed">
-                  Import your game in <code className="text-zinc-300 font-mono">src/games/registry.ts</code>{' '}
-                  and add the board in <code className="text-zinc-300 font-mono">GameRenderer.tsx</code>.
-                  It will show up instantly in the lobby selector!
-                </p>
-              </div>
-            </div>
-
-            {/* Code Template Card */}
-            <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 space-y-3.5 shadow-xl">
-              <div className="flex items-center justify-between border-b border-[#222429] pb-3">
-                <div className="flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-zinc-400" />
-                  <span className="text-xs font-mono font-semibold text-zinc-300">
-                    src/games/bomb-busters/index.ts (Plugin Schema Specification)
-                  </span>
-                </div>
-              </div>
-
-              <pre className="text-xs font-mono text-zinc-300 overflow-x-auto p-4 bg-[#18191e] border border-[#272930] rounded-xl leading-relaxed">
-{`export const bombBustersGameDefinition: GameDefinition = {
-  id: 'bomb-busters',
-  name: 'Bomb Busters',
-  description: 'Cooperative wire-cutting puzzle game',
-  minPlayers: 2,
-  maxPlayers: 5,
-  tags: ['Cooperative', 'Puzzle', 'Numbers'],
-  durationMinutes: '20-30m',
-  settingsSchema: [
-    { key: 'difficulty', label: 'Mission Pack', type: 'select', default: 1, options: [...] },
-  ],
-  initGame: (players, settings) => initBombBustersGame(players, settings),
-  handleAction: (state, action, playerId) => handleBombBustersAction(state, action, playerId),
-  sanitizeState: (state, playerId) => sanitizeBombBustersState(state, playerId),
-};`}
-              </pre>
-            </div>
-          </section>
-        )}
       </main>
 
       {/* Minimalist Footer */}
@@ -545,11 +449,105 @@ export default function HomePage() {
             <span className="font-bold text-white tracking-tight">BoardgameZaa</span>
             <span>• Tabletop Simulation Platform</span>
           </div>
-          <div className="text-[11px] font-mono text-zinc-600">
-            Next.js • Socket.IO • Web Audio • Zero-Latency Realtime 🎲
+
+          <div className="flex items-center gap-4 text-[11px] font-mono text-zinc-500">
+            <button
+              onClick={() => {
+                soundFX.playClick();
+                setIsDevDocsOpen(true);
+              }}
+              className="text-zinc-500 hover:text-zinc-300 transition underline underline-offset-4 cursor-pointer"
+            >
+              Developer API & Plugin Guide ⚙️
+            </button>
+            <span>•</span>
+            <span>Zero-Latency Realtime 🎲</span>
           </div>
         </div>
       </footer>
+
+      {/* Developer & Extensibility Guide Modal */}
+      {isDevDocsOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-2xl w-full space-y-5 shadow-2xl max-h-[85vh] flex flex-col text-zinc-200">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  <Code2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">How to Add Your Own Boardgame</h3>
+                  <p className="text-xs text-zinc-500">Modular Plugin Architecture Specification</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsDevDocsOpen(false)}
+                className="p-1.5 rounded-xl bg-[#18191e] border border-[#272930] text-zinc-400 hover:text-white transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto space-y-4 pr-1 text-xs text-zinc-300 leading-relaxed">
+              <p className="text-zinc-400">
+                The BoardgameZaa architecture is designed so you can create a new folder under{' '}
+                <code className="text-zinc-200 font-mono bg-[#18191e] px-1.5 py-0.5 rounded border border-[#272930]">src/games/</code>, define your game logic, and it immediately becomes playable in the lobby!
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-[#141518] border border-[#272930] rounded-xl p-3 space-y-1.5">
+                  <div className="text-[11px] font-mono text-zinc-400 font-bold">01. Create Folder</div>
+                  <p className="text-zinc-400 text-[11px]">
+                    Create <code className="text-zinc-300 font-mono">src/games/my-game/</code> with index.ts, logic.ts, and MyGameBoard.tsx.
+                  </p>
+                </div>
+
+                <div className="bg-[#141518] border border-[#272930] rounded-xl p-3 space-y-1.5">
+                  <div className="text-[11px] font-mono text-zinc-400 font-bold">02. Game Contract</div>
+                  <p className="text-zinc-400 text-[11px]">
+                    Implement <code className="text-zinc-300 font-mono">initGame</code>, <code className="text-zinc-300 font-mono">handleAction</code>, and state sanitization.
+                  </p>
+                </div>
+
+                <div className="bg-[#141518] border border-[#272930] rounded-xl p-3 space-y-1.5">
+                  <div className="text-[11px] font-mono text-zinc-400 font-bold">03. Register</div>
+                  <p className="text-zinc-400 text-[11px]">
+                    Register in <code className="text-zinc-300 font-mono">src/games/registry.ts</code>. Shows up instantly in room lobbies!
+                  </p>
+                </div>
+              </div>
+
+              {/* Code Template Box */}
+              <div className="bg-[#141518] border border-[#272930] rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2 text-zinc-400">
+                  <Terminal className="w-3.5 h-3.5" />
+                  <span className="text-[11px] font-mono font-semibold">src/games/my-game/index.ts</span>
+                </div>
+                <pre className="text-[11px] font-mono text-zinc-300 overflow-x-auto p-3 bg-[#18191e] border border-[#272930] rounded-lg leading-relaxed">
+{`export const myGameDefinition: GameDefinition = {
+  id: 'my-game',
+  name: 'My Boardgame',
+  minPlayers: 2,
+  maxPlayers: 4,
+  initGame: (players, settings) => initMyGame(players, settings),
+  handleAction: (state, action, playerId) => handleMyAction(state, action, playerId),
+  sanitizeState: (state, playerId) => sanitizeMyState(state, playerId),
+};`}
+                </pre>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-[#222429] text-right">
+              <button
+                onClick={() => setIsDevDocsOpen(false)}
+                className="btn-tactile bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs px-5 py-2.5 rounded-xl"
+              >
+                Close Guide
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

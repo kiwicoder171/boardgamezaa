@@ -114,6 +114,10 @@ class RoomManager {
       return { error: 'Room not found. Check the code and try again.' };
     }
 
+    if (room.kickedPlayerIds?.includes(player.id)) {
+      return { error: 'You have been removed from this room by the host.' };
+    }
+
     const existingPlayerIndex = room.players.findIndex((p) => p.id === player.id);
     if (existingPlayerIndex >= 0) {
       // Reconnecting player
@@ -221,6 +225,10 @@ class RoomManager {
 
     const kickedPlayer = room.players[playerIndex];
     room.players.splice(playerIndex, 1);
+    room.kickedPlayerIds = room.kickedPlayerIds || [];
+    if (!room.kickedPlayerIds.includes(targetPlayerId)) {
+      room.kickedPlayerIds.push(targetPlayerId);
+    }
 
     this.addSystemMessage(room, `${kickedPlayer.name} was removed from the lobby by the host.`);
     room.lastActivity = Date.now();
@@ -232,6 +240,34 @@ class RoomManager {
     if (!room) return { error: 'Room not found' };
 
     const res = this.kickPlayer(code, hostId, targetPlayerId);
+    if (res.room) {
+      await this.saveRoomAsync(res.room);
+    }
+    return res;
+  }
+
+  public updatePlayer(code: string, playerId: string, updates: { name?: string; avatar?: string }): { room?: Room; error?: string } {
+    const room = this.getRoom(code);
+    if (!room) return { error: 'Room not found' };
+
+    const player = room.players.find((p) => p.id === playerId);
+    if (!player) return { error: 'Player not found in room.' };
+
+    if (updates.name && updates.name.trim()) {
+      player.name = updates.name.trim().slice(0, 24);
+    }
+    if (updates.avatar && updates.avatar.trim()) {
+      player.avatar = updates.avatar.trim().slice(0, 8);
+    }
+    room.lastActivity = Date.now();
+    return { room };
+  }
+
+  public async updatePlayerAsync(code: string, playerId: string, updates: { name?: string; avatar?: string }): Promise<{ room?: Room; error?: string }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return { error: 'Room not found' };
+
+    const res = this.updatePlayer(code, playerId, updates);
     if (res.room) {
       await this.saveRoomAsync(res.room);
     }
@@ -511,6 +547,7 @@ class RoomManager {
       gameSettings: room.gameSettings,
       gameState: sanitizedGameState,
       chatMessages: room.chatMessages.slice(-25),
+      kickedPlayerIds: room.kickedPlayerIds || [],
     };
   }
 

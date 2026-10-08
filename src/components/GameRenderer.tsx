@@ -9,6 +9,9 @@ import WerewolfBoard from '@/games/werewolf/WerewolfBoard';
 import { CheeseThiefBoard } from '@/games/cheese-thief/CheeseThiefBoard';
 import SplendorBoard from '@/games/splendor/SplendorBoard';
 import CodenamesBoard from '@/games/codenames/CodenamesBoard';
+import WavelengthBoard from '@/games/wavelength/WavelengthBoard';
+import OneNightWerewolfBoard from '@/games/one-night-werewolf/OneNightWerewolfBoard';
+import ForSaleBoard from '@/games/for-sale/ForSaleBoard';
 
 interface GameRendererProps {
   room: Room;
@@ -100,6 +103,42 @@ export default function GameRenderer({
     case 'codenames':
       return (
         <CodenamesBoard
+          state={room.gameState}
+          players={room.players}
+          currentPlayerId={currentPlayerId}
+          isHost={isHost}
+          onAction={onGameAction}
+          onReturnToLobby={onReturnToLobby}
+        />
+      );
+
+    case 'wavelength':
+      return (
+        <WavelengthBoard
+          state={room.gameState}
+          players={room.players}
+          currentPlayerId={currentPlayerId}
+          isHost={isHost}
+          onAction={onGameAction}
+          onReturnToLobby={onReturnToLobby}
+        />
+      );
+
+    case 'one-night-werewolf':
+      return (
+        <OneNightWerewolfBoard
+          state={room.gameState}
+          players={room.players}
+          currentPlayerId={currentPlayerId}
+          isHost={isHost}
+          onAction={onGameAction}
+          onReturnToLobby={onReturnToLobby}
+        />
+      );
+
+    case 'for-sale':
+      return (
+        <ForSaleBoard
           state={room.gameState}
           players={room.players}
           currentPlayerId={currentPlayerId}
