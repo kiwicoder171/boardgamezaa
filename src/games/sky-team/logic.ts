@@ -62,7 +62,7 @@ export function initSkyTeamGame(
     tilt: 0,
     maxTiltAllowed: 3,
 
-    blueAeroMarker: 8,
+    blueAeroMarker: 4,
     orangeAeroMarker: 8,
     currentEngineSum: null,
     currentRoundSpeed: null,
@@ -440,7 +440,7 @@ function applyImmediateSlotEffect(
     s.blueAeroMarker += 1;
     s.history.push({
       id: `gear1-${Date.now()}`,
-      text: `⚙️ Landing Gear 1/3 deployed! Aerodynamic drag increased (Min Speed: ${s.blueAeroMarker}).`,
+      text: `⚙️ Landing Gear 1/3 deployed! Aerodynamic drag increased: Blue Marker moved to ${s.blueAeroMarker} (Stall sum ≤ ${s.blueAeroMarker} = 0 spaces).`,
       type: 'success',
       timestamp: Date.now(),
     });
@@ -450,7 +450,7 @@ function applyImmediateSlotEffect(
     s.blueAeroMarker += 1;
     s.history.push({
       id: `gear2-${Date.now()}`,
-      text: `⚙️ Landing Gear 2/3 deployed! Aerodynamic drag increased (Min Speed: ${s.blueAeroMarker}).`,
+      text: `⚙️ Landing Gear 2/3 deployed! Aerodynamic drag increased: Blue Marker moved to ${s.blueAeroMarker} (Stall sum ≤ ${s.blueAeroMarker} = 0 spaces).`,
       type: 'success',
       timestamp: Date.now(),
     });
@@ -460,7 +460,7 @@ function applyImmediateSlotEffect(
     s.blueAeroMarker += 1;
     s.history.push({
       id: `gear3-${Date.now()}`,
-      text: `⚙️ Landing Gear 3/3 FULLY DEPLOYED! All wheels locked in green!`,
+      text: `⚙️ Landing Gear 3/3 FULLY DEPLOYED! All wheels down: Blue Marker at ${s.blueAeroMarker} (Stall sum ≤ ${s.blueAeroMarker} = 0 spaces).`,
       type: 'success',
       timestamp: Date.now(),
     });
@@ -472,7 +472,7 @@ function applyImmediateSlotEffect(
     s.orangeAeroMarker += 1;
     s.history.push({
       id: `flaps1-${Date.now()}`,
-      text: `🪶 Flaps 1/4 deployed! Lift profile adjusted (Max Speed: ${s.orangeAeroMarker}).`,
+      text: `🪶 Flaps 1/4 deployed! Lift adjusted: Orange Marker moved to ${s.orangeAeroMarker} (High-speed sum > ${s.orangeAeroMarker} = 2 spaces).`,
       type: 'success',
       timestamp: Date.now(),
     });
@@ -482,7 +482,7 @@ function applyImmediateSlotEffect(
     s.orangeAeroMarker += 1;
     s.history.push({
       id: `flaps2-${Date.now()}`,
-      text: `🪶 Flaps 2/4 deployed! (Max Speed: ${s.orangeAeroMarker}).`,
+      text: `🪶 Flaps 2/4 deployed! Orange Marker moved to ${s.orangeAeroMarker} (High-speed sum > ${s.orangeAeroMarker} = 2 spaces).`,
       type: 'success',
       timestamp: Date.now(),
     });
@@ -492,7 +492,7 @@ function applyImmediateSlotEffect(
     s.orangeAeroMarker += 1;
     s.history.push({
       id: `flaps3-${Date.now()}`,
-      text: `🪶 Flaps 3/4 deployed! (Max Speed: ${s.orangeAeroMarker}).`,
+      text: `🪶 Flaps 3/4 deployed! Orange Marker moved to ${s.orangeAeroMarker} (High-speed sum > ${s.orangeAeroMarker} = 2 spaces).`,
       type: 'success',
       timestamp: Date.now(),
     });
@@ -502,7 +502,7 @@ function applyImmediateSlotEffect(
     s.orangeAeroMarker += 1;
     s.history.push({
       id: `flaps4-${Date.now()}`,
-      text: `🪶 Flaps 4/4 FULLY EXTENDED! Full approach lift configured!`,
+      text: `🪶 Flaps 4/4 FULLY EXTENDED! Full drag: Orange Marker moved to ${s.orangeAeroMarker} (High-speed impossible, max speed 1 space).`,
       type: 'success',
       timestamp: Date.now(),
     });
@@ -595,7 +595,7 @@ function resolveRoundEnd(s: SkyTeamState) {
   s.currentEngineSum = effectiveSum;
 
   let speed = 0;
-  if (effectiveSum < s.blueAeroMarker) {
+  if (effectiveSum <= s.blueAeroMarker) {
     speed = 0;
   } else if (effectiveSum <= s.orangeAeroMarker) {
     speed = 1;
@@ -606,9 +606,7 @@ function resolveRoundEnd(s: SkyTeamState) {
 
   s.history.push({
     id: `eng-res-${Date.now()}`,
-    text: `⚡ Engines: Sum [${effectiveSum}] vs Markers (Min: ${s.blueAeroMarker}, Max: ${
-      s.orangeAeroMarker
-    }) ➔ Speed: ${speed} space(s).`,
+    text: `⚡ Engines: Sum [${effectiveSum}] vs Markers (Blue: ≤${s.blueAeroMarker} ➔ 0 spaces, Green: ${s.blueAeroMarker + 1}..${s.orangeAeroMarker} ➔ 1 space, Orange: >${s.orangeAeroMarker} ➔ 2 spaces) ➔ Speed: ${speed} space(s).`,
     type: 'info',
     timestamp: Date.now(),
   });

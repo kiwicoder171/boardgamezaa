@@ -145,6 +145,20 @@ export default function SkyTeamBoard({
   const myDice = isPilot ? state.pilotDice : isCopilot ? state.copilotDice : [];
   const selectedDie = myDice.find((d) => d.id === selectedDieId && !d.placed);
 
+  // Aerodynamics & Speed Gauge Derived State
+  const pilotEngineDie = state.slots.enginesPilot;
+  const copilotEngineDie = state.slots.enginesCopilot;
+  const hasBothEngines = !!(pilotEngineDie && copilotEngineDie);
+  const headwind = state.modules?.wind?.headwind || 0;
+  const rawEngineSum = (pilotEngineDie?.value ?? 0) + (copilotEngineDie?.value ?? 0);
+  const effectiveEngineSum = hasBothEngines ? rawEngineSum - headwind : null;
+  const currentSpeed = effectiveEngineSum !== null
+    ? (effectiveEngineSum <= state.blueAeroMarker ? 0 : effectiveEngineSum <= state.orangeAeroMarker ? 1 : 2)
+    : null;
+  const speedTrackNumbers = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const gearDeployedCount = state.landingGear.filter(Boolean).length;
+  const flapsDeployedCount = state.flaps.filter(Boolean).length;
+
   // Play audio helper
   const playSound = (fn: () => void) => {
     if (soundEnabled) fn();
@@ -241,7 +255,7 @@ export default function SkyTeamBoard({
               if (partnerEngineDie) {
                 const totalEngine = die.value + partnerEngineDie.value;
                 let speed = 1;
-                if (totalEngine < state.blueAeroMarker) speed = 0;
+                if (totalEngine <= state.blueAeroMarker) speed = 0;
                 else if (totalEngine > state.orangeAeroMarker) speed = 2;
 
                 // Check collisions ahead
@@ -472,7 +486,12 @@ export default function SkyTeamBoard({
                   <Gauge className="w-3.5 h-3.5 text-blue-400" />
                   <span>Engines (Throttle)</span>
                 </span>
-                <span className="text-[10px] text-rose-400 font-mono font-bold uppercase">MANDATORY</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-mono text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800">
+                    ≤{state.blueAeroMarker} Stall | &gt;{state.orangeAeroMarker} Spd 2
+                  </span>
+                  <span className="text-[10px] text-rose-400 font-mono font-bold uppercase">MANDATORY</span>
+                </div>
               </div>
               <div
                 onClick={() => handleSlotClick('enginesPilot')}
@@ -716,7 +735,249 @@ export default function SkyTeamBoard({
               </div>
             </div>
 
-            {/* B. APPROACH TRACK & AIR TRAFFIC RADAR */}
+            {/* B. AERODYNAMICS & SPEED GAUGE (AERODYNAMIC MARKERS) */}
+            <div className="bg-gradient-to-b from-slate-950 via-slate-900 to-black border-2 border-cyan-800/60 rounded-3xl p-4 shadow-2xl relative space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <Gauge className="w-4 h-4 text-cyan-400" />
+                  <div>
+                    <div className="text-xs font-bold text-slate-200 tracking-wide flex items-center gap-2">
+                      <span>AERODYNAMICS & SPEED GAUGE</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono">
+                        APPROACH SPEED
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      ตำแหน่งตัวคั่นแอโรไดนามิก & ความเร็วตามผลรวมลูกเต๋า
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Speed Outcome Badge */}
+                {hasBothEngines ? (
+                  <div
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-black border flex items-center gap-1.5 shadow-md ${
+                      currentSpeed === 0
+                        ? 'bg-amber-950/80 text-amber-300 border-amber-600/70 shadow-amber-900/30'
+                        : currentSpeed === 1
+                        ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/70 shadow-emerald-900/30 ring-1 ring-emerald-400/50'
+                        : 'bg-rose-950/80 text-rose-300 border-rose-500/70 shadow-rose-900/30 ring-1 ring-rose-400/50'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-current animate-ping" />
+                    <span>
+                      {currentSpeed === 0
+                        ? '⏸️ SPEED 0: NO MOVE'
+                        : currentSpeed === 1
+                        ? '🟢 SPEED 1: MOVE 1 SPACE'
+                        : '🚀 SPEED 2: MOVE 2 SPACES'}
+                    </span>
+                  </div>
+                ) : pilotEngineDie || copilotEngineDie ? (
+                  <div className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-blue-950/60 text-blue-300 border border-blue-700/50">
+                    Engine 1/2 Placed • Waiting Partner
+                  </div>
+                ) : (
+                  <div className="px-2.5 py-1 rounded-full text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-700">
+                    Waiting for Engine Dice
+                  </div>
+                )}
+              </div>
+
+              {/* Throttle Contribution Bar */}
+              <div className="flex items-center justify-between bg-black/50 border border-slate-800/80 rounded-xl p-2 text-xs font-mono">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-blue-400 font-bold uppercase">Pilot:</span>
+                  {pilotEngineDie ? (
+                    <span className="px-2 py-0.5 rounded bg-blue-900/50 text-blue-200 border border-blue-500 font-black">
+                      [{pilotEngineDie.value}]
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 italic text-[11px]">—</span>
+                  )}
+                </div>
+
+                <span className="text-slate-600 font-bold">+</span>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-orange-400 font-bold uppercase">Co-Pilot:</span>
+                  {copilotEngineDie ? (
+                    <span className="px-2 py-0.5 rounded bg-orange-900/50 text-orange-200 border border-orange-500 font-black">
+                      [{copilotEngineDie.value}]
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 italic text-[11px]">—</span>
+                  )}
+                </div>
+
+                {headwind > 0 && (
+                  <>
+                    <span className="text-slate-600 font-bold">-</span>
+                    <span className="text-cyan-400 font-bold">Wind [{headwind}]</span>
+                  </>
+                )}
+
+                <span className="text-slate-600 font-bold">=</span>
+
+                <div className="flex items-center gap-1.5 font-bold">
+                  <span className="text-[10px] text-slate-400 uppercase">Sum:</span>
+                  <span className={`text-sm font-black ${hasBothEngines ? 'text-amber-300 underline' : 'text-slate-500'}`}>
+                    {hasBothEngines ? effectiveEngineSum : '?'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Visual Aerodynamic Track with Markers */}
+              <div className="relative pt-7 pb-7 px-1">
+                {/* 🟦 Blue Aerodynamic Marker (Gear Drag) */}
+                <div
+                  className="absolute top-0 transform -translate-x-1/2 flex flex-col items-center transition-all duration-500 z-20 pointer-events-none"
+                  style={{
+                    left: `${Math.min(95, Math.max(5, ((state.blueAeroMarker - 2 + 0.5) / 11) * 100))}%`,
+                  }}
+                >
+                  <div className="px-2 py-0.5 rounded-full bg-blue-600 border border-blue-200 shadow-[0_0_8px_rgba(59,130,246,0.6)] text-[9px] font-mono font-bold text-white flex items-center gap-1 whitespace-nowrap">
+                    <span>🟦 GEAR MARKER ({gearDeployedCount}/3)</span>
+                  </div>
+                  <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-blue-400" />
+                </div>
+
+                {/* 2 to 12 Track Slots */}
+                <div className="grid grid-cols-11 gap-1 bg-black/60 p-1.5 rounded-2xl border border-slate-800">
+                  {speedTrackNumbers.map((num) => {
+                    const isStall = num <= state.blueAeroMarker;
+                    const isMedium = num > state.blueAeroMarker && num <= state.orangeAeroMarker;
+                    const isFast = num > state.orangeAeroMarker;
+                    const isActiveSum = hasBothEngines && effectiveEngineSum === num;
+
+                    return (
+                      <div
+                        key={num}
+                        className={`flex flex-col items-center justify-between py-2 rounded-xl border text-center transition-all relative ${
+                          isActiveSum
+                            ? 'ring-2 ring-white scale-105 z-10 shadow-lg ' +
+                              (isStall
+                                ? 'bg-amber-600 border-white text-white font-black'
+                                : isMedium
+                                ? 'bg-emerald-600 border-white text-white font-black'
+                                : 'bg-rose-600 border-white text-white font-black')
+                            : isStall
+                            ? 'bg-amber-950/20 border-amber-900/40 text-amber-300/80'
+                            : isMedium
+                            ? 'bg-emerald-950/25 border-emerald-800/40 text-emerald-300'
+                            : 'bg-rose-950/20 border-rose-900/40 text-rose-300/80'
+                        }`}
+                      >
+                        <span className="text-xs font-mono font-bold">{num}</span>
+                        <span className="text-[8px] font-mono mt-0.5 opacity-80">
+                          {isStall ? '0' : isMedium ? '1' : '2'}
+                        </span>
+
+                        {isActiveSum && (
+                          <div className="absolute -top-1.5 w-2 h-2 rounded-full bg-white animate-ping" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 🟧 Orange Aerodynamic Marker (Flaps Drag) */}
+                <div
+                  className="absolute bottom-0 transform -translate-x-1/2 flex flex-col items-center transition-all duration-500 z-20 pointer-events-none"
+                  style={{
+                    left: `${Math.min(95, Math.max(5, ((state.orangeAeroMarker - 2 + 0.5) / 11) * 100))}%`,
+                  }}
+                >
+                  <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[6px] border-b-orange-400" />
+                  <div className="px-2 py-0.5 rounded-full bg-orange-600 border border-orange-200 shadow-[0_0_8px_rgba(249,115,22,0.6)] text-[9px] font-mono font-bold text-white flex items-center gap-1 whitespace-nowrap">
+                    <span>🟧 FLAPS MARKER ({flapsDeployedCount}/4)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3 Zones Explanations */}
+              <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800/80 text-[10px] font-mono">
+                {/* 0 Spaces */}
+                <div
+                  className={`p-2 rounded-xl border flex flex-col justify-between ${
+                    hasBothEngines && currentSpeed === 0
+                      ? 'bg-amber-950/40 border-amber-500 text-amber-200 ring-1 ring-amber-400'
+                      : 'bg-black/30 border-slate-800 text-slate-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-bold text-amber-400">
+                    <span>⏸️ 0 SPACES</span>
+                    <span className="text-[8px] px-1 py-0.5 bg-amber-950 rounded border border-amber-800">
+                      ไม่ขยับ
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs font-black text-amber-300">
+                    Sum: 2 – {state.blueAeroMarker}
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    ≤ Blue Marker ({state.blueAeroMarker})
+                  </div>
+                </div>
+
+                {/* 1 Space */}
+                <div
+                  className={`p-2 rounded-xl border flex flex-col justify-between ${
+                    hasBothEngines && currentSpeed === 1
+                      ? 'bg-emerald-950/40 border-emerald-500 text-emerald-200 ring-1 ring-emerald-400'
+                      : 'bg-black/30 border-slate-800 text-slate-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-bold text-emerald-400">
+                    <span>🟢 1 SPACE</span>
+                    <span className="text-[8px] px-1 py-0.5 bg-emerald-950 rounded border border-emerald-800">
+                      ขยับ 1 ช่อง
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs font-black text-emerald-300">
+                    Sum: {state.blueAeroMarker + 1} – {state.orangeAeroMarker}
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    ระหว่าง Blue & Orange
+                  </div>
+                </div>
+
+                {/* 2 Spaces */}
+                <div
+                  className={`p-2 rounded-xl border flex flex-col justify-between ${
+                    hasBothEngines && currentSpeed === 2
+                      ? 'bg-rose-950/40 border-rose-500 text-rose-200 ring-1 ring-rose-400'
+                      : 'bg-black/30 border-slate-800 text-slate-400'
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-bold text-rose-400">
+                    <span>🚀 2 SPACES</span>
+                    <span className="text-[8px] px-1 py-0.5 bg-rose-950 rounded border border-rose-800">
+                      ขยับ 2 ช่อง
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs font-black text-rose-300">
+                    {state.orangeAeroMarker >= 12 ? 'IMPOSSIBLE' : `Sum: ${state.orangeAeroMarker + 1} – 12`}
+                  </div>
+                  <div className="text-[9px] text-slate-400 mt-0.5">
+                    &gt; Orange Marker ({state.orangeAeroMarker})
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Partner Prediction when only 1 Die is placed */}
+              {!hasBothEngines && (pilotEngineDie || copilotEngineDie) && (
+                <div className="bg-cyan-950/30 border border-cyan-800/40 rounded-xl p-2 text-[10px] font-mono text-cyan-200 flex flex-wrap items-center justify-between gap-1">
+                  <span>
+                    💡 วางแล้ว [{pilotEngineDie ? `Pilot: ${pilotEngineDie.value}` : `Co-Pilot: ${copilotEngineDie!.value}`}]:
+                  </span>
+                  <span className="text-slate-300">
+                    ต้องการแต้มรวม: ≤{state.blueAeroMarker} เพื่อไม่ขยับ (0 ช่อง) • {state.blueAeroMarker + 1}..{state.orangeAeroMarker} เพื่อขยับ 1 ช่อง • &gt;{state.orangeAeroMarker} เพื่อขยับ 2 ช่อง
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* C. APPROACH TRACK & AIR TRAFFIC RADAR */}
             <div className="bg-black/60 border border-slate-700 rounded-3xl p-4 space-y-2 shadow-inner">
               <div className="flex items-center justify-between text-xs font-bold text-slate-300">
                 <span className="flex items-center gap-1.5">
@@ -850,7 +1111,12 @@ export default function SkyTeamBoard({
                   <Gauge className="w-3.5 h-3.5 text-orange-400" />
                   <span>Engines (Throttle)</span>
                 </span>
-                <span className="text-[10px] text-rose-400 font-mono font-bold uppercase">MANDATORY</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-mono text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800">
+                    ≤{state.blueAeroMarker} Stall | &gt;{state.orangeAeroMarker} Spd 2
+                  </span>
+                  <span className="text-[10px] text-rose-400 font-mono font-bold uppercase">MANDATORY</span>
+                </div>
               </div>
               <div
                 onClick={() => handleSlotClick('enginesCopilot')}
@@ -1224,9 +1490,13 @@ export default function SkyTeamBoard({
               </div>
 
               <div className="space-y-1">
-                <h4 className="font-bold text-sky-400 uppercase tracking-wider text-[11px]">⚡ Engines & Throttle (Mandatory)</h4>
+                <h4 className="font-bold text-sky-400 uppercase tracking-wider text-[11px]">⚡ Engines & Aerodynamics Markers (Mandatory)</h4>
                 <p className="text-zinc-400">
-                  Sum of Pilot + Co-pilot engine dice determines distance moved along the approach track. If you advance into a space occupied by traffic airplanes, you crash! Use Radio to clear them beforehand.
+                  Sum of Pilot + Co-pilot engine dice determines distance moved along the approach corridor based on the 2 Aerodynamics Markers:
+                  <br />• <strong>0 Spaces (Stall / ไม่ขยับ):</strong> Sum ≤ Blue Marker (starts at 4; increases by +1 for each Landing Gear switch deployed).
+                  <br />• <strong>1 Space (มาตรฐาน / ขยับ 1 ช่อง):</strong> Sum is between Blue and Orange Markers (starts at 5–8).
+                  <br />• <strong>2 Spaces (ความเร็วสูง / ขยับ 2 ช่อง):</strong> Sum &gt; Orange Marker (starts at 9–12; increases by +1 for each Flaps switch deployed).
+                  <br />If you advance into a space occupied by traffic airplanes, you crash! Use Radio to clear them beforehand.
                 </p>
               </div>
 

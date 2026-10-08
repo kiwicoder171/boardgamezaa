@@ -78,8 +78,8 @@ export interface SkyTeamState {
   maxTiltAllowed: number; // 3
 
   // Aerodynamics & Speed
-  blueAeroMarker: number; // Minimum threshold (starts at 8, increases as gear deploys)
-  orangeAeroMarker: number; // Maximum threshold (starts at 8, increases as flaps deploy)
+  blueAeroMarker: number; // Low-speed threshold (starts at 4, increases as gear deploys; sum <= blue is 0 spaces)
+  orangeAeroMarker: number; // High-speed threshold (starts at 8, increases as flaps deploy; sum > orange is 2 spaces)
   currentEngineSum: number | null;
   currentRoundSpeed: number | null; // 0, 1, or 2 spaces
 
