@@ -1,0 +1,211 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #070a12;
+  --foreground: #f1f5f9;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+/* TABLETOP GAMING AESTHETICS */
+
+/* Luxury Table Felt with Spotlight */
+.tabletop-felt {
+  background: radial-gradient(circle at 50% 35%, #132438 0%, #0a1320 60%, #050911 100%);
+  border: 10px solid #271d17;
+  outline: 2px solid #5a4030;
+  box-shadow: 
+    inset 0 0 80px rgba(0, 0, 0, 0.8),
+    inset 0 0 15px rgba(255, 255, 255, 0.05),
+    0 25px 60px rgba(0, 0, 0, 0.9);
+}
+
+/* Premium Mahogany / Walnut Wooden Rack */
+.wooden-rack {
+  background: linear-gradient(180deg, #3d2514 0%, #29160a 40%, #1d0f06 100%);
+  border-top: 3px solid #664126;
+  border-bottom: 4px solid #140903;
+  border-left: 2px solid #4a2d18;
+  border-right: 2px solid #4a2d18;
+  box-shadow: 
+    0 12px 25px -4px rgba(0, 0, 0, 0.8),
+    inset 0 3px 2px rgba(255, 255, 255, 0.15),
+    inset 0 -4px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* Recessed groove where tiles sit */
+.rack-groove {
+  background: linear-gradient(180deg, #110702 0%, #1e0d05 100%);
+  box-shadow: inset 0 4px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* Chunky Resin / Acrylic Game Tile */
+.chunky-tile {
+  background: linear-gradient(180deg, #fcfcfc 0%, #ede8e1 45%, #d9d2c5 100%);
+  color: #1a1a1a;
+  border-radius: 12px;
+  box-shadow: 
+    0 8px 16px -2px rgba(0, 0, 0, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    inset 0 2px 1px rgba(255, 255, 255, 1),
+    inset 0 -3px 3px rgba(0, 0, 0, 0.15);
+  transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chunky-tile:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 
+    0 16px 24px -4px rgba(0, 0, 0, 0.7),
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    inset 0 2px 1px rgba(255, 255, 255, 1);
+}
+
+.chunky-tile:active {
+  transform: translateY(-2px) scale(0.99);
+}
+
+/* Cut / Defused Tile (Flipped flat on felt) */
+.tile-cut {
+  background: linear-gradient(180deg, #2b333e 0%, #1b2129 100%);
+  color: #64748b;
+  box-shadow: 
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+
+/* Wire Rubber Insulation Cables */
+.wire-cable {
+  height: 6px;
+  border-radius: 9999px;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Classified Espionage Dossier */
+.dossier-paper {
+  background: #fbf7ee;
+  color: #1e293b;
+  box-shadow: 
+    0 20px 40px -10px rgba(0, 0, 0, 0.8),
+    inset 0 0 25px rgba(180, 140, 90, 0.15);
+  border-left: 6px solid #b45309;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+  }
+}
+
+.glow-box {
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+/* Green Casino Table Felt */
+.tabletop-felt-green {
+  background: radial-gradient(circle at 50% 40%, #0d3b28 0%, #062316 60%, #02120a 100%);
+  border: 12px solid #2b180d;
+  outline: 3px solid #5a351a;
+  box-shadow: 
+    inset 0 0 100px rgba(0, 0, 0, 0.85),
+    inset 0 0 20px rgba(255, 255, 255, 0.05),
+    0 25px 70px rgba(0, 0, 0, 0.95);
+}
+
+/* Table Edge Padded Armrest Cushion */
+.table-cushion {
+  box-shadow: 
+    inset 0 4px 6px rgba(255, 255, 255, 0.1),
+    inset 0 -6px 12px rgba(0, 0, 0, 0.9),
+    0 8px 16px rgba(0, 0, 0, 0.6);
+}
+
+/* Brushed Metal / Steel Bomb Console Chassis */
+.metal-chassis {
+  background: linear-gradient(135deg, #2b303c 0%, #1c202a 50%, #151821 100%);
+  border: 2px solid #475569;
+  box-shadow: 
+    inset 0 1px 2px rgba(255, 255, 255, 0.2),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.8),
+    0 15px 30px rgba(0, 0, 0, 0.7);
+}
+
+/* Vintage 7-segment / Red Digital LED Display */
+.led-display {
+  background: #0d0202;
+  border: 2px solid #270d0d;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(239, 68, 68, 0.2);
+}
+
+/* Metallic Brass / Steel Rivet */
+.rivet {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, #94a3b8 0%, #475569 50%, #1e293b 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6), inset 0 0.5px 1px rgba(255, 255, 255, 0.4);
+}
+
+/* Real-world Polaroid Location Card */
+.polaroid-card {
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 8px;
+  padding: 8px 8px 14px 8px;
+  box-shadow: 
+    0 10px 20px -3px rgba(0, 0, 0, 0.5),
+    0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.polaroid-card:hover {
+  transform: translateY(-5px) rotate(1deg) scale(1.02);
+  box-shadow: 
+    0 18px 28px -5px rgba(0, 0, 0, 0.7),
+    0 8px 10px -3px rgba(0, 0, 0, 0.4);
+}
+
+/* Classified Distressed Rubber Stamp */
+.rubber-stamp {
+  display: inline-block;
+  padding: 4px 12px;
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  border: 3px dashed #ef4444;
+  color: #ef4444;
+  transform: rotate(-4deg);
+  mask-image: radial-gradient(circle, black 80%, transparent 100%);
+  text-shadow: 0 0 1px rgba(239, 68, 68, 0.5);
+}

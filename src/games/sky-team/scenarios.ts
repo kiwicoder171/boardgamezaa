@@ -1,0 +1,182 @@
+import { AirportScenario } from './types';
+
+export const SKY_TEAM_SCENARIOS: AirportScenario[] = [
+  {
+    id: 'yul-montreal',
+    name: 'Montreal-Trudeau International',
+    code: 'YUL',
+    country: 'Canada',
+    flag: '🇨🇦',
+    difficulty: 'Green (Novice)',
+    briefing:
+      'Introductory flight under clear blue skies. Perfect conditions to master the axis, aerodynamics, landing gear, and flaps.',
+    approachTrackLength: 7,
+    runwayIndex: 6,
+    trafficLayout: {
+      1: 1,
+      3: 1,
+      5: 1,
+    },
+    activeModules: {},
+  },
+  {
+    id: 'hnd-tokyo',
+    name: 'Tokyo Haneda International',
+    code: 'HND',
+    country: 'Japan',
+    flag: '🇯🇵',
+    difficulty: 'Yellow (Moderate)',
+    briefing:
+      'Dense Tokyo Bay air traffic! Control tower reports heavy holding patterns. You must coordinate radio clears with approach speed.',
+    approachTrackLength: 8,
+    runwayIndex: 7,
+    trafficLayout: {
+      1: 2,
+      2: 1,
+      4: 2,
+      6: 1,
+    },
+    trafficDiceEvents: {
+      4000: 1,
+      2000: 1,
+    },
+    activeModules: {},
+  },
+  {
+    id: 'sxm-sint-maarten',
+    name: 'Princess Juliana International',
+    code: 'SXM',
+    country: 'Sint Maarten',
+    flag: '🇸🇽',
+    difficulty: 'Orange (Challenging)',
+    briefing:
+      'Iconic low altitude approach over Maho Beach! Strong maritime headwinds and crosswinds will push the aircraft off course.',
+    approachTrackLength: 8,
+    runwayIndex: 7,
+    trafficLayout: {
+      2: 1,
+      3: 2,
+      5: 1,
+    },
+    windValue: 1,
+    crosswind: 1,
+    activeModules: {
+      wind: true,
+    },
+  },
+  {
+    id: 'rkv-reykjavik',
+    name: 'Reykjavik International Airport',
+    code: 'RKV',
+    country: 'Iceland',
+    flag: '🇮🇸',
+    difficulty: 'Orange (Challenging)',
+    briefing:
+      'Sub-zero arctic landing. Runway 01 is coated in black ice, reducing braking friction dramatically.',
+    approachTrackLength: 8,
+    runwayIndex: 7,
+    trafficLayout: {
+      1: 1,
+      3: 1,
+      4: 1,
+      6: 1,
+    },
+    activeModules: {
+      iceBrakes: true,
+      wind: true,
+    },
+    windValue: -1,
+    crosswind: 1,
+  },
+  {
+    id: 'lua-lukla',
+    name: 'Tenzing-Hillary Airport (Lukla)',
+    code: 'LUA',
+    country: 'Nepal',
+    flag: '🇳🇵',
+    difficulty: 'Red (Extreme)',
+    briefing:
+      'The most dangerous airport in the world! Perched on a cliff at 9,334 feet with an uphill gradient runway, sheer drops, and zero go-around margin.',
+    approachTrackLength: 7,
+    runwayIndex: 6,
+    trafficLayout: {
+      2: 2,
+      4: 2,
+    },
+    windValue: 2,
+    crosswind: 2,
+    activeModules: {
+      wind: true,
+      kerosene: true,
+      heavyTurbulence: true,
+    },
+    startingFuel: 6,
+  },
+  {
+    id: 'pek-beijing',
+    name: 'Beijing Capital International',
+    code: 'PEK',
+    country: 'China',
+    flag: '🇨🇳',
+    difficulty: 'Orange (Challenging)',
+    briefing:
+      'CAT III low visibility approach. Thick fog hides approaching air traffic until radar locks onto close proximity.',
+    approachTrackLength: 8,
+    runwayIndex: 7,
+    trafficLayout: {
+      1: 1,
+      2: 2,
+      4: 1,
+      5: 2,
+    },
+    activeModules: {
+      lowVisibility: true,
+      alarms: true,
+    },
+  },
+  {
+    id: 'mad-madrid',
+    name: 'Adolfo Suárez Madrid-Barajas',
+    code: 'MAD',
+    country: 'Spain',
+    flag: '🇪🇸',
+    difficulty: 'Yellow (Moderate)',
+    briefing:
+      'Summer thermal updrafts cause sudden system master caution alarms. Work through the electrical checklist while maintaining descent rate.',
+    approachTrackLength: 8,
+    runwayIndex: 7,
+    trafficLayout: {
+      1: 1,
+      3: 2,
+      5: 1,
+    },
+    activeModules: {
+      alarms: true,
+      intern: true,
+    },
+  },
+  {
+    id: 'syd-sydney',
+    name: 'Sydney Kingsford Smith',
+    code: 'SYD',
+    country: 'Australia',
+    flag: '🇦🇺',
+    difficulty: 'Yellow (Moderate)',
+    briefing:
+      'Pacific trade winds and a rookie flight officer intern on board. Mentor the intern through active runway vectoring.',
+    approachTrackLength: 8,
+    runwayIndex: 7,
+    trafficLayout: {
+      1: 1,
+      2: 1,
+      4: 1,
+      6: 1,
+    },
+    activeModules: {
+      intern: true,
+      wind: true,
+    },
+    windValue: 1,
+    crosswind: 1,
+  },
+];

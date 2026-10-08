@@ -1,0 +1,27 @@
+import { GameDefinition } from '@/types/game';
+import { spyfallGameDefinition } from './spyfall';
+import { bombBustersGameDefinition } from './bomb-busters';
+import { skyTeamGameDefinition } from './sky-team';
+import { werewolfGameDefinition } from './werewolf';
+import { cheeseThiefGameDefinition } from './cheese-thief';
+import { splendorGameDefinition } from './splendor';
+import { codenamesGameDefinition } from './codenames';
+
+// Central Registry of all games available on BoardgameZaa
+export const GAME_REGISTRY: Record<string, GameDefinition<any, any, any>> = {
+  [spyfallGameDefinition.id]: spyfallGameDefinition,
+  [bombBustersGameDefinition.id]: bombBustersGameDefinition,
+  [skyTeamGameDefinition.id]: skyTeamGameDefinition,
+  [werewolfGameDefinition.id]: werewolfGameDefinition,
+  [cheeseThiefGameDefinition.id]: cheeseThiefGameDefinition,
+  [splendorGameDefinition.id]: splendorGameDefinition,
+  [codenamesGameDefinition.id]: codenamesGameDefinition,
+};
+
+export function getAllGames(): GameDefinition[] {
+  return Object.values(GAME_REGISTRY);
+}
+
+export function getGame(id: string): GameDefinition | undefined {
+  return GAME_REGISTRY[id];
+}
