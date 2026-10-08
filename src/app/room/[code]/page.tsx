@@ -349,9 +349,12 @@ export default function RoomPage({ params }: RoomPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col">
-      {/* Top Navbar */}
-      <header className="border-b border-slate-800/80 bg-slate-950/60 backdrop-blur sticky top-0 z-30 px-4 py-3">
+    <div className="min-h-screen bg-[#090604] text-[#ffedd7] flex flex-col relative selection:bg-[#dc5000] selection:text-white">
+      {/* Tabletop Atmosphere */}
+      <div className="tabletop-atmosphere" />
+
+      {/* Top Navbar: Polished Walnut Rim */}
+      <header className="border-b border-[#382416] bg-[#140d07]/90 backdrop-blur sticky top-0 z-30 px-4 py-3 shadow-xl">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -359,14 +362,14 @@ export default function RoomPage({ params }: RoomPageProps) {
                 soundFX.playClick();
                 router.push('/');
               }}
-              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition"
+              className="btn-tactile p-2 rounded-xl bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] border border-[#40372e] transition"
               title="Leave Room & Go Home"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center gap-2">
               <span className="text-2xl">🎲</span>
-              <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
+              <span className="font-serifDisplay font-black text-lg tracking-tight bg-gradient-to-r from-[#ffedd7] via-[#fde68a] to-[#f59e0b] bg-clip-text text-transparent">
                 BoardgameZaa
               </span>
             </div>
@@ -374,9 +377,9 @@ export default function RoomPage({ params }: RoomPageProps) {
 
           <div className="flex items-center gap-3 text-xs">
             {profile && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/80">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#26180e] border border-[#40372e] shadow-sm">
                 <span>{profile.avatar}</span>
-                <span className="font-semibold text-slate-300">{profile.name}</span>
+                <span className="font-semibold text-[#ffedd7]">{profile.name}</span>
               </div>
             )}
 
@@ -385,7 +388,7 @@ export default function RoomPage({ params }: RoomPageProps) {
                 soundFX.playClick();
                 setIsSettingsOpen(true);
               }}
-              className="btn-tactile p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 transition"
+              className="btn-tactile p-2 rounded-xl bg-[#26180e] hover:bg-[#382416] text-[#ffedd7] hover:text-[#fbbf24] border border-[#40372e] transition"
               title="Table & Sound Preferences"
               aria-label="Table Preferences"
             >
