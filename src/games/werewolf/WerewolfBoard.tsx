@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   RotateCcw,
 } from 'lucide-react';
+import { CardFlip } from '@/components/ui/CardFlip';
 
 // Web Audio Ambient & Sound Effects
 class WerewolfSoundFX {
@@ -401,7 +402,7 @@ export default function WerewolfBoard({
 
         {/* 3. ACTIVE NIGHT OR DAY WORKBENCH */}
         {isNight && isMyNightTurn && (
-          <div className="bg-indigo-950/40 border border-indigo-700/60 rounded-3xl p-5 space-y-3 shadow-xl">
+          <div className="bg-indigo-950/40 border border-indigo-700/60 rounded-3xl p-5 space-y-3 shadow-xl turn-spotlight">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Moon className="w-5 h-5 text-indigo-400" />
@@ -459,21 +460,40 @@ export default function WerewolfBoard({
 
         {/* 4. SECRET ROLE CARD CONSOLE */}
         <div className="mt-6 bg-black/50 border border-white/10 rounded-3xl p-5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <div
               onClick={() => setCardFlipped((v: boolean) => !v)}
-              className="w-14 h-20 rounded-xl bg-gradient-to-br from-slate-900 to-slate-950 border-2 border-amber-500/40 flex items-center justify-center text-3xl select-none cursor-pointer transition transform hover:scale-105 shadow-md"
+              className="w-16 h-24 select-none cursor-pointer"
               title="Click to Flip Secret Role Card"
             >
-              {cardFlipped ? roleConfig?.icon || '🎭' : '❓'}
+              <CardFlip
+                isFlipped={cardFlipped}
+                className="w-full h-full"
+                front={
+                  <div className="w-full h-full rounded-xl bg-gradient-to-br from-slate-900 to-slate-950 border-2 border-amber-500/40 flex flex-col items-center justify-center p-2 text-center shadow-lg hover:border-amber-400 transition">
+                    <span className="text-2xl">❓</span>
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-amber-300/80 mt-1">
+                      Peep Role
+                    </span>
+                  </div>
+                }
+                back={
+                  <div className="w-full h-full rounded-xl bg-gradient-to-br from-amber-950/80 to-slate-950 border-2 border-amber-400 flex flex-col items-center justify-center p-2 text-center shadow-lg shadow-amber-500/20">
+                    <span className="text-3xl">{roleConfig?.icon || '🎭'}</span>
+                    <span className="text-[9px] font-mono font-black uppercase text-amber-300 mt-1 truncate max-w-full">
+                      {roleConfig?.name || 'Villager'}
+                    </span>
+                  </div>
+                }
+              />
             </div>
             <div>
               <div className="text-[10px] font-mono uppercase text-slate-400">Your Secret Role</div>
               <h3 className="font-serif font-black text-base text-amber-300">
-                {cardFlipped ? roleConfig?.name : '••••••••'}
+                {cardFlipped ? roleConfig?.name : '•••••••• (Click card to reveal)'}
               </h3>
               <p className="text-xs text-slate-300 max-w-md font-sans">
-                {cardFlipped ? roleConfig?.description : 'Click card to view your secret alignment.'}
+                {cardFlipped ? roleConfig?.description : 'Protected against screen peeking.'}
               </p>
             </div>
           </div>

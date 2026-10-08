@@ -12,6 +12,7 @@
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
+    "motion": "^14.0.0",
     "nanoid": "^5.1.5",
     "next": "^15.2.4",
     "react": "^19.0.0",

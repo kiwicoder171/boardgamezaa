@@ -223,7 +223,13 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
         </div>
 
         {/* Clock Tower Display */}
-        <div className="flex items-center gap-3 bg-stone-900/90 border border-stone-700 px-4 py-2 rounded-2xl shadow-xl">
+        <div
+          className={`flex items-center gap-3 bg-stone-900/90 border px-4 py-2 rounded-2xl shadow-xl transition ${
+            amIAwake || (state.phase === 'voting' && !me?.votedTargetId)
+              ? 'border-amber-400 shadow-amber-950/40 turn-spotlight'
+              : 'border-stone-700'
+          }`}
+        >
           <div className="flex flex-col items-center">
             <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400">Tavern Clock</span>
             <div className="flex items-center gap-1.5 text-lg font-mono font-bold text-amber-300">
@@ -461,9 +467,9 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
 
                     {/* Mouse Avatar & Badge */}
                     <div
-                      className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center text-xl shadow-md ${
+                      className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center text-xl shadow-md transition ${
                         isMe
-                          ? 'border-amber-400 bg-amber-950/80 ring-2 ring-amber-400/50'
+                          ? `border-amber-400 bg-amber-950/80 ring-2 ring-amber-400/50 ${amIAwake ? 'turn-spotlight' : ''}`
                           : 'border-stone-600 bg-stone-800'
                       }`}
                     >

@@ -325,3 +325,29 @@ body {
     inset 0 0 20px rgba(180, 130, 70, 0.15);
 }
 
+/* 9. Dynamic Turn Indicator Radial Spotlight Aura */
+.turn-spotlight {
+  position: relative;
+}
+.turn-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.35) 0%, transparent 72%);
+  animation: turnPulse 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+@keyframes turnPulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.025);
+  }
+}
+
+

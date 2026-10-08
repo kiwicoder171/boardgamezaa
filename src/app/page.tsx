@@ -24,6 +24,7 @@ import {
   Award,
   Compass,
 } from 'lucide-react';
+import { Card3DTilt } from '@/components/ui/Card3DTilt';
 
 // Thematic Visual Design Metadata matching real tabletop physical materials & mood
 const GAME_THEMES: Record<
@@ -434,116 +435,117 @@ export default function HomePage() {
                   const isExpanded = expandedGameRule === g.id;
 
                   return (
-                    <div
-                      key={g.id}
-                      className={`relative rounded-3xl p-6 shadow-xl hover:shadow-2xl flex flex-col justify-between gap-5 transition-all duration-200 ${theme.containerClass}`}
-                    >
-                      {/* Top Bar: Icon, Genre Badge & Ready Indicator */}
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="w-14 h-14 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
-                            {g.icon}
-                          </div>
-                          <div className="flex flex-col items-end gap-1">
-                            <span
-                              className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${theme.badgeClass}`}
-                            >
-                              {theme.genre}
-                            </span>
-                            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
-                              <Check className="w-3 h-3" /> Ready to Play
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Title and Thematic Heading Font */}
-                        <div>
-                          <h3 className={`text-2xl font-black tracking-tight ${theme.fontFamily}`}>
-                            {g.name}
-                          </h3>
-                          <p className="text-xs opacity-80 mt-1 leading-relaxed">
-                            {g.description}
-                          </p>
-                        </div>
-
-                        {/* Physical Materials Inventory Strip */}
-                        <div className="p-3 rounded-2xl bg-black/30 border border-white/5 space-y-1.5">
-                          <div className="text-[10px] font-bold tracking-widest uppercase opacity-60 flex items-center gap-1">
-                            <Layers className="w-3 h-3" /> Tangible Components
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {theme.materials.map((m) => (
-                              <span
-                                key={m}
-                                className="text-[11px] font-medium bg-black/40 px-2 py-0.5 rounded-md border border-white/10"
-                              >
-                                {m}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Accordion Bite-Sized Rule Overview */}
-                        <div className="border-t border-white/10 pt-3">
-                          <button
-                            onClick={() => {
-                              soundFX.playClick();
-                              setExpandedGameRule(isExpanded ? null : g.id);
-                            }}
-                            className="w-full flex items-center justify-between text-xs font-bold opacity-80 hover:opacity-100 transition py-1"
-                          >
-                            <span className="flex items-center gap-1.5">
-                              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                              <span>How It Works & Playstyle</span>
-                            </span>
-                            {isExpanded ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
-                          </button>
-
-                          {isExpanded && (
-                            <div className="mt-2 text-xs opacity-90 p-3 rounded-xl bg-black/50 border border-white/10 space-y-2 animate-in fade-in leading-relaxed">
-                              <p>{theme.quickRule}</p>
-                              <div className="text-[10px] opacity-75 pt-1 border-t border-white/10">
-                                <span className="font-bold text-amber-400">Tactile Feel: </span>
-                                {theme.tactileHighlight}
-                              </div>
+                    <Card3DTilt key={g.id} className="h-full">
+                      <div
+                        className={`relative h-full rounded-3xl p-6 shadow-xl hover:shadow-2xl flex flex-col justify-between gap-5 transition-all duration-200 ${theme.containerClass}`}
+                      >
+                        {/* Top Bar: Icon, Genre Badge & Ready Indicator */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div className="w-14 h-14 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
+                              {g.icon}
                             </div>
-                          )}
+                            <div className="flex flex-col items-end gap-1">
+                              <span
+                                className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${theme.badgeClass}`}
+                              >
+                                {theme.genre}
+                              </span>
+                              <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                                <Check className="w-3 h-3" /> Ready to Play
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Title and Thematic Heading Font */}
+                          <div>
+                            <h3 className={`text-2xl font-black tracking-tight ${theme.fontFamily}`}>
+                              {g.name}
+                            </h3>
+                            <p className="text-xs opacity-80 mt-1 leading-relaxed">
+                              {g.description}
+                            </p>
+                          </div>
+
+                          {/* Physical Materials Inventory Strip */}
+                          <div className="p-3 rounded-2xl bg-black/30 border border-white/5 space-y-1.5">
+                            <div className="text-[10px] font-bold tracking-widest uppercase opacity-60 flex items-center gap-1">
+                              <Layers className="w-3 h-3" /> Tangible Components
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {theme.materials.map((m) => (
+                                <span
+                                  key={m}
+                                  className="text-[11px] font-medium bg-black/40 px-2 py-0.5 rounded-md border border-white/10"
+                                >
+                                  {m}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Accordion Bite-Sized Rule Overview */}
+                          <div className="border-t border-white/10 pt-3">
+                            <button
+                              onClick={() => {
+                                soundFX.playClick();
+                                setExpandedGameRule(isExpanded ? null : g.id);
+                              }}
+                              className="w-full flex items-center justify-between text-xs font-bold opacity-80 hover:opacity-100 transition py-1"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                                <span>How It Works & Playstyle</span>
+                              </span>
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+
+                            {isExpanded && (
+                              <div className="mt-2 text-xs opacity-90 p-3 rounded-xl bg-black/50 border border-white/10 space-y-2 animate-in fade-in leading-relaxed">
+                                <p>{theme.quickRule}</p>
+                                <div className="text-[10px] opacity-75 pt-1 border-t border-white/10">
+                                  <span className="font-bold text-amber-400">Tactile Feel: </span>
+                                  {theme.tactileHighlight}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Bottom Actions: Specs & Host Button */}
+                        <div className="space-y-3 pt-3 border-t border-white/10">
+                          <div className="flex items-center justify-between text-xs opacity-75">
+                            <span className="flex items-center gap-1">
+                              <Users className="w-3.5 h-3.5" />
+                              {g.minPlayers} - {g.maxPlayers} Players
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {g.durationMinutes}
+                            </span>
+                          </div>
+
+                          {/* High-Affordance Button to Launch Game */}
+                          <button
+                            disabled={isCreating}
+                            onClick={() => handleCreateRoomWithGame(g.id)}
+                            className="btn-tactile w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md shadow-black/50 flex items-center justify-center gap-1.5"
+                          >
+                            <Gamepad2 className="w-4 h-4" />
+                            <span>
+                              {creatingGameId === g.id
+                                ? 'Launching...'
+                                : `Host ${g.name}`}
+                            </span>
+                            <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
+                          </button>
                         </div>
                       </div>
-
-                      {/* Bottom Actions: Specs & Host Button */}
-                      <div className="space-y-3 pt-3 border-t border-white/10">
-                        <div className="flex items-center justify-between text-xs opacity-75">
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3.5 h-3.5" />
-                            {g.minPlayers} - {g.maxPlayers} Players
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            {g.durationMinutes}
-                          </span>
-                        </div>
-
-                        {/* High-Affordance Button to Launch Game */}
-                        <button
-                          disabled={isCreating}
-                          onClick={() => handleCreateRoomWithGame(g.id)}
-                          className="btn-tactile w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md shadow-black/50 flex items-center justify-center gap-1.5"
-                        >
-                          <Gamepad2 className="w-4 h-4" />
-                          <span>
-                            {creatingGameId === g.id
-                              ? 'Launching...'
-                              : `Host ${g.name}`}
-                          </span>
-                          <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
-                        </button>
-                      </div>
-                    </div>
+                    </Card3DTilt>
                   );
                 })}
               </div>

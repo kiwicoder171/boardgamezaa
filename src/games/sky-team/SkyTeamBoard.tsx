@@ -223,7 +223,9 @@ export default function SkyTeamBoard({
 
           {/* Turn & Silence Indicator */}
           <div className="flex items-center gap-3">
-            <div className="px-4 py-2 rounded-2xl bg-black/60 border border-slate-700 text-xs sm:text-sm font-semibold shadow-inner">
+            <div className={`px-4 py-2 rounded-2xl bg-black/60 border text-xs sm:text-sm font-semibold shadow-inner transition ${
+              state.status === 'playing' && isMyTurn ? 'border-amber-400 turn-spotlight' : 'border-slate-700'
+            }`}>
               {state.status === 'playing' ? (
                 isMyTurn ? (
                   <span className="text-amber-300 font-black animate-pulse flex items-center gap-2">
@@ -864,7 +866,13 @@ export default function SkyTeamBoard({
         </div>
 
         {/* 3. FLIGHT SCREENS: PERSONAL SECRET ROLLED DICE BEHIND SCREEN */}
-        <div className="mt-6 bg-black/70 border-2 border-slate-700/80 rounded-3xl p-5 shadow-2xl space-y-4">
+        <div
+          className={`mt-6 bg-black/70 border-2 rounded-3xl p-5 shadow-2xl space-y-4 transition ${
+            isMyTurn && state.status === 'playing'
+              ? 'border-cyan-400 shadow-cyan-950/40 turn-spotlight'
+              : 'border-slate-700/80'
+          }`}
+        >
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2.5">
               <span className="text-xl">🛡️</span>

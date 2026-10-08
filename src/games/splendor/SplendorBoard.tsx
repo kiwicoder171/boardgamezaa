@@ -261,7 +261,11 @@ export const SplendorBoard: React.FC<SplendorBoardProps> = ({
         </div>
 
         {/* Turn Status & Goal */}
-        <div className="flex items-center gap-4 bg-stone-900/90 border border-stone-800 px-4 py-2 rounded-2xl shadow-xl">
+        <div
+          className={`flex items-center gap-4 bg-stone-900/90 border border-stone-800 px-4 py-2 rounded-2xl shadow-xl ${
+            isMyTurn ? 'turn-spotlight' : ''
+          }`}
+        >
           <div className="flex flex-col text-right">
             <span className="text-[10px] uppercase font-bold tracking-wider text-stone-400">Current Turn</span>
             <span
@@ -670,15 +674,23 @@ export const SplendorBoard: React.FC<SplendorBoardProps> = ({
                 const oppBonuses = getPlayerGemBonuses(opp);
                 const oppTokens = getTotalTokens(opp.tokens);
 
+                const isOppTurn = state.currentTurnPlayerId === id;
                 return (
                   <div
                     key={id}
-                    className="p-3 rounded-2xl bg-stone-950/60 border border-stone-800 flex flex-col gap-2"
+                    className={`p-3 rounded-2xl bg-stone-950/60 border flex flex-col gap-2 transition ${
+                      isOppTurn ? 'border-amber-400 shadow-lg turn-spotlight' : 'border-stone-800'
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-lg">{opp.avatar || '💎'}</span>
                         <span className="text-xs font-bold text-stone-200">{opp.name}</span>
+                        {isOppTurn && (
+                          <span className="text-[10px] font-bold text-amber-300 bg-amber-950 px-1.5 py-0.5 rounded border border-amber-600 animate-pulse">
+                            Thinking...
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs font-bold text-amber-400 font-serif">
@@ -712,7 +724,11 @@ export const SplendorBoard: React.FC<SplendorBoardProps> = ({
 
       {/* Bottom Sticky Player Dashboard */}
       {me && (
-        <footer className="fixed bottom-0 left-0 right-0 z-40 bg-stone-950/95 border-t border-emerald-900/80 px-4 py-3 backdrop-blur-md shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 max-w-7xl mx-auto rounded-t-3xl">
+        <footer
+          className={`fixed bottom-0 left-0 right-0 z-40 bg-stone-950/95 border-t px-4 py-3 backdrop-blur-md shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 max-w-7xl mx-auto rounded-t-3xl transition ${
+            isMyTurn ? 'border-emerald-400 shadow-emerald-900/40 turn-spotlight' : 'border-emerald-900/80'
+          }`}
+        >
           {/* Player Identity & Prestige */}
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-900 border-2 border-emerald-400 flex items-center justify-center text-2xl shadow">

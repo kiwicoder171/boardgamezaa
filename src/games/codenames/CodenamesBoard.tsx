@@ -10,6 +10,7 @@ import {
   PlayerRole,
   TeamColor,
 } from './types';
+import { CardFlip } from '@/components/ui/CardFlip';
 
 interface CodenamesBoardProps {
   state: CodenamesState;
@@ -201,7 +202,7 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
           <div
             className={`flex items-center gap-2.5 px-3 py-1 rounded-xl transition-all ${
               state.currentTeam === 'red'
-                ? 'bg-rose-950/80 border border-rose-500 shadow-md scale-105'
+                ? 'bg-rose-950/80 border border-rose-500 shadow-md scale-105 turn-spotlight'
                 : 'opacity-70'
             }`}
           >
@@ -220,7 +221,7 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
           <div
             className={`flex items-center gap-2.5 px-3 py-1 rounded-xl transition-all ${
               state.currentTeam === 'blue'
-                ? 'bg-sky-950/80 border border-sky-500 shadow-md scale-105'
+                ? 'bg-sky-950/80 border border-sky-500 shadow-md scale-105 turn-spotlight'
                 : 'opacity-70'
             }`}
           >
@@ -328,7 +329,6 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
           {state.grid.map((card) => {
             const isRevealed = card.revealed;
             const cardType = card.type; // On client, masked to 'neutral' for unrevealed cards unless spymaster or game over
-            const showIdentity = isRevealed || isSpymaster || state.winner !== null;
             const isPinned = pinnedCardIds.includes(card.id);
 
             return (
@@ -339,27 +339,9 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
                     handleGuessCard(card);
                   }
                 }}
-                className={`relative rounded-2xl transition-all duration-300 transform flex flex-col items-center justify-between p-2 select-none cursor-pointer shadow-md ${
+                className={`relative w-full h-full min-h-[75px] sm:min-h-[95px] select-none cursor-pointer transition-transform ${
                   isPinned && !isRevealed ? 'ring-4 ring-amber-400 shadow-amber-500/50 scale-[1.02]' : ''
-                } ${
-                  isRevealed
-                    ? cardType === 'red'
-                      ? 'bg-gradient-to-br from-rose-600 to-rose-800 border-2 border-rose-400 text-white'
-                      : cardType === 'blue'
-                      ? 'bg-gradient-to-br from-sky-600 to-sky-800 border-2 border-sky-400 text-white'
-                      : cardType === 'assassin'
-                      ? 'bg-gradient-to-br from-stone-900 to-black border-2 border-rose-600 text-white'
-                      : 'bg-stone-700/80 border-2 border-stone-500 text-stone-300'
-                    : isSpymaster
-                    ? cardType === 'red'
-                      ? 'bg-[#e2d5c3] border-4 border-rose-500 text-stone-900 shadow-rose-500/20'
-                      : cardType === 'blue'
-                      ? 'bg-[#e2d5c3] border-4 border-sky-500 text-stone-900 shadow-sky-500/20'
-                      : cardType === 'assassin'
-                      ? 'bg-[#e2d5c3] border-4 border-stone-950 text-stone-900 shadow-black'
-                      : 'bg-[#e2d5c3] border-2 border-[#b5a48e] text-stone-800'
-                    : 'bg-[#ede3d4] hover:bg-[#f5ecdd] border-2 border-[#c8b79f] text-stone-900 hover:scale-[1.03] shadow-lg'
-                }`}
+                } ${!isRevealed && state.turnPhase === 'guess' ? 'hover:scale-[1.03]' : ''}`}
               >
                 {/* Pin Suspect Marker Button */}
                 {!isRevealed && (
@@ -370,7 +352,7 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
                         prev.includes(card.id) ? prev.filter((id) => id !== card.id) : [...prev, card.id]
                       );
                     }}
-                    className={`absolute top-1.5 right-1.5 z-20 px-1 py-0.5 rounded text-[10px] transition ${
+                    className={`absolute top-1.5 right-1.5 z-30 px-1 py-0.5 rounded text-[10px] transition ${
                       isPinned ? 'bg-amber-400 text-stone-950 font-bold shadow' : 'opacity-25 hover:opacity-100 text-stone-700 bg-black/10'
                     }`}
                     title={isPinned ? 'Unmark Suspect Pin' : 'Pin Suspect for Discussion'}
@@ -379,58 +361,87 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
                   </button>
                 )}
 
-                {/* Vintage Top Inverted Word for Table-facing opponents */}
-                <span className="transform rotate-180 text-[9px] font-mono font-bold tracking-tight opacity-40 uppercase truncate max-w-full">
-                  {card.word}
-                </span>
+                <CardFlip
+                  isFlipped={isRevealed}
+                  className="w-full h-full"
+                  front={
+                    <div
+                      className={`w-full h-full rounded-2xl flex flex-col items-center justify-between p-2 shadow-md transition-colors ${
+                        isSpymaster
+                          ? cardType === 'red'
+                            ? 'bg-[#e2d5c3] border-4 border-rose-500 text-stone-900 shadow-rose-500/20'
+                            : cardType === 'blue'
+                            ? 'bg-[#e2d5c3] border-4 border-sky-500 text-stone-900 shadow-sky-500/20'
+                            : cardType === 'assassin'
+                            ? 'bg-[#e2d5c3] border-4 border-stone-950 text-stone-900 shadow-black'
+                            : 'bg-[#e2d5c3] border-2 border-[#b5a48e] text-stone-800'
+                          : 'bg-[#ede3d4] hover:bg-[#f5ecdd] border-2 border-[#c8b79f] text-stone-900 shadow-lg'
+                      }`}
+                    >
+                      {/* Vintage Top Inverted Word for Table-facing opponents */}
+                      <span className="transform rotate-180 text-[9px] font-mono font-bold tracking-tight opacity-40 uppercase truncate max-w-full">
+                        {card.word}
+                      </span>
 
-                {/* Primary Card Word & Identity Badge */}
-                <div className="flex flex-col items-center my-auto">
-                  {isRevealed ? (
-                    <span className="text-2xl mb-1">
-                      {cardType === 'red'
-                        ? '🔴'
-                        : cardType === 'blue'
-                        ? '🔵'
-                        : cardType === 'assassin'
-                        ? '💀'
-                        : '👤'}
-                    </span>
-                  ) : null}
+                      {/* Primary Card Word */}
+                      <span className="text-xs sm:text-sm font-black font-mono tracking-wider text-center uppercase text-stone-900 my-auto">
+                        {card.word}
+                      </span>
 
-                  <span
-                    className={`text-xs sm:text-sm font-black font-mono tracking-wider text-center uppercase ${
-                      isRevealed ? 'text-white drop-shadow' : 'text-stone-900'
-                    }`}
-                  >
-                    {card.word}
-                  </span>
-                </div>
-
-                {/* Bottom Spymaster Icon Marker */}
-                {isSpymaster && !isRevealed ? (
-                  <span
-                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full uppercase ${
-                      cardType === 'red'
-                        ? 'bg-rose-600 text-white'
-                        : cardType === 'blue'
-                        ? 'bg-sky-600 text-white'
-                        : cardType === 'assassin'
-                        ? 'bg-stone-900 text-white'
-                        : 'bg-stone-400 text-stone-900'
-                    }`}
-                  >
-                    {cardType === 'red'
-                      ? 'Red'
-                      : cardType === 'blue'
-                      ? 'Blue'
-                      : cardType === 'assassin'
-                      ? 'Assassin 💀'
-                      : 'Bystander'}
-                  </span>
-                ) : (
-                  <div className="h-2" />
-                )}
+                      {/* Bottom Spymaster Icon Marker */}
+                      {isSpymaster ? (
+                        <span
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase ${
+                            cardType === 'red'
+                              ? 'bg-rose-600 text-white'
+                              : cardType === 'blue'
+                              ? 'bg-sky-600 text-white'
+                              : cardType === 'assassin'
+                              ? 'bg-stone-900 text-white'
+                              : 'bg-stone-400 text-stone-900'
+                          }`}
+                        >
+                          {cardType === 'red'
+                            ? 'Red'
+                            : cardType === 'blue'
+                            ? 'Blue'
+                            : cardType === 'assassin'
+                            ? 'Assassin 💀'
+                            : 'Bystander'}
+                        </span>
+                      ) : (
+                        <div className="h-2" />
+                      )}
+                    </div>
+                  }
+                  back={
+                    <div
+                      className={`w-full h-full rounded-2xl flex flex-col items-center justify-between p-2 shadow-md ${
+                        cardType === 'red'
+                          ? 'bg-gradient-to-br from-rose-600 to-rose-800 border-2 border-rose-400 text-white'
+                          : cardType === 'blue'
+                          ? 'bg-gradient-to-br from-sky-600 to-sky-800 border-2 border-sky-400 text-white'
+                          : cardType === 'assassin'
+                          ? 'bg-gradient-to-br from-stone-900 to-black border-2 border-rose-600 text-white'
+                          : 'bg-stone-700/80 border-2 border-stone-500 text-stone-300'
+                      }`}
+                    >
+                      <span className="text-2xl mt-1">
+                        {cardType === 'red'
+                          ? '🔴'
+                          : cardType === 'blue'
+                          ? '🔵'
+                          : cardType === 'assassin'
+                          ? '💀'
+                          : '👤'}
+                      </span>
+                      <span className="text-xs sm:text-sm font-black font-mono tracking-wider text-center uppercase text-white drop-shadow mb-1">
+                        {card.word}
+                      </span>
+                      <div className="h-1" />
+                    </div>
+                  }
+                />
               </div>
             );
           })}
