@@ -33,12 +33,12 @@ export interface SpyfallState {
 }
 
 export type SpyfallAction =
-  | { type: 'SELECT_QUESTIONEE'; targetPlayerId: string }
-  | { type: 'FINISH_ANSWER' }
-  | { type: 'ACCUSE'; targetPlayerId: string }
-  | { type: 'CAST_VOTE'; voteGuilty: boolean }
-  | { type: 'CANCEL_ACCUSATION' }
-  | { type: 'SPY_GUESS'; locationName: string }
+  | { type: 'SELECT_QUESTIONEE'; targetPlayerId: string; playerId?: string }
+  | { type: 'FINISH_ANSWER'; playerId?: string }
+  | { type: 'ACCUSE'; targetPlayerId: string; playerId?: string }
+  | { type: 'CAST_VOTE'; voteGuilty: boolean; playerId?: string }
+  | { type: 'CANCEL_ACCUSATION'; playerId?: string }
+  | { type: 'SPY_GUESS'; locationName: string; playerId?: string }
   | { type: 'TOGGLE_PAUSE' }
   | { type: 'NUDGE_PLAYER' }
   | { type: 'TIMER_TICK'; secondsElapsed?: number }

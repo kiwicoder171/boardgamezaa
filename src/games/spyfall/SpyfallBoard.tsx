@@ -141,6 +141,70 @@ export default function SpyfallBoard({
     return () => clearInterval(timer);
   }, [state.phase, isHost, onAction]);
 
+  // Bot automation: Accusation voting
+  useEffect(() => {
+    if (!isHost || state.phase !== 'accusation') return;
+
+    const unvotedBot = players.find(
+      (p) =>
+        (p.id.startsWith('bot_') || p.id.startsWith('spy_bot_')) &&
+        p.id !== state.accusedId &&
+        state.votes[p.id] === undefined
+    );
+    if (!unvotedBot) return;
+
+    const timer = setTimeout(() => {
+      const voteGuilty = Math.random() < 0.85;
+      onAction({
+        type: 'CAST_VOTE',
+        voteGuilty,
+        playerId: unvotedBot.id,
+      });
+    }, 900);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state.phase, state.votes, state.accusedId, players, onAction]);
+
+  // Bot automation: Answer question and pass floor
+  useEffect(() => {
+    if (!isHost || state.phase !== 'questioning' || state.isPaused) return;
+
+    const answererId = state.currentAnswererId;
+    if (!answererId || !(answererId.startsWith('bot_') || answererId.startsWith('spy_bot_'))) return;
+
+    const timer = setTimeout(() => {
+      onAction({
+        type: 'FINISH_ANSWER',
+        playerId: answererId,
+      });
+    }, 2200);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state.phase, state.isPaused, state.currentAnswererId, onAction]);
+
+  // Bot automation: Ask question to another player
+  useEffect(() => {
+    if (!isHost || state.phase !== 'questioning' || state.isPaused) return;
+    if (state.currentAnswererId) return;
+
+    const askerId = state.currentAskerId;
+    if (!askerId || !(askerId.startsWith('bot_') || askerId.startsWith('spy_bot_'))) return;
+
+    const timer = setTimeout(() => {
+      const eligibleTargets = players.filter((p) => p.id !== askerId);
+      if (eligibleTargets.length > 0) {
+        const target = eligibleTargets[Math.floor(Math.random() * eligibleTargets.length)];
+        onAction({
+          type: 'SELECT_QUESTIONEE',
+          targetPlayerId: target.id,
+          playerId: askerId,
+        });
+      }
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state.phase, state.isPaused, state.currentAskerId, state.currentAnswererId, players, onAction]);
+
   // Audio tick when timer is critical
   useEffect(() => {
     if (state.phase === 'questioning' && !state.isPaused && localTimeRemaining <= 10 && localTimeRemaining > 0) {

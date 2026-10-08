@@ -295,7 +295,7 @@ export function handleSkyTeamAction(
   return s;
 }
 
-function validateSlotPlacement(
+export function validateSlotPlacement(
   s: SkyTeamState,
   isPilot: boolean,
   die: SkyTeamDie,
@@ -727,23 +727,34 @@ export function sanitizeSkyTeamState(
   const sanitized = JSON.parse(JSON.stringify(state)) as SkyTeamState;
 
   // Anti-cheat sanitization: Players only see their own unplaced rolled dice!
-  // Pilot cannot see Co-pilot's unplaced dice, and Co-pilot cannot see Pilot's unplaced dice.
+  // Pilot cannot see Co-pilot's unplaced dice, and Co-pilot cannot see Pilot's unplaced dice, UNLESS the partner is an AI bot.
+  const isPilotBot = sanitized.pilotPlayerId.startsWith('bot_');
+  const isCopilotBot = sanitized.copilotPlayerId.startsWith('bot_');
+
   if (viewingPlayerId === sanitized.pilotPlayerId) {
-    sanitized.copilotDice = sanitized.copilotDice.map((d) =>
-      d.placed ? d : { ...d, value: 0 }
-    );
+    if (!isCopilotBot) {
+      sanitized.copilotDice = sanitized.copilotDice.map((d) =>
+        d.placed ? d : { ...d, value: 0 }
+      );
+    }
   } else if (viewingPlayerId === sanitized.copilotPlayerId) {
-    sanitized.pilotDice = sanitized.pilotDice.map((d) =>
-      d.placed ? d : { ...d, value: 0 }
-    );
+    if (!isPilotBot) {
+      sanitized.pilotDice = sanitized.pilotDice.map((d) =>
+        d.placed ? d : { ...d, value: 0 }
+      );
+    }
   } else {
     // Spectator
-    sanitized.pilotDice = sanitized.pilotDice.map((d) =>
-      d.placed ? d : { ...d, value: 0 }
-    );
-    sanitized.copilotDice = sanitized.copilotDice.map((d) =>
-      d.placed ? d : { ...d, value: 0 }
-    );
+    if (!isPilotBot) {
+      sanitized.pilotDice = sanitized.pilotDice.map((d) =>
+        d.placed ? d : { ...d, value: 0 }
+      );
+    }
+    if (!isCopilotBot) {
+      sanitized.copilotDice = sanitized.copilotDice.map((d) =>
+        d.placed ? d : { ...d, value: 0 }
+      );
+    }
   }
 
   return sanitized;

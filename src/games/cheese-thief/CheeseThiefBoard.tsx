@@ -191,6 +191,58 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
     return () => clearInterval(interval);
   }, [isHost, state.phase, onAction]);
 
+  // Bot automation: Setup ready
+  useEffect(() => {
+    if (!isHost || state.phase !== 'setup') return;
+    const unreadyBot = state.playerOrder.find(
+      (id) => (id.startsWith('bot_') || id.startsWith('mouse_bot_')) && !state.players[id]?.isReady
+    );
+    if (!unreadyBot) return;
+
+    const timer = setTimeout(() => {
+      onAction({ type: 'set_ready', playerId: unreadyBot });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state.phase, state.players, state.playerOrder, onAction]);
+
+  // Bot automation: Follower selection fallback
+  useEffect(() => {
+    if (!isHost || state.phase !== 'follower_selection') return;
+    const thief = Object.values(state.players).find((p) => p.role === 'thief');
+    if (thief && (thief.id.startsWith('bot_') || thief.id.startsWith('mouse_bot_'))) {
+      const timer = setTimeout(() => {
+        const candidates = state.playerOrder.filter((id) => id !== thief.id);
+        if (candidates.length > 0) {
+          const targetId = candidates[Math.floor(Math.random() * candidates.length)];
+          onAction({ type: 'choose_follower', playerId: thief.id, targetId });
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isHost, state.phase, state.players, state.playerOrder, onAction]);
+
+  // Bot automation: Voting
+  useEffect(() => {
+    if (!isHost || state.phase !== 'voting') return;
+    const unvotedBot = state.playerOrder.find(
+      (id) =>
+        (id.startsWith('bot_') || id.startsWith('mouse_bot_')) &&
+        !state.players[id]?.votedTargetId
+    );
+    if (!unvotedBot) return;
+
+    const timer = setTimeout(() => {
+      const candidates = state.playerOrder.filter((id) => id !== unvotedBot);
+      if (candidates.length > 0) {
+        const targetId = candidates[Math.floor(Math.random() * candidates.length)];
+        onAction({ type: 'cast_vote', playerId: unvotedBot, targetId });
+      }
+    }, 800);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state.phase, state.players, state.playerOrder, onAction]);
+
   const handleStealCheese = () => {
     playSfx('swipe');
     onAction({ type: 'steal_cheese', playerId: myPlayerId });

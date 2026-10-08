@@ -139,6 +139,52 @@ export default function WerewolfBoard({
     return () => clearInterval(interval);
   }, [state.phase, isHost, onAction, currentPlayerId]);
 
+  // Bot automation: Day Voting
+  React.useEffect(() => {
+    if (!isHost || state.phase !== 'day_voting') return;
+
+    // Find any living bot who has not cast a vote yet
+    const unvotedBot = state.players.find(
+      (p) => p.isAlive && p.id.startsWith('bot_') && !state.votes[p.id]
+    );
+    if (!unvotedBot) return;
+
+    const timer = setTimeout(() => {
+      const livingCandidates = state.players.filter((p) => p.isAlive && p.id !== unvotedBot.id);
+      if (livingCandidates.length > 0) {
+        const target = livingCandidates[Math.floor(Math.random() * livingCandidates.length)];
+        onAction({
+          type: 'CAST_VOTE',
+          playerId: unvotedBot.id,
+          targetId: target.id,
+        });
+      }
+    }, 900);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state.phase, state.votes, state.players, onAction]);
+
+  // Bot automation: Hunter Revenge
+  React.useEffect(() => {
+    if (!isHost || state.phase !== 'hunter_revenge') return;
+    const hunterId = state.hunterActivePlayerId;
+    if (!hunterId || !hunterId.startsWith('bot_')) return;
+
+    const timer = setTimeout(() => {
+      const livingCandidates = state.players.filter((p) => p.isAlive && p.id !== hunterId);
+      if (livingCandidates.length > 0) {
+        const target = livingCandidates[Math.floor(Math.random() * livingCandidates.length)];
+        onAction({
+          type: 'HUNTER_REVENGE',
+          playerId: hunterId,
+          targetId: target.id,
+        });
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state.phase, state.hunterActivePlayerId, state.players, onAction]);
+
   const me = state.players.find((p) => p.id === currentPlayerId);
   const roleConfig = me ? WEREWOLF_ROLES_CATALOG[me.role] : null;
   const isNight = state.phase === 'night';

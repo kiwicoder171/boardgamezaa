@@ -123,6 +123,87 @@ export const CodenamesBoard: React.FC<CodenamesBoardProps> = ({
   const canGiveClue = isMyTeamTurn && me?.role === 'spymaster' && state.turnPhase === 'clue';
   const canGuess = isMyTeamTurn && me?.role === 'operative' && state.turnPhase === 'guess';
 
+  // Bot automation: Spymaster gives clue
+  React.useEffect(() => {
+    if (!isHost || state.winner !== null || state.turnPhase !== 'clue') return;
+
+    const currentSpymaster = Object.values(state.players).find(
+      (p) => p.team === state.currentTeam && p.role === 'spymaster'
+    );
+    if (!currentSpymaster || !currentSpymaster.id.startsWith('bot_')) return;
+
+    const timer = setTimeout(() => {
+      const unrevealedWords = state.grid.filter((c) => !c.revealed).map((c) => c.word.toUpperCase());
+      const candidateClues = [
+        'INTEL',
+        'OPERATION',
+        'CODENAME',
+        'RADAR',
+        'TACTIC',
+        'SHADOW',
+        'MISSION',
+        'BEACON',
+        'CIPHER',
+        'VECTOR',
+        'ECHO',
+        'ALLIANCE',
+        'HORIZON',
+        'SIGNAL',
+        'PHOENIX',
+        'COMPASS',
+        'ORBIT',
+        'SUMMIT',
+        'NEXUS',
+        'STEALTH',
+      ];
+      const validClue = candidateClues.find((w) => !unrevealedWords.includes(w)) || 'INTEL';
+
+      playCodenamesSfx('typewriter');
+      onAction({
+        type: 'give_clue',
+        word: validClue,
+        count: 2,
+      });
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state.winner, state.turnPhase, state.currentTeam, state.players, state.grid, onAction]);
+
+  // Bot automation: Field Operative guesses cards
+  React.useEffect(() => {
+    if (!isHost || state.winner !== null || state.turnPhase !== 'guess') return;
+
+    // Check if current team's operatives are all bots
+    const teamOperatives = Object.values(state.players).filter(
+      (p) => p.team === state.currentTeam && p.role === 'operative'
+    );
+    const hasHumanOperative = teamOperatives.some((p) => !p.id.startsWith('bot_'));
+    if (hasHumanOperative) return; // let human operative guess!
+
+    const unrevealedCards = state.grid.filter((c) => !c.revealed);
+    if (unrevealedCards.length === 0) return;
+
+    const timer = setTimeout(() => {
+      const ownTeamCards = unrevealedCards.filter((c) => c.type === state.currentTeam);
+      const chosenCard =
+        ownTeamCards.length > 0 && Math.random() < 0.75
+          ? ownTeamCards[Math.floor(Math.random() * ownTeamCards.length)]
+          : unrevealedCards[Math.floor(Math.random() * unrevealedCards.length)];
+
+      if (chosenCard.type === 'assassin') {
+        playCodenamesSfx('assassin');
+      } else if (chosenCard.type === state.currentTeam) {
+        playCodenamesSfx('reveal');
+      } else {
+        playCodenamesSfx('wrong');
+      }
+
+      onAction({ type: 'guess_card', cardId: chosenCard.id });
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state.winner, state.turnPhase, state.currentTeam, state.guessesRemaining, state.players, state.grid, onAction]);
+
   const handleGiveClue = (e: React.FormEvent) => {
     e.preventDefault();
     if (!clueWord.trim()) return;

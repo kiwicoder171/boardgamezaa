@@ -82,7 +82,8 @@ export function handleSpyfallAction(
   playerId: string,
   room: Room<SpyfallState, SpyfallSettings>
 ): { newState: SpyfallState; events?: string[]; error?: string } {
-  const player = room.players.find((p) => p.id === playerId);
+  const actorId = ('playerId' in action && action.playerId) ? action.playerId : playerId;
+  const player = room.players.find((p) => p.id === actorId);
   const playerName = player?.name || 'Someone';
 
   switch (action.type) {
@@ -131,10 +132,10 @@ export function handleSpyfallAction(
       if (state.phase !== 'questioning') {
         return { newState: state, error: 'Cannot ask questions during accusation phase.' };
       }
-      if (state.currentAskerId && state.currentAskerId !== playerId) {
+      if (state.currentAskerId && state.currentAskerId !== actorId) {
         return { newState: state, error: 'It is not your turn to ask a question.' };
       }
-      if (action.targetPlayerId === playerId) {
+      if (action.targetPlayerId === actorId) {
         return { newState: state, error: 'You cannot ask yourself a question!' };
       }
 
@@ -146,7 +147,7 @@ export function handleSpyfallAction(
       return {
         newState: {
           ...state,
-          currentAskerId: playerId,
+          currentAskerId: actorId,
           currentAnswererId: action.targetPlayerId,
           history: [
             ...state.history,
@@ -165,14 +166,14 @@ export function handleSpyfallAction(
       if (state.phase !== 'questioning') {
         return { newState: state, error: 'Invalid phase.' };
       }
-      if (state.currentAnswererId !== playerId) {
+      if (state.currentAnswererId !== actorId) {
         return { newState: state, error: 'You are not the current answerer.' };
       }
 
       return {
         newState: {
           ...state,
-          currentAskerId: playerId,
+          currentAskerId: actorId,
           currentAnswererId: null,
           history: [
             ...state.history,
@@ -191,7 +192,7 @@ export function handleSpyfallAction(
       if (state.phase !== 'questioning') {
         return { newState: state, error: 'An accusation or guess is already in progress.' };
       }
-      if (action.targetPlayerId === playerId) {
+      if (action.targetPlayerId === actorId) {
         return { newState: state, error: 'You cannot accuse yourself!' };
       }
 
@@ -205,9 +206,9 @@ export function handleSpyfallAction(
           ...state,
           phase: 'accusation',
           isPaused: true,
-          accuserId: playerId,
+          accuserId: actorId,
           accusedId: action.targetPlayerId,
-          votes: { [playerId]: true }, // Accuser votes guilty
+          votes: { [actorId]: true }, // Accuser votes guilty
           votingTimeRemaining: 45,
           history: [
             ...state.history,
@@ -226,11 +227,11 @@ export function handleSpyfallAction(
       if (state.phase !== 'accusation') {
         return { newState: state, error: 'Not in voting phase.' };
       }
-      if (playerId === state.accusedId) {
+      if (actorId === state.accusedId) {
         return { newState: state, error: 'The accused player cannot vote.' };
       }
 
-      const newVotes = { ...state.votes, [playerId]: action.voteGuilty };
+      const newVotes = { ...state.votes, [actorId]: action.voteGuilty };
       const eligibleVoters = room.players.filter((p) => p.id !== state.accusedId);
       const allVoted = eligibleVoters.every((p) => newVotes[p.id] !== undefined);
 
@@ -342,7 +343,7 @@ export function handleSpyfallAction(
     }
 
     case 'SPY_GUESS': {
-      if (!state.spies.includes(playerId)) {
+      if (!state.spies.includes(actorId)) {
         return { newState: state, error: 'Only a spy can make a location guess.' };
       }
 

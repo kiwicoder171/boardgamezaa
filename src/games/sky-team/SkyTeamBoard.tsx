@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Player } from '@/types/game';
 import { SkyTeamState, SkyTeamAction, SkyTeamDie } from './types';
+import { validateSlotPlacement } from './logic';
 import {
   Plane,
   Radio,
@@ -148,6 +149,171 @@ export default function SkyTeamBoard({
   const playSound = (fn: () => void) => {
     if (soundEnabled) fn();
   };
+
+  // Bot automation loop: runs on host's client if active player is a bot
+  useEffect(() => {
+    if (!isHost || state.status !== 'playing') return;
+    const botId = state.currentTurnPlayerId;
+    if (!botId || !botId.startsWith('bot_')) return;
+
+    const botIsPilot = botId === state.pilotPlayerId;
+    const botIsCopilot = botId === state.copilotPlayerId;
+    if (!botIsPilot && !botIsCopilot) return;
+
+    const unplacedDice = (botIsPilot ? state.pilotDice : state.copilotDice).filter(
+      (d) => !d.placed && d.value > 0
+    );
+    if (unplacedDice.length === 0) return;
+
+    const timer = setTimeout(() => {
+      const candidateSlots = botIsPilot
+        ? [
+            'axisPilot',
+            'enginesPilot',
+            'radioPilot',
+            'gear1',
+            'gear2',
+            'gear3',
+            'brakes1',
+            'brakes2',
+            'brakes3',
+            'coffee1',
+            'coffee2',
+            'coffee3',
+          ]
+        : [
+            'axisCopilot',
+            'enginesCopilot',
+            'radioCopilot1',
+            'radioCopilot2',
+            'flaps1',
+            'flaps2',
+            'flaps3',
+            'flaps4',
+            'coffee1',
+            'coffee2',
+            'coffee3',
+          ];
+
+      // Mandatory check: if remaining dice count <= remaining empty mandatory slots, must prioritize mandatory!
+      const mandatorySlots = botIsPilot
+        ? [{ id: 'axisPilot', empty: !state.slots.axisPilot }, { id: 'enginesPilot', empty: !state.slots.enginesPilot }]
+        : [{ id: 'axisCopilot', empty: !state.slots.axisCopilot }, { id: 'enginesCopilot', empty: !state.slots.enginesCopilot }];
+      const emptyMandatoryCount = mandatorySlots.filter((m) => m.empty).length;
+      const mustPlayMandatory = unplacedDice.length <= emptyMandatoryCount;
+
+      type Candidate = { die: SkyTeamDie; slotId: string; score: number };
+      const validMoves: Candidate[] = [];
+
+      for (const die of unplacedDice) {
+        for (const slotId of candidateSlots) {
+          if (mustPlayMandatory) {
+            const isMandatorySlot = mandatorySlots.some((m) => m.empty && m.id === slotId);
+            if (!isMandatorySlot) continue;
+          }
+
+          const err = validateSlotPlacement(state, botIsPilot, die, slotId);
+          if (!err) {
+            let score = 20;
+
+            // 1. Mandatory Axis Slot:
+            if (slotId === 'axisPilot' || slotId === 'axisCopilot') {
+              const partnerAxisDie = botIsPilot ? state.slots.axisCopilot : state.slots.axisPilot;
+              if (partnerAxisDie) {
+                const pilotVal = botIsPilot ? die.value : partnerAxisDie.value;
+                const copilotVal = botIsPilot ? partnerAxisDie.value : die.value;
+                const newTilt = state.tilt + (pilotVal - copilotVal);
+                if (Math.abs(newTilt) > state.maxTiltAllowed) {
+                  score -= 1000; // Catastrophic crash prevention
+                } else {
+                  score += 180 - Math.abs(newTilt) * 45; // Max score for keeping plane level (0°)
+                }
+              } else {
+                // Partner hasn't placed: mid-range (3 or 4) allows highest flexibility
+                const diffFromMid = Math.abs(die.value - 3.5);
+                score += 90 - diffFromMid * 15;
+              }
+            }
+
+            // 2. Mandatory Engines Slot:
+            if (slotId === 'enginesPilot' || slotId === 'enginesCopilot') {
+              const partnerEngineDie = botIsPilot ? state.slots.enginesCopilot : state.slots.enginesPilot;
+              if (partnerEngineDie) {
+                const totalEngine = die.value + partnerEngineDie.value;
+                let speed = 1;
+                if (totalEngine < state.blueAeroMarker) speed = 0;
+                else if (totalEngine > state.orangeAeroMarker) speed = 2;
+
+                // Check collisions ahead
+                let willCrashTraffic = false;
+                for (let step = 1; step <= speed; step++) {
+                  const checkIdx = state.currentApproachIndex + step;
+                  if (state.approachTrack[checkIdx] && state.approachTrack[checkIdx].airplanes > 0) {
+                    willCrashTraffic = true;
+                  }
+                }
+
+                if (willCrashTraffic) {
+                  score -= 1000;
+                } else {
+                  score += 110;
+                }
+              } else {
+                score += 80;
+              }
+            }
+
+            // 3. Radio - clear impending air traffic!
+            if (slotId.startsWith('radio')) {
+              const targetSpaceIndex = state.currentApproachIndex + die.value;
+              const space = state.approachTrack[targetSpaceIndex];
+              if (space && space.airplanes > 0) {
+                score += 250 + space.airplanes * 60; // Urgent tactical priority
+              } else {
+                score -= 40;
+              }
+            }
+
+            // 4. Landing Gear (Pilot)
+            if (slotId.startsWith('gear')) {
+              score += 105;
+            }
+
+            // 5. Flaps (Co-Pilot)
+            if (slotId.startsWith('flaps')) {
+              score += 105;
+            }
+
+            // 6. Brakes (Pilot)
+            if (slotId.startsWith('brakes')) {
+              score += 85;
+            }
+
+            // 7. Coffee
+            if (slotId.startsWith('coffee')) {
+              score += 35;
+            }
+
+            validMoves.push({ die, slotId, score });
+          }
+        }
+      }
+
+      if (validMoves.length > 0) {
+        validMoves.sort((a, b) => b.score - a.score);
+        const bestMove = validMoves[0];
+        playSound(() => cockpitFX.playSwitchClick());
+        onAction({
+          type: 'PLACE_DIE',
+          playerId: botId,
+          dieId: bestMove.die.id,
+          slotId: bestMove.slotId,
+        });
+      }
+    }, 1100);
+
+    return () => clearTimeout(timer);
+  }, [isHost, state, onAction, soundEnabled]);
 
   // Die click handler
   const handleSelectDie = (die: SkyTeamDie) => {

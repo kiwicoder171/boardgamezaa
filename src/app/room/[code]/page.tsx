@@ -3,7 +3,7 @@
 import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
-import { Room } from '@/types/game';
+import { Room, Player } from '@/types/game';
 import { getAllGames } from '@/games/registry';
 import { getUserProfile, UserProfile } from '@/lib/storage';
 import RoomLobby from '@/components/RoomLobby';
@@ -302,36 +302,43 @@ export default function RoomPage({ params }: RoomPageProps) {
     }
   };
 
-  // Helper: Add simulated bot player for quick solo testing
+  // Helper: Add simulated bot player for quick solo testing (instant 0ms response)
   const handleAddBotPlayer = () => {
+    soundFX.playClick();
     const currentCount = room?.players.length || 1;
-    const botAvatars = ['🤖', '🦊', '🐯', '🐼', '🧙‍♂️'];
-    const botNames = ['PixelBot', 'Echo', 'Nexus', 'Cypher', 'Gizmo'];
+    const botAvatars = ['🤖', '🦊', '🐯', '🐼', '🧙‍♂️', '🦁', '🦉', '👾'];
+    const botNames = ['PixelBot', 'Echo', 'Nexus', 'Cypher', 'Gizmo', 'Nova', 'Atlas', 'Vortex'];
     const botId = `bot_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const botName = botNames[(currentCount - 1) % botNames.length];
     const botAvatar = botAvatars[(currentCount - 1) % botAvatars.length];
 
-    if (socket && socket.connected) {
-      const botSocket = io();
-      botSocket.on('connect', () => {
-        botSocket.emit('join_room', {
-          code: roomCode,
-          player: {
-            id: botId,
-            name: botName,
-            avatar: botAvatar,
-          },
-        });
-      });
-    } else {
-      postRoomAction('join', {
-        id: botId,
-        playerId: botId,
-        name: botName,
-        avatar: botAvatar,
-        isReady: true,
-      });
-    }
+    const optimisticBot: Player = {
+      id: botId,
+      socketId: '',
+      name: botName,
+      avatar: botAvatar,
+      isHost: false,
+      isReady: true,
+      connected: true,
+    };
+
+    // Instant 0ms optimistic UI update
+    setRoom((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        players: [...prev.players, optimisticBot],
+      };
+    });
+
+    // Notify backend
+    postRoomAction('join', {
+      id: botId,
+      playerId: botId,
+      name: botName,
+      avatar: botAvatar,
+      isReady: true,
+    });
   };
 
   const allGames = getAllGames();

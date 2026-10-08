@@ -82,7 +82,7 @@ export function initWerewolfGame(
   const presentRoles = new Set(werewolfPlayers.map((p) => p.role));
   const activeNightRoles = NIGHT_ROLES_ORDER.filter((r) => presentRoles.has(r));
 
-  return {
+  const initialState: WerewolfState = {
     dayNumber: 1,
     phase: 'night',
     activeNightRole: activeNightRoles[0] || 'werewolf',
@@ -121,6 +121,8 @@ export function initWerewolfGame(
       },
     ],
   };
+
+  return processActiveNightRoleIfBots(initialState);
 }
 
 export function handleWerewolfAction(
@@ -314,6 +316,120 @@ export function handleWerewolfAction(
   return s;
 }
 
+function processActiveNightRoleIfBots(s: WerewolfState): WerewolfState {
+  if (s.phase !== 'night' || !s.activeNightRole) return s;
+
+  const livingRolePlayers = s.players.filter(
+    (p) =>
+      p.isAlive &&
+      (p.role === s.activeNightRole ||
+        (s.activeNightRole === 'werewolf' && p.role === 'wolf_pup'))
+  );
+
+  // If no one is alive with this role (e.g. died), advance
+  if (livingRolePlayers.length === 0) {
+    return advanceNightStep(s);
+  }
+
+  // If ANY living player with this role is a human, wait for human input!
+  const hasHuman = livingRolePlayers.some((p) => !p.id.startsWith('bot_'));
+  if (hasHuman) {
+    return s;
+  }
+
+  // ALL players of this role are bots! Execute bot action automatically:
+  const botActor = livingRolePlayers[0];
+
+  if (s.activeNightRole === 'werewolf') {
+    const candidates = s.players.filter(
+      (p) => p.isAlive && p.role !== 'werewolf' && p.role !== 'wolf_pup'
+    );
+    if (candidates.length > 0) {
+      const victim = candidates[Math.floor(Math.random() * candidates.length)];
+      s.werewolfKillTarget = victim.id;
+      s.history.push({
+        id: `wolf-${Date.now()}`,
+        text: `🐺 The Werewolf pack selected ${victim.name} as tonight's victim.`,
+        type: 'night',
+        timestamp: Date.now(),
+      });
+    }
+    return advanceNightStep(s);
+  }
+
+  if (s.activeNightRole === 'seer') {
+    const candidates = s.players.filter((p) => p.isAlive && p.id !== botActor.id);
+    if (candidates.length > 0) {
+      const target = candidates[Math.floor(Math.random() * candidates.length)];
+      const isEvil = target.role === 'werewolf' || target.role === 'wolf_pup';
+      s.seerInspected[botActor.id] = {
+        targetId: target.id,
+        role: target.role,
+        isEvil,
+      };
+      s.history.push({
+        id: `seer-${Date.now()}`,
+        text: `🔮 The Seer gazed into the crystal ball and inspected ${target.name}.`,
+        type: 'seer',
+        timestamp: Date.now(),
+      });
+    }
+    return advanceNightStep(s);
+  }
+
+  if (s.activeNightRole === 'bodyguard') {
+    const candidates = s.players.filter(
+      (p) => p.isAlive && p.id !== s.bodyguardLastProtected
+    );
+    if (candidates.length > 0) {
+      const target = candidates[Math.floor(Math.random() * candidates.length)];
+      s.bodyguardProtectTarget = target.id;
+      s.bodyguardLastProtected = target.id;
+      s.history.push({
+        id: `guard-${Date.now()}`,
+        text: `🛡️ The Bodyguard stood sentinel over a villager's door tonight.`,
+        type: 'night',
+        timestamp: Date.now(),
+      });
+    }
+    return advanceNightStep(s);
+  }
+
+  if (s.activeNightRole === 'witch') {
+    if (!s.witchPotionsUsed.heal && s.werewolfKillTarget && Math.random() < 0.6) {
+      s.witchHealTarget = s.werewolfKillTarget;
+      s.witchPotionsUsed.heal = true;
+    }
+    s.history.push({
+      id: `witch-${Date.now()}`,
+      text: `🧙‍♀️ The Witch brewed mysterious potions under the midnight sky.`,
+      type: 'night',
+      timestamp: Date.now(),
+    });
+    return advanceNightStep(s);
+  }
+
+  if (s.activeNightRole === 'cupid') {
+    const living = s.players.filter((p) => p.isAlive);
+    if (living.length >= 2) {
+      const [l1, l2] = living.slice(0, 2);
+      s.cupidLovers = [l1.id, l2.id];
+      l1.isLover = true;
+      l2.isLover = true;
+      s.history.push({
+        id: `cupid-${Date.now()}`,
+        text: `💘 Cupid struck two villagers with love arrows!`,
+        type: 'night',
+        timestamp: Date.now(),
+      });
+    }
+    return advanceNightStep(s);
+  }
+
+  // Any other role without custom logic
+  return advanceNightStep(s);
+}
+
 function advanceNightStep(s: WerewolfState): WerewolfState {
   const livingRoles = new Set(s.players.filter((p) => p.isAlive).map((p) => p.role));
   const activeNightRoles = NIGHT_ROLES_ORDER.filter((r) => livingRoles.has(r));
@@ -328,7 +444,7 @@ function advanceNightStep(s: WerewolfState): WerewolfState {
       type: 'night',
       timestamp: Date.now(),
     });
-    return s;
+    return processActiveNightRoleIfBots(s);
   }
 
   // All night actions complete -> resolve night!
@@ -538,6 +654,8 @@ function startNextNight(s: WerewolfState) {
       timestamp: Date.now(),
     });
   }
+
+  processActiveNightRoleIfBots(s);
 }
 
 function checkLoversHeartbreak(s: WerewolfState, deadId: string) {

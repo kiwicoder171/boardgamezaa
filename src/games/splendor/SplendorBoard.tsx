@@ -201,6 +201,110 @@ export const SplendorBoard: React.FC<SplendorBoardProps> = ({
   const myBonuses = me ? getPlayerGemBonuses(me) : { diamond: 0, sapphire: 0, emerald: 0, ruby: 0, onyx: 0 };
   const myTotalTokens = me ? getTotalTokens(me.tokens) : 0;
 
+  // Automated Bot AI Player for Splendor
+  React.useEffect(() => {
+    if (state.phase !== 'action' && state.phase !== 'discard_tokens') return;
+    if (!isHost) return;
+
+    const activeBotId =
+      state.phase === 'discard_tokens'
+        ? state.discardingPlayerId
+        : state.currentTurnPlayerId;
+
+    if (!activeBotId || !activeBotId.startsWith('bot_')) return;
+
+    const timer = setTimeout(() => {
+      const bot = state.players[activeBotId];
+      if (!bot) return;
+
+      // 1. Handle Token Discard Phase for Bot (if > 10 tokens)
+      if (state.phase === 'discard_tokens') {
+        const total = getTotalTokens(bot.tokens);
+        if (total > 10) {
+          let neededToDiscard = total - 10;
+          const toDiscard: Partial<Record<TokenType, number>> = {};
+          const colorsByCount = (['diamond', 'sapphire', 'emerald', 'ruby', 'onyx'] as GemColor[])
+            .sort((a, b) => (bot.tokens[b] || 0) - (bot.tokens[a] || 0));
+
+          for (const c of colorsByCount) {
+            const avail = bot.tokens[c] || 0;
+            if (avail > 0 && neededToDiscard > 0) {
+              const discardAmount = Math.min(avail, neededToDiscard);
+              toDiscard[c] = discardAmount;
+              neededToDiscard -= discardAmount;
+            }
+          }
+          if (neededToDiscard > 0 && (bot.tokens.gold || 0) > 0) {
+            toDiscard.gold = Math.min(bot.tokens.gold, neededToDiscard);
+          }
+          onAction({ type: 'discard_tokens', tokens: toDiscard });
+        }
+        return;
+      }
+
+      // 2. Action Phase: Check if bot can buy a card (Market or Reserved)
+      const availableCards: DevCard[] = [
+        ...bot.reservedCards,
+        ...((state.market[3]?.filter(Boolean) || []) as DevCard[]),
+        ...((state.market[2]?.filter(Boolean) || []) as DevCard[]),
+        ...((state.market[1]?.filter(Boolean) || []) as DevCard[]),
+      ];
+
+      const affordableCards = availableCards.filter((c) => canAffordCard(bot, c));
+
+      if (affordableCards.length > 0) {
+        // Pick card with highest prestige, or highest tier
+        const bestCard = affordableCards.sort((a, b) => {
+          if (b.prestige !== a.prestige) return b.prestige - a.prestige;
+          return b.tier - a.tier;
+        })[0];
+
+        onAction({ type: 'buy_card', cardId: bestCard.id });
+        return;
+      }
+
+      // 3. Can Bot Reserve a high-prestige Tier 3 card?
+      if (bot.reservedCards.length < 3 && (state.bank.gold || 0) > 0) {
+        const tier3Cards = (state.market[3]?.filter(Boolean) || []) as DevCard[];
+        const highValue = tier3Cards.find((c) => c.prestige >= 4);
+        if (highValue && Math.random() < 0.3) {
+          onAction({ type: 'reserve_card', cardId: highValue.id });
+          return;
+        }
+      }
+
+      // 4. Take Tokens: Try to take 3 different gem colors or 2 of same color
+      const availableGems = (['diamond', 'sapphire', 'emerald', 'ruby', 'onyx'] as GemColor[])
+        .filter((c) => (state.bank[c] || 0) > 0);
+
+      const doubleColor = availableGems.find((c) => (state.bank[c] || 0) >= 4);
+      if (doubleColor && (availableGems.length < 3 || Math.random() < 0.35)) {
+        onAction({ type: 'take_2_tokens', color: doubleColor });
+        return;
+      }
+
+      if (availableGems.length >= 3) {
+        const chosen = availableGems.slice(0, 3);
+        onAction({ type: 'take_3_tokens', colors: [chosen[0], chosen[1], chosen[2]] });
+        return;
+      }
+
+      if (availableGems.length > 0) {
+        onAction({ type: 'take_3_tokens', colors: availableGems as any });
+        return;
+      }
+
+      // Fallback: reserve any card
+      const anyCard = availableCards[0];
+      if (anyCard && bot.reservedCards.length < 3) {
+        onAction({ type: 'reserve_card', cardId: anyCard.id });
+      }
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [state.phase, state.currentTurnPlayerId, state.discardingPlayerId, isHost, state.players, state.market, state.bank, onAction]);
+
+
   // Handle Token Selection
   const handleSelectToken = (color: GemColor) => {
     if (!isMyTurn || state.phase !== 'action') return;

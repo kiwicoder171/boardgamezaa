@@ -56,7 +56,7 @@ export function initCheeseThiefState(
       peekedTargetId: null,
       peekedTargetDie: null,
       votedTargetId: null,
-      isReady: false,
+      isReady: p.id.startsWith('bot_') || p.id.startsWith('mouse_bot_'),
     };
     playerOrder.push(p.id);
   });
@@ -389,10 +389,85 @@ export function cheeseThiefReducer(
   }
 }
 
+function processBotNightActions(state: CheeseThiefState): CheeseThiefState {
+  let s: CheeseThiefState = { ...state, players: { ...state.players } };
+  const awakeBots = s.playerOrder
+    .map((id) => s.players[id])
+    .filter(
+      (p) =>
+        (p.id.startsWith('bot_') || p.id.startsWith('mouse_bot_')) &&
+        p.dieValue === s.currentHour
+    );
+
+  if (awakeBots.length === 0) return s;
+
+  // 1. If thief bot is awake and cheese not yet stolen
+  const thiefBot = awakeBots.find((p) => p.role === 'thief');
+  if (thiefBot && !s.cheeseStolen) {
+    const allAwakeIds = s.playerOrder.filter(
+      (id) => s.players[id].dieValue === s.currentHour
+    );
+    const witnessSleepyheads = allAwakeIds.filter(
+      (id) => s.players[id].role === 'sleepyhead'
+    );
+    let followerId = s.followerId;
+    if (!followerId && witnessSleepyheads.length === 1) {
+      followerId = witnessSleepyheads[0];
+    }
+    const updatedPlayers = { ...s.players };
+    if (followerId && updatedPlayers[followerId]) {
+      updatedPlayers[followerId] = {
+        ...updatedPlayers[followerId],
+        isFollower: true,
+      };
+    }
+    s = {
+      ...s,
+      cheeseStolen: true,
+      stolenAtHour: s.currentHour,
+      stolenBy: thiefBot.id,
+      followerId,
+      players: updatedPlayers,
+      logs: [
+        ...s.logs,
+        {
+          id: `log_${Date.now()}`,
+          hour: s.currentHour,
+          text: `At Hour ${s.currentHour}:00, the Cheese was secretly swiped from the center of the table!`,
+          timestamp: Date.now(),
+        },
+      ],
+    };
+  }
+
+  // 2. If sleepyhead bot is alone awake, peek at a random other player
+  const allAwakeCount = s.playerOrder.filter(
+    (id) => s.players[id].dieValue === s.currentHour
+  ).length;
+  if (allAwakeCount === 1) {
+    const aloneBot = awakeBots[0];
+    if (aloneBot && !aloneBot.hasPeeked && aloneBot.role !== 'thief') {
+      const candidates = s.playerOrder.filter((id) => id !== aloneBot.id);
+      if (candidates.length > 0) {
+        const targetId = candidates[Math.floor(Math.random() * candidates.length)];
+        const target = s.players[targetId];
+        s.players[aloneBot.id] = {
+          ...aloneBot,
+          hasPeeked: true,
+          peekedTargetId: targetId,
+          peekedTargetDie: target ? target.dieValue : null,
+        };
+      }
+    }
+  }
+
+  return s;
+}
+
 function startNightTransition(state: CheeseThiefState): CheeseThiefState {
-  return {
+  const next = {
     ...state,
-    phase: 'night',
+    phase: 'night' as const,
     currentHour: 1,
     hourSecondsRemaining: state.hourDurationSeconds,
     logs: [
@@ -405,12 +480,13 @@ function startNightTransition(state: CheeseThiefState): CheeseThiefState {
       },
     ],
   };
+  return processBotNightActions(next);
 }
 
 function advanceNightHour(state: CheeseThiefState): CheeseThiefState {
   if (state.currentHour < 6) {
     const nextHour = state.currentHour + 1;
-    return {
+    const next = {
       ...state,
       currentHour: nextHour,
       hourSecondsRemaining: state.hourDurationSeconds,
@@ -424,12 +500,43 @@ function advanceNightHour(state: CheeseThiefState): CheeseThiefState {
         },
       ],
     };
+    return processBotNightActions(next);
   }
 
   // Finished hour 6. Check follower status
   const thief = Object.values(state.players).find((p) => p.role === 'thief');
   if (thief && !state.followerId) {
-    // If thief has not chosen a follower yet, give 10 seconds follower selection window
+    // If thief is a bot, auto-select a follower immediately
+    if (thief.id.startsWith('bot_') || thief.id.startsWith('mouse_bot_')) {
+      const eligibleTargets = state.playerOrder.filter((id) => id !== thief.id);
+      const chosenFollowerId =
+        eligibleTargets[Math.floor(Math.random() * eligibleTargets.length)];
+      const updatedPlayers = { ...state.players };
+      if (chosenFollowerId && updatedPlayers[chosenFollowerId]) {
+        updatedPlayers[chosenFollowerId] = {
+          ...updatedPlayers[chosenFollowerId],
+          isFollower: true,
+        };
+      }
+      return {
+        ...state,
+        phase: 'day',
+        currentHour: 7,
+        followerId: chosenFollowerId,
+        players: updatedPlayers,
+        daySecondsRemaining: state.dayDiscussionSeconds,
+        logs: [
+          ...state.logs,
+          {
+            id: `log_${Date.now()}`,
+            text: 'Dawn breaks over the mouse tavern! All mice wake up. Look at the cheese plate!',
+            timestamp: Date.now(),
+          },
+        ],
+      };
+    }
+
+    // If human thief, give 10 seconds follower selection window
     return {
       ...state,
       phase: 'follower_selection',
