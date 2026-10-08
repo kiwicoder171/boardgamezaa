@@ -17,8 +17,16 @@ export interface DbRoom {
 let cachedClient: SupabaseClient | null = null;
 
 export function getSupabaseClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    (typeof window === 'undefined' ? process.env.SUPABASE_URL : undefined);
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    (typeof window === 'undefined'
+      ? process.env.SUPABASE_ANON_KEY ||
+        process.env.SUPABASE_KEY ||
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      : undefined);
 
   if (!url || !anonKey) {
     return null;
@@ -36,9 +44,17 @@ export function getSupabaseClient(): SupabaseClient | null {
 }
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    (typeof window === 'undefined' ? process.env.SUPABASE_URL : undefined);
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    (typeof window === 'undefined'
+      ? process.env.SUPABASE_ANON_KEY ||
+        process.env.SUPABASE_KEY ||
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      : undefined);
+  return Boolean(url && anonKey);
 }
 
 export function roomToDb(room: Room): DbRoom {
