@@ -149,10 +149,11 @@ export default function RoomPage({ params }: RoomPageProps) {
   const postRoomAction = async (type: string, payload: any = {}) => {
     try {
       const u = profile || getUserProfile();
+      const actionPlayerId = payload.playerId || payload.id || u.id;
       const res = await fetch(`/api/room/${roomCode}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, playerId: u.id, ...payload }),
+        body: JSON.stringify({ type, playerId: actionPlayerId, ...payload }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -224,10 +225,12 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   // Helper: Add simulated bot player for quick solo testing
   const handleAddBotPlayer = () => {
-    const botIndex = (room?.players.length || 1);
+    const currentCount = room?.players.length || 1;
     const botAvatars = ['🤖', '🦊', '🐯', '🐼', '🧙‍♂️'];
     const botNames = ['PixelBot', 'Echo', 'Nexus', 'Cypher', 'Gizmo'];
     const botId = `bot_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const botName = botNames[(currentCount - 1) % botNames.length];
+    const botAvatar = botAvatars[(currentCount - 1) % botAvatars.length];
 
     if (socket && socket.connected) {
       const botSocket = io();
@@ -236,16 +239,18 @@ export default function RoomPage({ params }: RoomPageProps) {
           code: roomCode,
           player: {
             id: botId,
-            name: botNames[botIndex % botNames.length],
-            avatar: botAvatars[botIndex % botAvatars.length],
+            name: botName,
+            avatar: botAvatar,
           },
         });
       });
     } else {
       postRoomAction('join', {
         id: botId,
-        name: botNames[botIndex % botNames.length],
-        avatar: botAvatars[botIndex % botAvatars.length],
+        playerId: botId,
+        name: botName,
+        avatar: botAvatar,
+        isReady: true,
       });
     }
   };

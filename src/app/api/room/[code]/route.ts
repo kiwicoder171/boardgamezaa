@@ -63,13 +63,14 @@ export async function POST(req: Request, context: RouteContext) {
 
     switch (type) {
       case 'join': {
+        const joinPlayerId = payload.id || playerId;
         const res = await roomManager.joinRoomAsync(normalizedCode, {
-          id: playerId,
+          id: joinPlayerId,
           socketId: '',
           name: payload.name || 'Player',
           avatar: payload.avatar || '🎲',
           isHost: false,
-          isReady: false,
+          isReady: Boolean(payload.isReady),
           connected: true,
         });
         if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
