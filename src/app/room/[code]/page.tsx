@@ -33,7 +33,8 @@ export default function RoomPage({ params }: RoomPageProps) {
     const user = getUserProfile();
     setProfile(user);
 
-    const s = io();
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || undefined;
+    const s = io(socketUrl);
     setSocket(s);
 
     s.on('connect', () => {
