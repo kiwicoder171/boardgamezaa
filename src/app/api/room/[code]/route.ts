@@ -15,7 +15,7 @@ export async function GET(req: Request, context: RouteContext) {
     const name = searchParams.get('name') || 'Player';
     const avatar = searchParams.get('avatar') || '🎲';
 
-    let room = roomManager.getRoom(normalizedCode);
+    let room = await roomManager.getRoomAsync(normalizedCode);
     if (!room) {
       return NextResponse.json({ error: 'Room not found. Check the code and try again.' }, { status: 404 });
     }
@@ -24,7 +24,7 @@ export async function GET(req: Request, context: RouteContext) {
     if (playerId) {
       const existing = room.players.find((p) => p.id === playerId);
       if (!existing && room.status === 'lobby') {
-        const joinRes = roomManager.joinRoom(normalizedCode, {
+        const joinRes = await roomManager.joinRoomAsync(normalizedCode, {
           id: playerId,
           socketId: '',
           name,
@@ -54,7 +54,7 @@ export async function POST(req: Request, context: RouteContext) {
     const body = await req.json();
     const { type, playerId, ...payload } = body;
 
-    const room = roomManager.getRoom(normalizedCode);
+    const room = await roomManager.getRoomAsync(normalizedCode);
     if (!room) {
       return NextResponse.json({ error: 'Room not found' }, { status: 404 });
     }
@@ -63,7 +63,7 @@ export async function POST(req: Request, context: RouteContext) {
 
     switch (type) {
       case 'join': {
-        const res = roomManager.joinRoom(normalizedCode, {
+        const res = await roomManager.joinRoomAsync(normalizedCode, {
           id: playerId,
           socketId: '',
           name: payload.name || 'Player',
@@ -78,48 +78,49 @@ export async function POST(req: Request, context: RouteContext) {
       }
 
       case 'set_ready': {
-        const res = roomManager.setPlayerReady(normalizedCode, playerId, Boolean(payload.isReady));
+        const res = await roomManager.setPlayerReadyAsync(normalizedCode, playerId, Boolean(payload.isReady));
         if (res) updatedRoom = res;
         break;
       }
 
       case 'select_game': {
-        const res = roomManager.selectGame(normalizedCode, playerId, payload.gameId);
+        const res = await roomManager.selectGameAsync(normalizedCode, playerId, payload.gameId);
         if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
         if (res.room) updatedRoom = res.room;
         break;
       }
 
       case 'update_settings': {
-        const res = roomManager.updateGameSettings(normalizedCode, playerId, payload.settings);
+        const res = await roomManager.updateGameSettingsAsync(normalizedCode, playerId, payload.settings);
         if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
         if (res.room) updatedRoom = res.room;
         break;
       }
 
       case 'start_game': {
-        const res = roomManager.startGame(normalizedCode, playerId);
+        const res = await roomManager.startGameAsync(normalizedCode, playerId);
         if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
         if (res.room) updatedRoom = res.room;
         break;
       }
 
       case 'return_to_lobby': {
-        const res = roomManager.returnToLobby(normalizedCode, playerId);
+        const res = await roomManager.returnToLobbyAsync(normalizedCode, playerId);
         if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
         if (res.room) updatedRoom = res.room;
         break;
       }
 
       case 'game_action': {
-        const res = roomManager.dispatchAction(normalizedCode, playerId, payload.action);
+        const res = await roomManager.dispatchActionAsync(normalizedCode, playerId, payload.action);
         if (res.error) return NextResponse.json({ error: res.error }, { status: 400 });
         if (res.room) updatedRoom = res.room;
         break;
       }
 
       case 'send_chat': {
-        roomManager.addChatMessage(normalizedCode, playerId, payload.text);
+        const res = await roomManager.addChatMessageAsync(normalizedCode, playerId, payload.text);
+        if (res.room) updatedRoom = res.room;
         break;
       }
 

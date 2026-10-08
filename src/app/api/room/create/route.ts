@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Player data required' }, { status: 400 });
     }
 
-    const room = roomManager.createRoom(
+    const room = await roomManager.createRoomAsync(
       {
         id: player.id,
         socketId: '',

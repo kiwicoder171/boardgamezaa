@@ -1,6 +1,7 @@
 import { GAME_REGISTRY, getGame } from '@/games/registry';
 import { ChatMessage, Player, Room } from '@/types/game';
 import { Server as SocketIOServer } from 'socket.io';
+import { getSupabaseClient, roomToDb, dbToRoom } from '@/lib/supabase';
 
 class RoomManager {
   private rooms: Map<string, Room> = new Map();
@@ -32,6 +33,45 @@ class RoomManager {
     return this.rooms.get(code.toUpperCase());
   }
 
+  public async getRoomAsync(code: string): Promise<Room | undefined> {
+    const normalized = code.toUpperCase();
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('rooms')
+          .select('*')
+          .eq('code', normalized)
+          .maybeSingle();
+
+        if (data && !error) {
+          const room = dbToRoom(data);
+          this.rooms.set(normalized, room);
+          return room;
+        }
+      } catch (err) {
+        console.warn('Supabase getRoom error, falling back to local memory:', err);
+      }
+    }
+    return this.rooms.get(normalized);
+  }
+
+  public async saveRoomAsync(room: Room): Promise<void> {
+    this.rooms.set(room.code, room);
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const dbPayload = roomToDb(room);
+        const { error } = await supabase.from('rooms').upsert(dbPayload);
+        if (error) {
+          console.warn('Supabase upsert error:', error.message);
+        }
+      } catch (err) {
+        console.warn('Supabase saveRoom error:', err);
+      }
+    }
+  }
+
   public createRoom(host: Player, gameId = 'spyfall'): Room {
     const code = this.generateRoomCode();
     const game = getGame(gameId) || getGame('spyfall')!;
@@ -59,6 +99,12 @@ class RoomManager {
     };
 
     this.rooms.set(code, room);
+    return room;
+  }
+
+  public async createRoomAsync(host: Player, gameId = 'spyfall'): Promise<Room> {
+    const room = this.createRoom(host, gameId);
+    await this.saveRoomAsync(room);
     return room;
   }
 
@@ -98,6 +144,19 @@ class RoomManager {
     return { room };
   }
 
+  public async joinRoomAsync(code: string, player: Player): Promise<{ room?: Room; error?: string }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) {
+      return { error: 'Room not found. Check the code and try again.' };
+    }
+
+    const res = this.joinRoom(code, player);
+    if (res.room) {
+      await this.saveRoomAsync(res.room);
+    }
+    return res;
+  }
+
   public leaveRoom(code: string, playerId: string): { room?: Room; deleted?: boolean } {
     const room = this.getRoom(code);
     if (!room) return {};
@@ -109,12 +168,10 @@ class RoomManager {
     room.players.splice(playerIndex, 1);
 
     if (room.players.length === 0) {
-      // Room empty, delete
       this.rooms.delete(code);
       return { deleted: true };
     }
 
-    // If host left, pass host to next player
     if (leavingPlayer.isHost) {
       room.players[0].isHost = true;
       room.hostId = room.players[0].id;
@@ -123,7 +180,6 @@ class RoomManager {
 
     this.addSystemMessage(room, `${leavingPlayer.name} left the room.`);
 
-    // If in game and not enough players, return to lobby
     const game = getGame(room.selectedGameId);
     if (room.status === 'playing' && game && room.players.length < game.minPlayers) {
       room.status = 'lobby';
@@ -138,6 +194,22 @@ class RoomManager {
     return { room };
   }
 
+  public async leaveRoomAsync(code: string, playerId: string): Promise<{ room?: Room; deleted?: boolean }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return {};
+
+    const res = this.leaveRoom(code, playerId);
+    if (res.deleted) {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase.from('rooms').delete().eq('code', code.toUpperCase());
+      }
+    } else if (res.room) {
+      await this.saveRoomAsync(res.room);
+    }
+    return res;
+  }
+
   public setPlayerReady(code: string, playerId: string, isReady: boolean): Room | undefined {
     const room = this.getRoom(code);
     if (!room) return undefined;
@@ -147,6 +219,17 @@ class RoomManager {
       player.isReady = isReady;
     }
     return room;
+  }
+
+  public async setPlayerReadyAsync(code: string, playerId: string, isReady: boolean): Promise<Room | undefined> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return undefined;
+
+    const updated = this.setPlayerReady(code, playerId, isReady);
+    if (updated) {
+      await this.saveRoomAsync(updated);
+    }
+    return updated;
   }
 
   public selectGame(code: string, hostId: string, gameId: string): { room?: Room; error?: string } {
@@ -163,6 +246,17 @@ class RoomManager {
     return { room };
   }
 
+  public async selectGameAsync(code: string, hostId: string, gameId: string): Promise<{ room?: Room; error?: string }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return { error: 'Room not found' };
+
+    const res = this.selectGame(code, hostId, gameId);
+    if (res.room) {
+      await this.saveRoomAsync(res.room);
+    }
+    return res;
+  }
+
   public updateGameSettings(
     code: string,
     hostId: string,
@@ -174,6 +268,21 @@ class RoomManager {
 
     room.gameSettings = { ...room.gameSettings, ...settings };
     return { room };
+  }
+
+  public async updateGameSettingsAsync(
+    code: string,
+    hostId: string,
+    settings: any
+  ): Promise<{ room?: Room; error?: string }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return { error: 'Room not found' };
+
+    const res = this.updateGameSettings(code, hostId, settings);
+    if (res.room) {
+      await this.saveRoomAsync(res.room);
+    }
+    return res;
   }
 
   public startGame(code: string, hostId: string): { room?: Room; error?: string } {
@@ -200,6 +309,17 @@ class RoomManager {
     }
   }
 
+  public async startGameAsync(code: string, hostId: string): Promise<{ room?: Room; error?: string }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return { error: 'Room not found' };
+
+    const res = this.startGame(code, hostId);
+    if (res.room) {
+      await this.saveRoomAsync(res.room);
+    }
+    return res;
+  }
+
   public returnToLobby(code: string, hostId: string): { room?: Room; error?: string } {
     const room = this.getRoom(code);
     if (!room) return { error: 'Room not found' };
@@ -209,6 +329,17 @@ class RoomManager {
     room.gameState = null;
     this.addSystemMessage(room, `Returned to lobby.`);
     return { room };
+  }
+
+  public async returnToLobbyAsync(code: string, hostId: string): Promise<{ room?: Room; error?: string }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return { error: 'Room not found' };
+
+    const res = this.returnToLobby(code, hostId);
+    if (res.room) {
+      await this.saveRoomAsync(res.room);
+    }
+    return res;
   }
 
   public dispatchAction(
@@ -246,6 +377,21 @@ class RoomManager {
     return { room };
   }
 
+  public async dispatchActionAsync(
+    code: string,
+    playerId: string,
+    action: any
+  ): Promise<{ room?: Room; error?: string }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return { error: 'Room not found' };
+
+    const res = this.dispatchAction(code, playerId, action);
+    if (res.room) {
+      await this.saveRoomAsync(res.room);
+    }
+    return res;
+  }
+
   public addChatMessage(code: string, senderId: string, text: string): ChatMessage | null {
     const room = this.getRoom(code);
     if (!room) return null;
@@ -266,6 +412,21 @@ class RoomManager {
       room.chatMessages.shift();
     }
     return msg;
+  }
+
+  public async addChatMessageAsync(
+    code: string,
+    senderId: string,
+    text: string
+  ): Promise<{ room?: Room; message?: ChatMessage }> {
+    const room = await this.getRoomAsync(code);
+    if (!room) return {};
+
+    const msg = this.addChatMessage(code, senderId, text);
+    if (msg) {
+      await this.saveRoomAsync(room);
+    }
+    return { room, message: msg || undefined };
   }
 
   private addSystemMessage(room: Room, text: string) {
@@ -356,4 +517,3 @@ class RoomManager {
 const globalForRoom = globalThis as unknown as { roomManager?: RoomManager };
 export const roomManager = globalForRoom.roomManager ?? new RoomManager();
 globalForRoom.roomManager = roomManager;
-

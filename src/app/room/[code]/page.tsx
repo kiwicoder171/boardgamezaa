@@ -12,6 +12,7 @@ import RoomChat from '@/components/RoomChat';
 import { soundFX } from '@/lib/sounds';
 import { AlertCircle, ArrowLeft, Loader2, Settings } from 'lucide-react';
 import { GameSettingsModal } from '@/components/ui/GameSettingsModal';
+import { getSupabaseClient } from '@/lib/supabase';
 
 interface RoomPageProps {
   params: Promise<{ code: string }>;
@@ -105,7 +106,32 @@ export default function RoomPage({ params }: RoomPageProps) {
       // Socket creation fallback
     }
 
-    // 3. Fallback polling loop (1.5s interval ensures sync on serverless Vercel)
+    // 3. Supabase Realtime Channel (Instant updates for serverless Vercel)
+    const supabase = getSupabaseClient();
+    let channel: any = null;
+    if (supabase) {
+      try {
+        channel = supabase
+          .channel(`room:${roomCode}`)
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'rooms',
+              filter: `code=eq.${roomCode}`,
+            },
+            () => {
+              fetchRoomState(user);
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.warn('Supabase Realtime subscription error:', err);
+      }
+    }
+
+    // 4. Fallback polling loop (1.5s interval ensures sync on serverless Vercel)
     const pollInterval = setInterval(() => {
       fetchRoomState(user);
     }, 1500);
@@ -113,6 +139,9 @@ export default function RoomPage({ params }: RoomPageProps) {
     return () => {
       clearInterval(pollInterval);
       if (s) s.disconnect();
+      if (supabase && channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [roomCode]);
 
