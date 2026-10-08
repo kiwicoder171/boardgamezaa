@@ -69,44 +69,50 @@ export default function RoomPage({ params }: RoomPageProps) {
     // 1. Immediately fetch room state over HTTP (sub-20ms)
     fetchRoomState(user);
 
-    // 2. Setup Socket.IO for real-time push
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || undefined;
+    // 2. Setup Socket.IO for real-time push (Only on custom server or localhost; Vercel uses Supabase Realtime)
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1');
+
     let s: Socket | null = null;
-    try {
-      s = io(socketUrl, {
-        reconnectionAttempts: 5,
-        timeout: 4000,
-        transports: ['websocket', 'polling'],
-      });
-      setSocket(s);
-
-      s.on('connect', () => {
-        s?.emit('join_room', {
-          code: roomCode,
-          player: user,
+    if (socketUrl || isLocalhost) {
+      try {
+        s = io(socketUrl || undefined, {
+          reconnectionAttempts: 2,
+          timeout: 2500,
+          transports: ['websocket', 'polling'],
         });
-      });
+        setSocket(s);
 
-      s.on('room_state_update', (updatedRoom: Room) => {
-        setRoom(updatedRoom);
-        setLoading(false);
-        setError(null);
-      });
+        s.on('connect', () => {
+          s?.emit('join_room', {
+            code: roomCode,
+            player: user,
+          });
+        });
 
-      s.on('error_notification', ({ message }: { message: string }) => {
-        setError(message);
-        setLoading(false);
-      });
+        s.on('room_state_update', (updatedRoom: Room) => {
+          setRoom(updatedRoom);
+          setLoading(false);
+          setError(null);
+        });
 
-      s.on('connect_error', () => {
-        // Fallback gracefully without blocking
-        fetchRoomState(user);
-      });
-    } catch {
-      // Socket creation fallback
+        s.on('error_notification', ({ message }: { message: string }) => {
+          setError(message);
+          setLoading(false);
+        });
+
+        s.on('connect_error', () => {
+          fetchRoomState(user);
+        });
+      } catch {
+        // Socket creation fallback
+      }
     }
 
-    // 3. Supabase Realtime Channel (Instant updates for serverless Vercel)
+    // 3. Supabase Realtime Channel (Instant sub-30ms WebSocket updates on Vercel)
     const supabase = getSupabaseClient();
     let channel: any = null;
     if (supabase) {
@@ -131,10 +137,11 @@ export default function RoomPage({ params }: RoomPageProps) {
       }
     }
 
-    // 4. Fallback polling loop (3000ms ensures sync without saturating Vercel concurrency)
+    // 4. Lightweight safety polling (only when tab is visible, 6s when Supabase is active)
     const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       fetchRoomState(user);
-    }, 3000);
+    }, supabase ? 6000 : 3000);
 
     return () => {
       clearInterval(pollInterval);

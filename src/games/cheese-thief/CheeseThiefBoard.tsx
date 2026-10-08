@@ -148,13 +148,44 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
     }
   }, [state.phase, state.currentHour]);
 
-  // Host ticker timer
+  // Local countdown timers to eliminate 1-second network POST spam
+  const [localHourSeconds, setLocalHourSeconds] = useState(state.hourSecondsRemaining);
+  const [localDaySeconds, setLocalDaySeconds] = useState(state.daySecondsRemaining);
+
   useEffect(() => {
-    if (!isHost) return;
+    setLocalHourSeconds(state.hourSecondsRemaining);
+  }, [state.hourSecondsRemaining, state.currentHour]);
+
+  useEffect(() => {
+    setLocalDaySeconds(state.daySecondsRemaining);
+  }, [state.daySecondsRemaining]);
+
+  // Host ticker timer - only dispatches transition action when seconds expire
+  useEffect(() => {
     if (state.phase !== 'night' && state.phase !== 'follower_selection' && state.phase !== 'day') return;
 
     const interval = setInterval(() => {
-      onAction({ type: 'tick_second' });
+      if (state.phase === 'night' || state.phase === 'follower_selection') {
+        setLocalHourSeconds((prev) => {
+          if (prev <= 1) {
+            if (isHost) {
+              onAction({ type: 'tick_second' });
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      } else if (state.phase === 'day') {
+        setLocalDaySeconds((prev) => {
+          if (prev <= 1) {
+            if (isHost) {
+              onAction({ type: 'tick_second' });
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -235,11 +266,11 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
             <div className="flex items-center gap-1.5 text-lg font-mono font-bold text-amber-300">
               <span className="text-xl">🕰️</span>
               {state.phase === 'night' ? (
-                <span>{state.currentHour}:00 AM ({state.hourSecondsRemaining}s)</span>
+                <span>{state.currentHour}:00 AM ({localHourSeconds}s)</span>
               ) : state.phase === 'follower_selection' ? (
-                <span className="text-purple-300">Dawn Sneak ({state.hourSecondsRemaining}s)</span>
+                <span className="text-purple-300">Dawn Sneak ({localHourSeconds}s)</span>
               ) : state.phase === 'day' ? (
-                <span className="text-yellow-300">Discussion ({Math.floor(state.daySecondsRemaining / 60)}:{(state.daySecondsRemaining % 60).toString().padStart(2, '0')})</span>
+                <span className="text-yellow-300">Discussion ({Math.floor(localDaySeconds / 60)}:{(localDaySeconds % 60).toString().padStart(2, '0')})</span>
               ) : state.phase === 'voting' ? (
                 <span className="text-red-400">Voting Time!</span>
               ) : state.phase === 'game_over' ? (

@@ -468,7 +468,7 @@ class RoomManager {
       status: room.status,
       gameSettings: room.gameSettings,
       gameState: sanitizedGameState,
-      chatMessages: room.chatMessages.slice(-50),
+      chatMessages: room.chatMessages.slice(-25),
     };
   }
 
