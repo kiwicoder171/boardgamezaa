@@ -23,7 +23,7 @@ export const codenamesGameDefinition: GameDefinition<
   name: 'Codenames',
   description:
     'The award-winning team deduction and word association phenomenon by Vlaada Chvátil! Spymasters give one-word clues pointing to secret agents on a 5x5 grid while avoiding the deadly Assassin.',
-  minPlayers: 2,
+  minPlayers: 4,
   maxPlayers: 12,
   recommendedPlayers: '4 - 8',
   tags: [

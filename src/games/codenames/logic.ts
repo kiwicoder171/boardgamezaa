@@ -23,10 +23,10 @@ export function initCodenamesGame(
   rawPlayers: Array<{ id: string; name: string; avatar?: string }>,
   theme: WordDeckTheme = 'classic'
 ): CodenamesState {
-  const count = Math.max(2, rawPlayers.length);
+  const count = Math.max(4, rawPlayers.length);
   const playerList = [...rawPlayers];
 
-  while (playerList.length < 2) {
+  while (playerList.length < 4) {
     const idx = playerList.length + 1;
     playerList.push({ id: `bot_${idx}`, name: `Agent ${idx}`, avatar: '🕵️' });
   }
