@@ -16,7 +16,100 @@ import {
   Check,
   Layers,
   Terminal,
+  Shield,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  Flame,
+  Award,
+  Compass,
 } from 'lucide-react';
+
+// Thematic Visual Design Metadata matching real tabletop physical materials & mood
+const GAME_THEMES: Record<
+  string,
+  {
+    genre: string;
+    fontFamily: string;
+    accentColor: string;
+    containerClass: string;
+    badgeClass: string;
+    materials: string[];
+    quickRule: string;
+    tactileHighlight: string;
+  }
+> = {
+  'sky-team': {
+    genre: 'Co-op Aviation / Precision',
+    fontFamily: 'font-scifi',
+    accentColor: 'from-sky-500 to-blue-700',
+    containerClass: 'cockpit-panel text-slate-100',
+    badgeClass: 'bg-sky-500/20 text-sky-300 border-sky-400/40',
+    materials: ['✈️ Dual Control Racks', '🎲 8 Custom Flight Dice', '🧭 Tilt Artificial Horizon', '☕ Coffee & Reroll Tokens'],
+    quickRule: 'Pilot & Co-Pilot assign secret dice without speaking to balance axis tilt, throttle airspeed, and clear traffic.',
+    tactileHighlight: 'Matte aluminum cockpit instrumentation with recessed dial gauges',
+  },
+  'werewolf': {
+    genre: 'Gothic Social Deduction',
+    fontFamily: 'font-fantasy',
+    accentColor: 'from-purple-600 to-rose-900',
+    containerClass: 'gothic-grimoire text-purple-100',
+    badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-400/40',
+    materials: ['📜 18+ Character Grimoire Cards', '🌕 Moonlit Phase Tracker', '🗳️ Village Execution Dais'],
+    quickRule: 'Unmask the bloodthirsty Werewolves before the village is devoured. Includes Tanner, Minion, Seer, Witch & Doppelgänger.',
+    tactileHighlight: 'Moonlit grimoire leather and distressed blood-red village seal',
+  },
+  'cheese-thief': {
+    genre: 'Party Bluffing & Deception',
+    fontFamily: 'font-serifDisplay',
+    accentColor: 'from-amber-500 to-orange-800',
+    containerClass: 'texture-wood-dark text-amber-100',
+    badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-400/40',
+    materials: ['🧀 Solid Cheese Token', '🎲 Hidden Wooden Dice Cups', '🕯️ Tavern Night Clock'],
+    quickRule: 'The sneaky Cheese Thief wakes at their secret die hour to steal the cheese. Solo sleepyheads peek while followers join the heist!',
+    tactileHighlight: 'Aged rustic tavern oak grain with warm candlelight illumination',
+  },
+  'splendor': {
+    genre: 'Renaissance Gem Engine',
+    fontFamily: 'font-fantasy',
+    accentColor: 'from-emerald-600 via-amber-500 to-rose-700',
+    containerClass: 'renaissance-border bg-gradient-to-br from-[#0c1f15] via-[#101924] to-[#1e1308] text-slate-100',
+    badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-400/40',
+    materials: ['💎 40 Weighted Resin Gem Chips', '🏰 90 Linen Finish Development Cards', '👑 10 Noble Patron Tiles'],
+    quickRule: 'Collect raw gemstone tokens to purchase gemstone mines and merchant caravans. Earn permanent discounts and Noble prestige.',
+    tactileHighlight: 'Weighted heavy casino resin chips and gilded Renaissance filigree',
+  },
+  'codenames': {
+    genre: 'Espionage Deduction',
+    fontFamily: 'font-typewriter',
+    accentColor: 'from-amber-600 to-red-800',
+    containerClass: 'manila-folder text-slate-900',
+    badgeClass: 'bg-amber-900/20 text-amber-900 border-amber-800/40 font-bold',
+    materials: ['🗂️ 25 Linen Word Cards', '🗺️ Classified Spymaster Keycard', '📌 Operative Suspect Pins', '💀 Assassin Tile'],
+    quickRule: 'Spymasters transmit one-word clues and numbers. Field operatives deduce the agents while dodging innocent bystanders and the lethal Assassin.',
+    tactileHighlight: 'Authentic 300gsm linen cross-weave cardstock & top-secret manila dossier',
+  },
+  'bomb-busters': {
+    genre: 'High-Stakes Wire Defusal',
+    fontFamily: 'font-scifi',
+    accentColor: 'from-amber-500 to-red-600',
+    containerClass: 'metal-chassis text-slate-100',
+    badgeClass: 'bg-red-500/20 text-red-300 border-red-500/40',
+    materials: ['💣 48 Heavy Resin Wire Tiles', '🔴 4 Detonator Cables', '📟 Vintage LED Defusal Matrix', '🛡️ Radar Scanners'],
+    quickRule: 'Cut numbered wires across teammates’ racks in ascending numerical order. Coordinate Duo and Solo cuts before fuses detonate!',
+    tactileHighlight: 'Industrial brushed steel console with authentic 7-segment LED readout',
+  },
+  'spyfall': {
+    genre: 'Secret Agent Interrogation',
+    fontFamily: 'font-typewriter',
+    accentColor: 'from-slate-700 to-amber-900',
+    containerClass: 'dossier-paper text-slate-900',
+    badgeClass: 'bg-stone-800/20 text-stone-900 border-stone-800/40 font-bold',
+    materials: ['📸 Polaroid Location Photos', '🕵️ Hidden Spy Role Dossier', '⏱️ 8-Minute Interrogation Stopclock'],
+    quickRule: 'Everyone knows the secret location except the Spy! Ask cunning questions without revealing the venue, while the Spy listens closely.',
+    tactileHighlight: 'Real-world polaroid photographs, scratchpad notes & stamped dossier',
+  },
+};
 
 export default function HomePage() {
   const router = useRouter();
@@ -27,8 +120,11 @@ export default function HomePage() {
   });
   const [roomCodeInput, setRoomCodeInput] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [creatingGameId, setCreatingGameId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'play' | 'guide'>('play');
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
+  const [expandedGameRule, setExpandedGameRule] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string>('All');
 
   useEffect(() => {
     const user = getUserProfile();
@@ -47,16 +143,17 @@ export default function HomePage() {
     setAvatarPickerOpen(false);
   };
 
-  const handleCreateRoom = async () => {
+  const handleCreateRoomWithGame = async (gameId: string = 'spyfall') => {
     if (isCreating) return;
     setIsCreating(true);
+    setCreatingGameId(gameId);
     soundFX.playStart();
 
     try {
       const res = await fetch('/api/room/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player: profile, gameId: 'spyfall' }),
+        body: JSON.stringify({ player: profile, gameId }),
       });
       const data = await res.json();
       if (data.code) {
@@ -65,6 +162,7 @@ export default function HomePage() {
     } catch (err) {
       console.error(err);
       setIsCreating(false);
+      setCreatingGameId(null);
     }
   };
 
@@ -78,120 +176,152 @@ export default function HomePage() {
 
   const games = getAllGames();
 
-  return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col">
-      {/* Background ambient decorative glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-indigo-600/15 via-purple-600/5 to-transparent blur-3xl pointer-events-none" />
+  const filterTags = ['All', 'Cooperative', 'Social Deduction', 'Strategy', 'Party'];
 
-      {/* Header */}
-      <header className="relative z-10 border-b border-slate-800/80 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+  const filteredGames = games.filter((g) => {
+    if (selectedTag === 'All') return true;
+    if (selectedTag === 'Cooperative') return g.tags.includes('Cooperative') || g.id === 'sky-team' || g.id === 'bomb-busters';
+    if (selectedTag === 'Social Deduction') return g.tags.includes('Social Deduction') || g.id === 'werewolf' || g.id === 'cheese-thief' || g.id === 'spyfall';
+    if (selectedTag === 'Strategy') return g.tags.includes('Strategy') || g.id === 'splendor' || g.id === 'sky-team';
+    if (selectedTag === 'Party') return g.tags.includes('Party') || g.id === 'codenames' || g.id === 'spyfall' || g.id === 'cheese-thief';
+    return true;
+  });
+
+  return (
+    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col selection:bg-amber-500 selection:text-black">
+      {/* Tabletop Atmosphere: Ambient table spotlights and velvet illumination */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1200px] h-[550px] bg-gradient-to-b from-indigo-900/25 via-emerald-950/15 to-transparent blur-[120px]" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[400px] bg-amber-950/15 blur-[100px]" />
+      </div>
+
+      {/* Tabletop Header Rim */}
+      <header className="relative z-20 border-b border-amber-900/30 bg-[#0c121e]/90 backdrop-blur-md px-6 py-4 shadow-xl">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">🎲</span>
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-2xl shadow-md border border-amber-400/40">
+              🎲
+            </div>
             <div>
-              <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
-                BoardgameZaa
-              </span>
-              <span className="hidden sm:inline-block ml-2 text-[10px] font-bold uppercase tracking-wider bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full">
-                Hub Platform
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-black text-2xl tracking-tight bg-gradient-to-r from-amber-200 via-yellow-100 to-amber-400 bg-clip-text text-transparent font-fantasy">
+                  BoardgameZaa
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-widest bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full">
+                  Tabletop Hub
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                Authentic physical board games recreated for online multiplayer
+              </p>
             </div>
           </div>
 
           <nav className="flex items-center gap-2">
             <button
-              onClick={() => setActiveTab('play')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              onClick={() => {
+                soundFX.playClick();
+                setActiveTab('play');
+              }}
+              className={`btn-tactile px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
                 activeTab === 'play'
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-950/40 font-black'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
               <Gamepad2 className="w-4 h-4" />
-              Play Games
+              Game Vault
             </button>
             <button
-              onClick={() => setActiveTab('guide')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+              onClick={() => {
+                soundFX.playClick();
+                setActiveTab('guide');
+              }}
+              className={`btn-tactile px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 ${
                 activeTab === 'guide'
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/30'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-950/40 font-black'
                   : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
               }`}
             >
-              <Code2 className="w-4 h-4 text-emerald-400" />
-              Developer Guide
+              <Code2 className="w-4 h-4" />
+              Developer API
             </button>
           </nav>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-10">
+      {/* Main Content Area */}
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-12">
         {activeTab === 'play' ? (
           <>
-            {/* Hero Section */}
-            <div className="text-center space-y-3 pt-4 sm:pt-8">
-              <h1 className="text-4xl sm:text-5xl font-black text-white tracking-tight">
-                Your Friend-Group{' '}
-                <span className="bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
-                  Board Game Center
+            {/* Tabletop Hero & Callout Banner */}
+            <section className="text-center space-y-4 pt-2 sm:pt-6">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>Zero Installs • Instant Table Link • 7 Authentic Tabletop Games</span>
+              </div>
+              <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-none">
+                Play Real Board Games <br className="hidden sm:inline" />
+                <span className="font-fantasy bg-gradient-to-r from-amber-300 via-amber-100 to-amber-400 bg-clip-text text-transparent">
+                  With Your Friends
                 </span>
               </h1>
-              <p className="text-sm sm:text-base text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                Create a lobby, share a link with your friends, pick what game you want to play
-                today, and code your own custom games whenever you want!
+              <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                Experience tactile physical game components—from wooden pilot dice in Sky Team and heavy resin gem chips in Splendor, to top-secret manila dossiers in Codenames.
               </p>
-            </div>
+            </section>
 
-            {/* Profile & Room Creation Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-              {/* Profile Card */}
-              <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+            {/* Quick Profile & Table Entrance Lounge */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Player Badge Dossier */}
+              <div className="bg-gradient-to-b from-[#131b2c] to-[#0c121d] border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl relative overflow-hidden">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-sm text-slate-200">Your Player Profile</h3>
-                  <span className="text-[11px] text-slate-500">Saved in browser</span>
+                  <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>👤</span> Player Identity
+                  </span>
+                  <span className="text-[11px] text-slate-500">Persistent across rooms</span>
                 </div>
 
                 <div className="flex items-center gap-4">
                   <div className="relative">
                     <button
                       onClick={() => setAvatarPickerOpen(!avatarPickerOpen)}
-                      className="w-16 h-16 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-3xl shadow-inner transition transform hover:scale-105"
-                      title="Click to change avatar"
+                      className="btn-tactile w-16 h-16 rounded-2xl bg-[#1a2336] hover:bg-[#222e47] border border-amber-500/40 flex items-center justify-center text-3xl shadow-inner"
+                      title="Click to select your avatar token"
                     >
                       {profile.avatar}
                     </button>
-                    <span className="absolute -bottom-1 -right-1 text-[10px] bg-indigo-600 text-white rounded-full px-1">
+                    <span className="absolute -bottom-1 -right-1 text-[10px] bg-amber-500 text-slate-950 font-black rounded-full px-1.5 shadow">
                       ✎
                     </span>
                   </div>
 
                   <div className="flex-1 space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                      Nickname
+                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                      Table Nickname
                     </label>
                     <input
                       type="text"
                       value={profile.name}
                       maxLength={18}
-                      placeholder="Enter your name..."
+                      placeholder="Enter player name..."
                       onChange={(e) => handleNameChange(e.target.value)}
-                      className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-[#0a0f19] border border-slate-700/80 rounded-xl px-3.5 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                     />
                   </div>
                 </div>
 
                 {/* Avatar Picker Drawer */}
                 {avatarPickerOpen && (
-                  <div className="p-3 bg-slate-800/60 rounded-2xl border border-slate-700/80 flex flex-wrap gap-2 justify-center animate-in fade-in">
+                  <div className="p-3 bg-[#0a0f19] rounded-2xl border border-slate-700 flex flex-wrap gap-2 justify-center animate-in fade-in">
                     {DEFAULT_AVATARS.map((emoji) => (
                       <button
                         key={emoji}
                         onClick={() => handleAvatarSelect(emoji)}
-                        className={`text-2xl p-2 rounded-xl transition ${
+                        className={`text-2xl p-2 rounded-xl transition btn-tactile ${
                           profile.avatar === emoji
-                            ? 'bg-indigo-600/40 border border-indigo-400'
-                            : 'hover:bg-slate-700'
+                            ? 'bg-amber-500/30 border border-amber-400'
+                            : 'hover:bg-slate-800'
                         }`}
                       >
                         {emoji}
@@ -201,179 +331,227 @@ export default function HomePage() {
                 )}
               </div>
 
-              {/* Lobby Entry Card: Create or Join */}
-              <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-5 shadow-xl flex flex-col justify-between">
+              {/* Instant Room Dispatcher */}
+              <div className="bg-gradient-to-b from-[#131b2c] to-[#0c121d] border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl flex flex-col justify-between">
                 <div>
-                  <h3 className="font-bold text-sm text-slate-200">Start or Join a Room</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Host a game night or jump into an existing lobby.
+                  <h3 className="font-bold text-sm text-slate-200 flex items-center gap-2">
+                    <Flame className="w-4 h-4 text-amber-400" />
+                    <span>Host or Enter a Table</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Spin up a private game room or join an invite code.
                   </p>
                 </div>
 
                 <div className="space-y-3">
                   <button
                     disabled={isCreating}
-                    onClick={handleCreateRoom}
-                    className="w-full py-3.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold rounded-2xl text-sm transition shadow-lg shadow-indigo-900/40 flex items-center justify-center gap-2 transform hover:-translate-y-0.5"
+                    onClick={() => handleCreateRoomWithGame('sky-team')}
+                    className="btn-tactile w-full py-3.5 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black rounded-2xl text-sm shadow-lg shadow-amber-950/60 flex items-center justify-center gap-2"
                   >
                     <PlusCircle className="w-5 h-5" />
-                    <span>Create New Room</span>
+                    <span>{isCreating ? 'Setting Up Table...' : 'Host New Game Table'}</span>
                   </button>
 
-                  <div className="relative flex py-1 items-center">
-                    <div className="flex-grow border-t border-slate-800"></div>
-                    <span className="flex-shrink mx-3 text-[11px] uppercase tracking-wider text-slate-500">
-                      or join with code
+                  <div className="relative flex py-0.5 items-center">
+                    <div className="flex-grow border-t border-slate-800" />
+                    <span className="flex-shrink mx-3 text-[10px] uppercase font-bold tracking-widest text-slate-500">
+                      Or Join with Code
                     </span>
-                    <div className="flex-grow border-t border-slate-800"></div>
+                    <div className="flex-grow border-t border-slate-800" />
                   </div>
 
                   <form onSubmit={handleJoinRoom} className="flex gap-2">
                     <input
                       type="text"
                       maxLength={6}
-                      placeholder="ROOM CODE (e.g. ABCD)"
+                      placeholder="ENTER 4-LETTER CODE"
                       value={roomCodeInput}
                       onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
-                      className="flex-1 bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white font-mono tracking-widest text-center uppercase focus:outline-none focus:border-indigo-500"
+                      className="flex-1 bg-[#0a0f19] border border-slate-700/80 rounded-xl px-4 py-2 text-sm text-white font-mono tracking-widest text-center uppercase focus:outline-none focus:border-amber-400"
                     />
                     <button
                       type="submit"
                       disabled={!roomCodeInput.trim()}
-                      className="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-40 font-bold text-xs rounded-xl border border-slate-700 transition"
+                      className="btn-tactile px-5 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 disabled:opacity-40 font-bold text-xs rounded-xl border border-slate-700"
                     >
-                      Join
+                      Enter 🚪
                     </button>
                   </form>
                 </div>
               </div>
-            </div>
+            </section>
 
-            {/* Game Catalog Section */}
-            <div className="space-y-5 pt-4">
-              <div className="flex items-center justify-between">
+            {/* Game Catalog & Thematic Materials Showcase */}
+            <section className="space-y-6 pt-6">
+              {/* Filter Tabs & Header */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-amber-400" />
-                    Available & Upcoming Games
+                  <h2 className="text-2xl font-black text-white flex items-center gap-2">
+                    <Sparkles className="w-6 h-6 text-amber-400" />
+                    <span>The Tabletop Vault ({filteredGames.length} Titles)</span>
                   </h2>
                   <p className="text-xs text-slate-400">
-                    All games are playable directly in-browser with zero download or installation.
+                    Skeuomorphic digital editions engineered with physical tabletop materials and official rules.
                   </p>
                 </div>
+
+                {/* Genre Filter Pills */}
+                <div className="flex flex-wrap gap-1.5">
+                  {filterTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => {
+                        soundFX.playClick();
+                        setSelectedTag(tag);
+                      }}
+                      className={`btn-tactile text-xs px-3 py-1.5 rounded-xl font-bold transition ${
+                        selectedTag === tag
+                          ? 'bg-amber-500 text-slate-950 shadow-sm'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Spyfall (Playable) */}
-                {games.map((g) => (
-                  <div
-                    key={g.id}
-                    className="relative bg-gradient-to-br from-slate-900 to-indigo-950/40 border border-indigo-500/40 rounded-3xl p-6 shadow-xl flex flex-col justify-between gap-4 ring-1 ring-indigo-500/20"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-4xl p-3 bg-slate-800/80 rounded-2xl border border-slate-700">
-                          {g.icon}
-                        </span>
-                        <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Ready to Play
-                        </span>
-                      </div>
+              {/* Thematic Game Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredGames.map((g) => {
+                  const theme = GAME_THEMES[g.id] || {
+                    genre: 'Tabletop Game',
+                    fontFamily: 'font-sans',
+                    accentColor: 'from-indigo-600 to-purple-800',
+                    containerClass: 'bg-slate-900 text-slate-100',
+                    badgeClass: 'bg-indigo-500/20 text-indigo-300 border-indigo-400/40',
+                    materials: ['🎲 Dice', '🃏 Cards', '🪵 Board'],
+                    quickRule: g.description,
+                    tactileHighlight: 'Handcrafted digital tabletop components',
+                  };
 
-                      <h3 className="text-xl font-black text-white mt-4">{g.name}</h3>
-                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                        {g.description}
-                      </p>
+                  const isExpanded = expandedGameRule === g.id;
 
-                      <div className="flex flex-wrap gap-1.5 mt-3">
-                        {g.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md"
+                  return (
+                    <div
+                      key={g.id}
+                      className={`relative rounded-3xl p-6 shadow-2xl flex flex-col justify-between gap-5 transition-all duration-200 border border-slate-700/60 ${theme.containerClass}`}
+                    >
+                      {/* Top Bar: Icon, Genre Badge & Ready Indicator */}
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="w-14 h-14 rounded-2xl bg-black/40 border border-white/10 flex items-center justify-center text-3xl shadow-inner">
+                            {g.icon}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${theme.badgeClass}`}
+                            >
+                              {theme.genre}
+                            </span>
+                            <span className="text-[10px] font-bold text-emerald-400 flex items-center gap-1">
+                              <Check className="w-3 h-3" /> Ready to Play
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Title and Thematic Heading Font */}
+                        <div>
+                          <h3 className={`text-2xl font-black tracking-tight ${theme.fontFamily}`}>
+                            {g.name}
+                          </h3>
+                          <p className="text-xs opacity-80 mt-1 leading-relaxed">
+                            {g.description}
+                          </p>
+                        </div>
+
+                        {/* Physical Materials Inventory Strip */}
+                        <div className="p-3 rounded-2xl bg-black/30 border border-white/5 space-y-1.5">
+                          <div className="text-[10px] font-bold tracking-widest uppercase opacity-60 flex items-center gap-1">
+                            <Layers className="w-3 h-3" /> Tangible Components
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {theme.materials.map((m) => (
+                              <span
+                                key={m}
+                                className="text-[11px] font-medium bg-black/40 px-2 py-0.5 rounded-md border border-white/10"
+                              >
+                                {m}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Accordion Bite-Sized Rule Overview */}
+                        <div className="border-t border-white/10 pt-3">
+                          <button
+                            onClick={() => {
+                              soundFX.playClick();
+                              setExpandedGameRule(isExpanded ? null : g.id);
+                            }}
+                            className="w-full flex items-center justify-between text-xs font-bold opacity-80 hover:opacity-100 transition py-1"
                           >
-                            {tag}
+                            <span className="flex items-center gap-1.5">
+                              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                              <span>How It Works & Playstyle</span>
+                            </span>
+                            {isExpanded ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+
+                          {isExpanded && (
+                            <div className="mt-2 text-xs opacity-90 p-3 rounded-xl bg-black/50 border border-white/10 space-y-2 animate-in fade-in leading-relaxed">
+                              <p>{theme.quickRule}</p>
+                              <div className="text-[10px] opacity-75 pt-1 border-t border-white/10">
+                                <span className="font-bold text-amber-400">Tactile Feel: </span>
+                                {theme.tactileHighlight}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom Actions: Specs & Host Button */}
+                      <div className="space-y-3 pt-3 border-t border-white/10">
+                        <div className="flex items-center justify-between text-xs opacity-75">
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3.5 h-3.5" />
+                            {g.minPlayers} - {g.maxPlayers} Players
                           </span>
-                        ))}
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {g.durationMinutes}
+                          </span>
+                        </div>
+
+                        {/* High-Affordance Button to Launch Game */}
+                        <button
+                          disabled={isCreating}
+                          onClick={() => handleCreateRoomWithGame(g.id)}
+                          className="btn-tactile w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs shadow-md shadow-black/50 flex items-center justify-center gap-1.5"
+                        >
+                          <Gamepad2 className="w-4 h-4" />
+                          <span>
+                            {creatingGameId === g.id
+                              ? 'Launching...'
+                              : `Host ${g.name}`}
+                          </span>
+                          <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
+                        </button>
                       </div>
                     </div>
-
-                    <div className="pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                      <span>👥 {g.minPlayers} - {g.maxPlayers} players</span>
-                      <span>⏱️ {g.durationMinutes}</span>
-                    </div>
-                  </div>
-                ))}
-
-                {/* The Resistance: Avalon (Planned / In Development) */}
-                <div className="relative bg-slate-900/40 border border-slate-800/80 rounded-3xl p-6 flex flex-col justify-between gap-4 opacity-85">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-4xl p-3 bg-slate-800/40 rounded-2xl border border-slate-700/60">
-                        ⚔️
-                      </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2.5 py-1 rounded-full">
-                        Next in Line
-                      </span>
-                    </div>
-
-                    <h3 className="text-xl font-black text-white mt-4">The Resistance: Avalon</h3>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      Loyal servants of Arthur vs Minions of Mordred. Quests, voting, Merlin, and
-                      the Assassin strike.
-                    </p>
-
-                    <div className="flex flex-wrap gap-1.5 mt-3">
-                      {['Social Deduction', 'Hidden Roles', 'Strategy'].map((t) => (
-                        <span key={t} className="text-[10px] bg-slate-800/60 text-slate-500 px-2 py-0.5 rounded-md">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-500">
-                    <span>👥 5 - 10 players</span>
-                    <span>⏱️ 30 min</span>
-                  </div>
-                </div>
-
-                {/* Werewolf (Next in Queue) */}
-                <div className="relative bg-slate-900/40 border border-slate-800/80 rounded-3xl p-6 flex flex-col justify-between gap-4 opacity-85">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-4xl p-3 bg-slate-800/40 rounded-2xl border border-slate-700/60">
-                        🐺
-                      </span>
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40 px-2.5 py-1 rounded-full">
-                        Up Next
-                      </span>
-                    </div>
-
-                    <h3 className="text-xl font-black text-white mt-4">Ultimate Werewolf</h3>
-                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                      Social deduction party classic with all expansion roles (Seer, Tanner, Witch, Doppelganger, Minion).
-                    </p>
-
-                    <div className="flex flex-wrap gap-1.5 mt-3">
-                      {['Social Deduction', 'Hidden Roles', 'Bluffing', 'Expansions'].map((t) => (
-                        <span key={t} className="text-[10px] bg-slate-800/60 text-slate-500 px-2 py-0.5 rounded-md">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-500">
-                    <span>👥 4 - 20 players</span>
-                    <span>⏱️ 15 min</span>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
-            </div>
+            </section>
           </>
         ) : (
-          /* Developer Guide Section */
-          <div className="space-y-8 animate-in fade-in">
+          /* Developer & Extensibility Guide Section */
+          <section className="space-y-8 animate-in fade-in">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
                 <Code2 className="w-3.5 h-3.5" />
@@ -384,26 +562,26 @@ export default function HomePage() {
               </h2>
               <p className="text-sm text-slate-400 max-w-2xl">
                 The BoardgameZaa architecture is designed so you can create a new folder under{' '}
-                <code className="text-indigo-300">src/games/</code>, define your game logic, and it
+                <code className="text-amber-300">src/games/</code>, define your game logic, and it
                 immediately becomes playable in the lobby!
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold">
+              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 space-y-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold">
                   1
                 </div>
                 <h3 className="font-bold text-white text-base">Create Game Folder</h3>
                 <p className="text-xs text-slate-400">
-                  Create <code className="text-indigo-300">src/games/bomb-busters/</code> with:{' '}
+                  Create <code className="text-amber-300">src/games/my-game/</code> with:{' '}
                   <code className="text-slate-300">index.ts</code>,{' '}
                   <code className="text-slate-300">logic.ts</code>, and{' '}
-                  <code className="text-slate-300">BoardComponent.tsx</code>.
+                  <code className="text-slate-300">MyGameBoard.tsx</code>.
                 </p>
               </div>
 
-              <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-3">
+              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center font-bold">
                   2
                 </div>
@@ -416,7 +594,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 space-y-3">
+              <div className="bg-[#0f172a] border border-slate-800 rounded-3xl p-6 space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold">
                   3
                 </div>
@@ -429,13 +607,13 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Code Example Card */}
+            {/* Code Template Card */}
             <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-emerald-400" />
                   <span className="text-xs font-mono font-bold text-slate-300">
-                    src/games/bomb-busters/index.ts (Example Plugin Template)
+                    src/games/bomb-busters/index.ts (Plugin Schema Specification)
                   </span>
                 </div>
               </div>
@@ -448,37 +626,31 @@ export default function HomePage() {
   minPlayers: 2,
   maxPlayers: 5,
   tags: ['Cooperative', 'Puzzle', 'Numbers'],
-  durationMinutes: '15 min',
-  icon: '💣',
-  coverGradient: 'from-amber-600 to-rose-700',
-  defaultSettings: { timerSeconds: 60, difficulty: 'normal' },
+  durationMinutes: '20-30m',
   settingsSchema: [
-    { key: 'difficulty', label: 'Difficulty', type: 'select', 
-      options: [{ label: 'Normal', value: 'normal' }, { label: 'Hard', value: 'hard' }], 
-      default: 'normal' }
+    { key: 'difficulty', label: 'Mission Pack', type: 'select', default: 1, options: [...] },
   ],
-  initGame: (players, settings) => {
-    // Deal wire tiles to players, set initial bomb fuse...
-    return { bombState: 100, wiresRemaining: 48, ... };
-  },
-  handleAction: (state, action, playerId) => {
-    // Handle action: CUT_WIRE, GUESS_NUMBER, etc.
-    return { newState: updatedState };
-  },
-  sanitizeState: (state, playerId) => {
-    // Mask other players' secret numbers!
-    return maskedStateForPlayer;
-  }
+  initGame: (players, settings) => initBombBustersGame(players, settings),
+  handleAction: (state, action, playerId) => handleBombBustersAction(state, action, playerId),
+  sanitizeState: (state, playerId) => sanitizeBombBustersState(state, playerId),
 };`}
               </pre>
             </div>
-          </div>
+          </section>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
-        BoardgameZaa © 2026 • Built for playing games with friends online
+      {/* Tabletop Footer */}
+      <footer className="border-t border-slate-800/80 bg-[#090e17] px-6 py-6 text-center text-xs text-slate-500 relative z-10">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-fantasy text-amber-400 font-bold">BoardgameZaa</span>
+            <span>• Tabletop Simulation Platform</span>
+          </div>
+          <div>
+            Built with Next.js, Socket.IO, Tailwind CSS & Real Tabletop Passion 🎲
+          </div>
+        </div>
       </footer>
     </div>
   );
