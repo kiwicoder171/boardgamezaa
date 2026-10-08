@@ -12,6 +12,7 @@ import CodenamesBoard from '@/games/codenames/CodenamesBoard';
 import WavelengthBoard from '@/games/wavelength/WavelengthBoard';
 import OneNightWerewolfBoard from '@/games/one-night-werewolf/OneNightWerewolfBoard';
 import ForSaleBoard from '@/games/for-sale/ForSaleBoard';
+import CoupBoard from '@/games/coup/CoupBoard';
 
 interface GameRendererProps {
   room: Room;
@@ -139,6 +140,18 @@ export default function GameRenderer({
     case 'for-sale':
       return (
         <ForSaleBoard
+          state={room.gameState}
+          players={room.players}
+          currentPlayerId={currentPlayerId}
+          isHost={isHost}
+          onAction={onGameAction}
+          onReturnToLobby={onReturnToLobby}
+        />
+      );
+
+    case 'coup':
+      return (
+        <CoupBoard
           state={room.gameState}
           players={room.players}
           currentPlayerId={currentPlayerId}

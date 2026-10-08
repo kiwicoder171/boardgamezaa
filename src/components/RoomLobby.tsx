@@ -48,6 +48,7 @@ const GAME_FONTS: Record<string, string> = {
   'wavelength': 'font-mono text-cyan-300',
   'one-night-werewolf': 'font-fantasy text-purple-300',
   'for-sale': 'font-mono text-emerald-400',
+  'coup': 'font-serifDisplay text-rose-300',
 };
 
 export default function RoomLobby({
