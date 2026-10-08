@@ -12,6 +12,15 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        tabletop: {
+          base: "#070b14",
+          surface: "#0d1524",
+          card: "#111a2d",
+          border: "#1e293b",
+          accent: "#f59e0b",
+          "accent-hover": "#fbbf24",
+          "accent-dark": "#d97706",
+        },
       },
       fontFamily: {
         sans: ["'Plus Jakarta Sans'", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
