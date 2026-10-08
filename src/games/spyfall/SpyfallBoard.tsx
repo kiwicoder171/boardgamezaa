@@ -91,12 +91,62 @@ export default function SpyfallBoard({
     }
   }, [state.phase]);
 
+  // Local smoothly-ticking countdown timers for serverless environments
+  const [localTimeRemaining, setLocalTimeRemaining] = useState(state.timeRemaining);
+  const [localVotingTime, setLocalVotingTime] = useState(state.votingTimeRemaining);
+
+  useEffect(() => {
+    setLocalTimeRemaining(state.timeRemaining);
+  }, [state.timeRemaining]);
+
+  useEffect(() => {
+    setLocalVotingTime(state.votingTimeRemaining);
+  }, [state.votingTimeRemaining]);
+
+  // Main questioning phase countdown interval
+  useEffect(() => {
+    if (state.isPaused || state.phase !== 'questioning') return;
+
+    const timer = setInterval(() => {
+      setLocalTimeRemaining((prev) => {
+        if (prev <= 1) {
+          if (isHost) {
+            onAction({ type: 'TIMES_UP' });
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [state.isPaused, state.phase, isHost, onAction]);
+
+  // Accusation voting phase countdown interval
+  useEffect(() => {
+    if (state.phase !== 'accusation') return;
+
+    const timer = setInterval(() => {
+      setLocalVotingTime((prev) => {
+        if (prev <= 1) {
+          if (isHost) {
+            onAction({ type: 'CANCEL_ACCUSATION' });
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [state.phase, isHost, onAction]);
+
   // Audio tick when timer is critical
   useEffect(() => {
-    if (state.phase === 'questioning' && !state.isPaused && state.timeRemaining <= 10 && state.timeRemaining > 0) {
+    if (state.phase === 'questioning' && !state.isPaused && localTimeRemaining <= 10 && localTimeRemaining > 0) {
       soundFX.playTick();
     }
-  }, [state.timeRemaining, state.phase, state.isPaused]);
+  }, [localTimeRemaining, state.phase, state.isPaused]);
 
   // Nudge reaction
   useEffect(() => {
@@ -129,8 +179,8 @@ export default function SpyfallBoard({
     }));
   };
 
-  const minutes = Math.floor(state.timeRemaining / 60);
-  const seconds = state.timeRemaining % 60;
+  const minutes = Math.floor(localTimeRemaining / 60);
+  const seconds = localTimeRemaining % 60;
   const timeFormatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 
   const currentAsker = players.find((p) => p.id === state.currentAskerId);
@@ -735,7 +785,7 @@ export default function SpyfallBoard({
                 <strong className="text-rose-400 text-base">{accused?.name}</strong> of being the SPY!
               </p>
               <div className="text-xs text-slate-400 font-mono">
-                Voting ends in <strong className="text-amber-400">{state.votingTimeRemaining}s</strong> (Unanimous guilty required)
+                Voting ends in <strong className="text-amber-400">{localVotingTime}s</strong> (Unanimous guilty required)
               </div>
             </div>
 

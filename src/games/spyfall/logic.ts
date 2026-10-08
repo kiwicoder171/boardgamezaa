@@ -390,6 +390,44 @@ export function handleSpyfallAction(
       }
     }
 
+    case 'TIMES_UP': {
+      if (state.phase !== 'questioning') return { newState: state };
+      return {
+        newState: {
+          ...state,
+          timeRemaining: 0,
+          phase: 'gameover',
+          winner: 'spy',
+          winReason: `Time ran out before the spy was caught! The SPY wins! Location was ${state.selectedLocation}.`,
+          revealedLocation: state.selectedLocation,
+          history: [
+            ...state.history,
+            {
+              id: `${Date.now()}`,
+              text: `⏰ Time expired! The SPY survived and wins!`,
+              time: Date.now(),
+              type: 'verdict',
+            },
+          ],
+        },
+      };
+    }
+
+    case 'TIMER_TICK': {
+      if (state.phase !== 'questioning' || state.isPaused) return { newState: state };
+      const elapsed = action.secondsElapsed || 1;
+      const nextTime = Math.max(0, state.timeRemaining - elapsed);
+      if (nextTime <= 0) {
+        return handleSpyfallAction(state, { type: 'TIMES_UP' }, playerId, room);
+      }
+      return {
+        newState: {
+          ...state,
+          timeRemaining: nextTime,
+        },
+      };
+    }
+
     default:
       return { newState: state };
   }

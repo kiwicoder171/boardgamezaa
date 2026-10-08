@@ -40,7 +40,9 @@ export type SpyfallAction =
   | { type: 'CANCEL_ACCUSATION' }
   | { type: 'SPY_GUESS'; locationName: string }
   | { type: 'TOGGLE_PAUSE' }
-  | { type: 'NUDGE_PLAYER' };
+  | { type: 'NUDGE_PLAYER' }
+  | { type: 'TIMER_TICK'; secondsElapsed?: number }
+  | { type: 'TIMES_UP' };
 
 export interface SpyfallClientState {
   // Public state

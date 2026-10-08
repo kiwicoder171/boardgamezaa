@@ -126,10 +126,18 @@ export default function WerewolfBoard({
       return;
     }
     const interval = setInterval(() => {
-      setDiscussionSecondsLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      setDiscussionSecondsLeft((prev) => {
+        if (prev <= 1) {
+          if (isHost) {
+            onAction({ type: 'PROCEED_TO_VOTING', playerId: currentPlayerId });
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(interval);
-  }, [state.phase]);
+  }, [state.phase, isHost, onAction, currentPlayerId]);
 
   const me = state.players.find((p) => p.id === currentPlayerId);
   const roleConfig = me ? WEREWOLF_ROLES_CATALOG[me.role] : null;

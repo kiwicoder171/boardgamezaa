@@ -131,10 +131,10 @@ export default function RoomPage({ params }: RoomPageProps) {
       }
     }
 
-    // 4. Fallback polling loop (1.5s interval ensures sync on serverless Vercel)
+    // 4. Fallback polling loop (3000ms ensures sync without saturating Vercel concurrency)
     const pollInterval = setInterval(() => {
       fetchRoomState(user);
-    }, 1500);
+    }, 3000);
 
     return () => {
       clearInterval(pollInterval);
@@ -168,6 +168,16 @@ export default function RoomPage({ params }: RoomPageProps) {
   };
 
   const handleSelectGame = (gameId: string) => {
+    soundFX.playClick();
+    setRoom((prev) => {
+      if (!prev) return prev;
+      const gameDef = allGames.find((g) => g.id === gameId);
+      return {
+        ...prev,
+        selectedGameId: gameId,
+        gameSettings: gameDef ? { ...gameDef.defaultSettings } : prev.gameSettings,
+      };
+    });
     if (socket && socket.connected) {
       socket.emit('select_game', { code: roomCode, gameId });
     } else {
@@ -176,6 +186,14 @@ export default function RoomPage({ params }: RoomPageProps) {
   };
 
   const handleUpdateSettings = (settings: any) => {
+    soundFX.playClick();
+    setRoom((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        gameSettings: { ...prev.gameSettings, ...settings },
+      };
+    });
     if (socket && socket.connected) {
       socket.emit('update_settings', { code: roomCode, settings });
     } else {
@@ -184,6 +202,17 @@ export default function RoomPage({ params }: RoomPageProps) {
   };
 
   const handleToggleReady = (isReady: boolean) => {
+    soundFX.playClick();
+    const u = profile || getUserProfile();
+    setRoom((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        players: prev.players.map((p) =>
+          p.id === u.id ? { ...p, isReady } : p
+        ),
+      };
+    });
     if (socket && socket.connected) {
       socket.emit('set_ready', { code: roomCode, isReady });
     } else {
@@ -192,6 +221,7 @@ export default function RoomPage({ params }: RoomPageProps) {
   };
 
   const handleStartGame = () => {
+    soundFX.playStart();
     if (socket && socket.connected) {
       socket.emit('start_game', { code: roomCode });
     } else {
@@ -200,6 +230,15 @@ export default function RoomPage({ params }: RoomPageProps) {
   };
 
   const handleReturnToLobby = () => {
+    soundFX.playClick();
+    setRoom((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        status: 'lobby',
+        gameState: null,
+      };
+    });
     if (socket && socket.connected) {
       socket.emit('return_to_lobby', { code: roomCode });
     } else {
@@ -208,6 +247,7 @@ export default function RoomPage({ params }: RoomPageProps) {
   };
 
   const handleGameAction = (action: any) => {
+    soundFX.playClick();
     if (socket && socket.connected) {
       socket.emit('game_action', { code: roomCode, action });
     } else {
@@ -216,6 +256,22 @@ export default function RoomPage({ params }: RoomPageProps) {
   };
 
   const handleSendMessage = (text: string) => {
+    soundFX.playClick();
+    const u = profile || getUserProfile();
+    const optimisticMsg = {
+      id: `opt_${Date.now()}`,
+      senderId: u.id,
+      senderName: u.name,
+      text: text.slice(0, 300),
+      timestamp: Date.now(),
+    };
+    setRoom((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        chatMessages: [...prev.chatMessages, optimisticMsg].slice(-50),
+      };
+    });
     if (socket && socket.connected) {
       socket.emit('send_chat', { code: roomCode, text });
     } else {
