@@ -57,7 +57,7 @@ export interface BombBustersState {
   turnOrder: string[];
   totalWiresToCut: number;
   cutWiresCount: number;
-  phase: 'in_progress' | 'victory' | 'exploded';
+  phase: 'initial_clue' | 'in_progress' | 'victory' | 'exploded';
   endReason: string | null;
   validationTrack: Record<number, { cut: number; total: number; isValidated: boolean }>;
   helperCards: HelperCard[];
@@ -142,7 +142,7 @@ export interface BombBustersClientState {
   turnOrder: string[];
   totalWiresToCut: number;
   cutWiresCount: number;
-  phase: 'in_progress' | 'victory' | 'exploded';
+  phase: 'initial_clue' | 'in_progress' | 'victory' | 'exploded';
   endReason: string | null;
   validationTrack: Record<number, { cut: number; total: number; isValidated: boolean }>;
   helperCards: HelperCard[];

@@ -104,17 +104,6 @@ export function initBombBustersGame(
     });
   });
 
-  // OFFICIAL SETUP RULE: Initial Info Token
-  // At the start of the game, each player places 1 Info token in front of a blue wire to reveal it!
-  players.forEach((p) => {
-    const playerStand = stands[p.id];
-    const blueWire = playerStand.find((w) => w.color === 'blue' && !w.infoToken);
-    if (blueWire) {
-      blueWire.infoToken = blueWire.value;
-      blueWire.clues.push(`Token: #${blueWire.value}`);
-    }
-  });
-
   // Total wires to cut (all non-red wires)
   const totalWiresToCut = rawDeck.filter((w) => w.color !== 'red').length;
   // Shuffle turn order to choose captain (Player 1 is Captain)
@@ -174,7 +163,7 @@ export function initBombBustersGame(
     turnOrder,
     totalWiresToCut,
     cutWiresCount: 0,
-    phase: 'in_progress',
+    phase: 'initial_clue',
     endReason: null,
     validationTrack,
     helperCards,
@@ -187,13 +176,13 @@ export function initBombBustersGame(
     history: [
       {
         id: 'start',
-        text: `💣 Mission #${mission.id}: "${mission.name}" started! 👑 Captain: ${captainName}. Defuse ${totalWiresToCut} wires. Detonator stability: ${lives} cells (${players.length}+1).`,
+        text: `💣 Mission #${mission.id}: "${mission.name}" started! 👑 Captain: ${captainName}. Total ${totalWiresToCut} wires to defuse. Detonator stability: ${lives} cells (${players.length}+1).`,
         time: Date.now(),
         type: 'info',
       },
       {
-        id: 'info_tokens',
-        text: `💡 SETUP: Starting Info Tokens placed! Each operative revealed 1 starting wire on their stand.`,
+        id: 'clue_phase',
+        text: `💡 SETUP PHASE: Starting with Captain ${captainName}, each operative chooses 1 Blue wire to place their starting Info Token!`,
         time: Date.now() + 1,
         type: 'info',
       },
@@ -240,8 +229,14 @@ export function handleBombBustersAction(
   const player = room.players.find((p) => p.id === effectivePlayerId);
   const playerName = player?.name || 'Operative';
 
-  if (state.phase !== 'in_progress') {
+  if (state.phase !== 'in_progress' && state.phase !== 'initial_clue') {
     return { newState: state, error: 'The mission has already concluded.' };
+  }
+
+  if (state.phase === 'initial_clue') {
+    if (action.type !== 'PLACE_INFO_TOKEN' && action.type !== 'BOT_AUTO_TURN') {
+      return { newState: state, error: 'Please finish placing starting clue tokens before cutting wires.' };
+    }
   }
 
   if (
@@ -742,11 +737,68 @@ export function handleBombBustersAction(
         return { newState: state, error: 'This wire already has an Info Token placed.' };
       }
 
+      if (state.phase === 'initial_clue' && targetWire.color !== 'blue') {
+        return { newState: state, error: 'Starting Info Token must be placed on a standard Blue wire.' };
+      }
+
       // Place Info Token showing the wire value
       targetWire.infoToken = targetWire.value;
       targetWire.clues.push(`Token: #${targetWire.value}`);
 
-      // Advance turn clockwise
+      if (state.phase === 'initial_clue') {
+        const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
+        // Check if all players have now placed their starting Info token
+        const allPlaced = state.turnOrder.every((pid) => {
+          const s = state.stands[pid] || [];
+          return s.some((w) => w.infoToken !== null);
+        });
+
+        if (allPlaced) {
+          const captainName = room.players.find((p) => p.id === state.captainPlayerId)?.name || 'Captain';
+          return {
+            newState: {
+              ...state,
+              phase: 'in_progress',
+              currentTurnPlayerId: state.captainPlayerId,
+              history: [
+                ...state.history,
+                {
+                  id: `${Date.now()}_clue`,
+                  text: `💡 SETUP: ${playerName} placed starting Info Token #${targetWire.value}!`,
+                  time: Date.now(),
+                  type: 'info',
+                },
+                {
+                  id: `${Date.now()}_ready`,
+                  text: `🚀 ALL OPERATIVES HAVE DEPLOYED STARTING CLUES! Captain ${captainName} begins the defusal mission!`,
+                  time: Date.now() + 1,
+                  type: 'success',
+                },
+              ],
+            },
+          };
+        } else {
+          const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
+          const nextPlayerName = room.players.find((p) => p.id === nextTurnPlayerId)?.name || 'Next operative';
+          return {
+            newState: {
+              ...state,
+              currentTurnPlayerId: nextTurnPlayerId,
+              history: [
+                ...state.history,
+                {
+                  id: `${Date.now()}`,
+                  text: `💡 SETUP: ${playerName} placed starting Info Token #${targetWire.value}! Turn passes to ${nextPlayerName}.`,
+                  time: Date.now(),
+                  type: 'info',
+                },
+              ],
+            },
+          };
+        }
+      }
+
+      // Advance turn clockwise (if in_progress)
       const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
       const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
 
@@ -966,6 +1018,17 @@ export function getBombBustersBotAction(
 
   const uncutBotWires = botStand.filter((w) => !w.isCut && w.color !== 'red');
   const uncutRedWires = botStand.filter((w) => !w.isCut && w.color === 'red');
+  // If in INITIAL CLUE setup phase, bot places starting Info Token on a blue wire
+  if (state.phase === 'initial_clue') {
+    const blueWires = uncutBotWires.filter((w) => w.color === 'blue' && w.infoToken === null);
+    if (blueWires.length > 0) {
+      const pick = blueWires[Math.floor(blueWires.length / 2)];
+      return {
+        type: 'PLACE_INFO_TOKEN',
+        wireId: pick.id,
+      };
+    }
+  }
 
   // If bot has ONLY red wires remaining, safely reveal them!
   if (uncutBotWires.length === 0 && uncutRedWires.length > 0) {

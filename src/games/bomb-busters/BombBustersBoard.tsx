@@ -66,7 +66,7 @@ export default function BombBustersBoard({
 
   // Auto Bot Turn Runner: Host triggers the server-side bot AI so bot secret wire values remain 100% hidden
   useEffect(() => {
-    if (state.phase !== 'in_progress') return;
+    if (state.phase !== 'in_progress' && state.phase !== 'initial_clue') return;
     if (!state.currentTurnPlayerId || !state.currentTurnPlayerId.startsWith('bot_')) return;
     if (!isHost) return;
 
@@ -512,6 +512,41 @@ export default function BombBustersBoard({
           <div className="absolute bottom-3 left-3 rivet" />
           <div className="absolute bottom-3 right-3 rivet" />
 
+          {/* INITIAL CLUE SETUP PHASE BANNER (ช่วงวางโทเคนใบ้เริ่มต้น) */}
+          {state.phase === 'initial_clue' && (
+            <div className="bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 border-2 border-amber-500/60 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl shadow-amber-950/40">
+              <div className="flex items-center gap-3.5">
+                <div className="p-3 bg-amber-500/25 rounded-2xl border border-amber-500/50 shrink-0">
+                  <Sparkles className="w-7 h-7 text-amber-300 animate-pulse" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[11px] font-mono font-black text-amber-300 uppercase tracking-widest bg-amber-950/70 px-2.5 py-0.5 rounded-full border border-amber-600/50">
+                      PHASE 1: INITIAL CLUE DEPLOYMENT
+                    </span>
+                    <span className="text-[10px] text-amber-200 font-mono font-bold bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-500/30">
+                      {players.filter((p) => (state.stands[p.id] || []).some((w) => w.infoToken != null)).length} / {players.length} Operatives Ready
+                    </span>
+                  </div>
+                  <h3 className="text-sm sm:text-base font-bold text-white">
+                    {isMyTurn ? (
+                      <span className="text-amber-200 animate-pulse">
+                        👉 Your turn to place a clue! Click &quot;💡 Clue&quot; on any BLUE wire on your stand below.
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">
+                        Waiting for operative <strong className="text-amber-300">{currentTurnPlayer?.name || 'Teammate'}</strong> to place their starting clue...
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Official Rule: Starting with Captain, each operative places 1 Info Token on a Blue wire to give the squad an opening clue before defusal begins.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* OFFICIAL CIRCUIT VALIDATION TRACK (Numbers 1 to 12) */}
           {state.validationTrack && Object.keys(state.validationTrack).length > 0 && (
             <div className="bg-black/50 border border-slate-700/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-inner">
@@ -624,7 +659,7 @@ export default function BombBustersBoard({
             <div className="flex flex-wrap items-center gap-2">
               {Array.from({ length: state.numberRange || 12 }, (_, i) => i + 1).map((val) => {
                 const uncluedTile = myStand.find(
-                  (w) => !w.isCut && w.value === val && w.infoToken == null
+                  (w) => !w.isCut && w.value === val && w.infoToken == null && (state.phase !== 'initial_clue' || w.color === 'blue')
                 );
                 const canUseThisToken = isMyTurn && Boolean(uncluedTile);
 
@@ -753,7 +788,7 @@ export default function BombBustersBoard({
           </div>
 
           {/* ACTIVE SNIP ACTION BENCH (DUO CUT, SOLO CUT, SAFE RED REVEAL, OR OPERATIVE CALL) */}
-          {isMyTurn && (
+          {isMyTurn && state.phase === 'in_progress' && (
             <div className="bg-black/50 border border-slate-700 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-inner">
               {/* Option A: Safe Red Wire Reveal when only Red wires remain */}
               {hasOnlyRedWires ? (
@@ -1038,18 +1073,22 @@ export default function BombBustersBoard({
                     <div className="absolute -bottom-2.5 z-20 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 border-2 border-amber-600 shadow-lg flex items-center justify-center font-mono text-[9px] font-black text-amber-950">
                       #{wire.infoToken}
                     </div>
-                  ) : !isCut && isMyTurn ? (
+                  ) : !isCut && isMyTurn && (state.phase !== 'initial_clue' || wire.color === 'blue') ? (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handlePlaceInfoToken(wire.id);
                       }}
-                      className="absolute -bottom-3 z-20 px-2 py-0.5 rounded-full bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-black text-[9px] shadow-lg border border-amber-500 uppercase tracking-wider flex items-center gap-0.5 transition cursor-pointer"
+                      className={`absolute -bottom-3.5 z-20 px-2.5 py-1 rounded-full font-black text-[9px] shadow-lg border uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${
+                        state.phase === 'initial_clue'
+                          ? 'bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 border-amber-400 animate-bounce scale-110 shadow-amber-500/50'
+                          : 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-500'
+                      }`}
                       title={`Place Info Token #${wire.value} on this wire`}
                     >
                       <span>💡</span>
-                      <span>Clue</span>
+                      <span>{state.phase === 'initial_clue' ? 'Start Clue' : 'Clue'}</span>
                     </button>
                   ) : null}
                 </div>
