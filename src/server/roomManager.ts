@@ -242,7 +242,6 @@ class RoomManager {
 
     room.selectedGameId = game.id;
     room.gameSettings = { ...game.defaultSettings };
-    this.addSystemMessage(room, `Game changed to ${game.name}.`);
     return { room };
   }
 
@@ -327,7 +326,6 @@ class RoomManager {
 
     room.status = 'lobby';
     room.gameState = null;
-    this.addSystemMessage(room, `Returned to lobby.`);
     return { room };
   }
 
