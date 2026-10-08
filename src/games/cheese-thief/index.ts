@@ -106,4 +106,3 @@ export const cheeseThiefGameDefinition: GameDefinition<
 
 export * from './types';
 export * from './logic';
-export * from './CheeseThiefBoard';

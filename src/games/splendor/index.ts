@@ -134,4 +134,3 @@ export const splendorGameDefinition: GameDefinition<
 export * from './types';
 export * from './cards';
 export * from './logic';
-export * from './SplendorBoard';

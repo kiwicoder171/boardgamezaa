@@ -120,4 +120,3 @@ export const codenamesGameDefinition: GameDefinition<
 export * from './types';
 export * from './words';
 export * from './logic';
-export * from './CodenamesBoard';

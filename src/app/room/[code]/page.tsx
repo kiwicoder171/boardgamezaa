@@ -10,7 +10,8 @@ import RoomLobby from '@/components/RoomLobby';
 import GameRenderer from '@/components/GameRenderer';
 import RoomChat from '@/components/RoomChat';
 import { soundFX } from '@/lib/sounds';
-import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Loader2, Settings } from 'lucide-react';
+import { GameSettingsModal } from '@/components/ui/GameSettingsModal';
 
 interface RoomPageProps {
   params: Promise<{ code: string }>;
@@ -26,6 +27,7 @@ export default function RoomPage({ params }: RoomPageProps) {
   const [room, setRoom] = useState<Room | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Initialize socket and profile
@@ -178,6 +180,18 @@ export default function RoomPage({ params }: RoomPageProps) {
                 <span className="font-semibold text-slate-300">{profile.name}</span>
               </div>
             )}
+
+            <button
+              onClick={() => {
+                soundFX.playClick();
+                setIsSettingsOpen(true);
+              }}
+              className="btn-tactile p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-amber-400 border border-slate-700 transition"
+              title="Table & Sound Preferences"
+              aria-label="Table Preferences"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </header>
@@ -224,6 +238,14 @@ export default function RoomPage({ params }: RoomPageProps) {
               onSendMessage={handleSendMessage}
               isOpen={isChatOpen}
               onToggle={() => setIsChatOpen(!isChatOpen)}
+            />
+
+            {/* Room Settings Modal */}
+            <GameSettingsModal
+              isOpen={isSettingsOpen}
+              onClose={() => setIsSettingsOpen(false)}
+              roomCode={room.code}
+              gameTitle={allGames.find((g) => g.id === room.selectedGameId)?.name}
             />
           </>
         )}

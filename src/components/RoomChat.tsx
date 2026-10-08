@@ -2,8 +2,9 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ChatMessage } from '@/types/game';
-import { MessageSquare, Send, X } from 'lucide-react';
+import { MessageSquare, Send } from 'lucide-react';
 import { soundFX } from '@/lib/sounds';
+import { GameDrawerSheet } from '@/components/ui/GameDrawerSheet';
 
 interface RoomChatProps {
   messages: ChatMessage[];
@@ -39,96 +40,96 @@ export default function RoomChat({
 
   return (
     <>
-      {/* Floating Toggle Button */}
+      {/* Floating Toggle Pill */}
       <button
         onClick={onToggle}
-        className="fixed bottom-6 right-6 z-40 p-3.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-950/60 transition transform hover:scale-105 flex items-center justify-center border border-indigo-400/40"
-        title="Open Room Chat"
+        className="fixed bottom-6 right-6 z-40 px-4 py-3 rounded-2xl bg-gradient-to-r from-[#182338] to-[#111927] hover:from-[#21304d] hover:to-[#172235] text-amber-300 shadow-2xl shadow-black/80 transition-all transform hover:scale-105 flex items-center gap-2.5 border-2 border-amber-500/40 btn-tactile"
+        title="Open Table Chat & Action Log"
+        aria-label="Open Table Chat"
       >
-        <MessageSquare className="w-6 h-6" />
+        <MessageSquare className="w-5 h-5 text-amber-400" />
+        <span className="font-mono text-xs font-black tracking-wide text-white">Table Talk</span>
         {messages.length > 0 && !isOpen && (
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 rounded-full border-2 border-slate-900" />
+          <span className="ml-0.5 px-2 py-0.5 text-[10px] bg-amber-500 text-slate-950 font-black rounded-full shadow">
+            {messages.length}
+          </span>
         )}
       </button>
 
-      {/* Chat Drawer */}
-      {isOpen && (
-        <div className="fixed bottom-20 right-6 z-50 w-80 sm:w-96 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-3xl shadow-2xl flex flex-col h-[460px] animate-in fade-in slide-in-from-bottom-6">
-          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-indigo-400" />
-              <h3 className="font-bold text-sm text-white">Room Chat</h3>
-            </div>
-            <button
-              onClick={onToggle}
-              className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div ref={scrollRef} className="flex-1 p-4 overflow-y-auto space-y-3">
-            {messages.length === 0 ? (
-              <div className="text-center text-xs text-slate-500 py-10">
-                No messages yet. Say hi!
-              </div>
-            ) : (
-              messages.map((msg) => {
-                const isMe = msg.senderId === currentPlayerId;
-                const isSystem = msg.isSystem;
-
-                if (isSystem) {
-                  return (
-                    <div key={msg.id} className="text-center my-1">
-                      <span className="text-[11px] bg-slate-800/80 text-slate-400 px-2.5 py-1 rounded-full border border-slate-800">
-                        {msg.text}
-                      </span>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div
-                    key={msg.id}
-                    className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
-                  >
-                    {!isMe && (
-                      <span className="text-[10px] text-slate-400 mb-0.5 ml-1 font-semibold">
-                        {msg.senderName}
-                      </span>
-                    )}
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
-                        isMe
-                          ? 'bg-indigo-600 text-white rounded-tr-none'
-                          : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-none'
-                      }`}
-                    >
-                      {msg.text}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-3 border-t border-slate-800 flex gap-2">
+      {/* Slide-out Sheet Drawer */}
+      <GameDrawerSheet
+        isOpen={isOpen}
+        onClose={onToggle}
+        title="Table Talk & Match Log"
+        icon={<MessageSquare className="w-5 h-5" />}
+        description="Live multiplayer table discussion and system notifications"
+        side="right"
+        footer={
+          <form onSubmit={handleSubmit} className="flex gap-2">
             <input
               type="text"
-              placeholder="Send message..."
+              placeholder="Type message to table..."
+              maxLength={280}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+              className="flex-1 bg-[#060a12] border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
             />
             <button
               type="submit"
-              className="p-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition"
+              disabled={!inputText.trim()}
+              className="btn-tactile px-3.5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black rounded-xl text-xs flex items-center gap-1 shadow-md disabled:opacity-40"
             >
               <Send className="w-3.5 h-3.5" />
             </button>
           </form>
+        }
+      >
+        <div ref={scrollRef} className="space-y-3 pr-1">
+          {messages.length === 0 ? (
+            <div className="text-center text-xs text-slate-500 py-16 flex flex-col items-center gap-2">
+              <span className="text-3xl">☕</span>
+              <span>No messages yet. Greet your fellow players!</span>
+            </div>
+          ) : (
+            messages.map((msg) => {
+              const isMe = msg.senderId === currentPlayerId;
+              const isSystem = msg.isSystem;
+
+              if (isSystem) {
+                return (
+                  <div key={msg.id} className="text-center my-2">
+                    <span className="text-[10px] font-mono bg-black/40 text-amber-300/80 px-3 py-1 rounded-full border border-amber-500/20 inline-block shadow-inner">
+                      📢 {msg.text}
+                    </span>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+                >
+                  {!isMe && (
+                    <span className="text-[10px] text-slate-400 mb-1 ml-1 font-bold">
+                      {msg.senderName}
+                    </span>
+                  )}
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-xs leading-relaxed shadow-md ${
+                      isMe
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-medium rounded-tr-none shadow-amber-950/40'
+                        : 'bg-[#141d2d] text-slate-100 border border-slate-700/80 rounded-tl-none'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
-      )}
+      </GameDrawerSheet>
     </>
   );
 }

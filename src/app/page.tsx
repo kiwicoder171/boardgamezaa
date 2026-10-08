@@ -150,15 +150,20 @@ export default function HomePage() {
     setCreatingGameId(gameId);
     soundFX.playStart();
 
+    const userToUse = profile.id ? profile : getUserProfile();
     try {
       const res = await fetch('/api/room/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ player: profile, gameId }),
+        body: JSON.stringify({ player: userToUse, gameId }),
       });
       const data = await res.json();
       if (data.code) {
         router.push(`/room/${data.code}`);
+      } else {
+        console.error('Room creation returned no code:', data);
+        setIsCreating(false);
+        setCreatingGameId(null);
       }
     } catch (err) {
       console.error(err);
