@@ -547,8 +547,12 @@ export function handleBombBustersAction(
 
       if (match1 && match2) {
         // 9.1: Both match! Cut both wires!
-        w1.isCut = true;
-        w2.isCut = true;
+        const updatedStands = {
+          ...state.stands,
+          [action.targetPlayerId]: (state.stands[action.targetPlayerId] || []).map((w) =>
+            w.id === w1.id || w.id === w2.id ? { ...w, isCut: true } : w
+          ),
+        };
         const newCutCount = state.cutWiresCount + 2;
         const updatedValidation = { ...state.validationTrack };
         const valNum = Math.floor(Number(action.guessedValue));
@@ -567,6 +571,7 @@ export function handleBombBustersAction(
         return {
           newState: {
             ...state,
+            stands: updatedStands,
             cutWiresCount: newCutCount,
             validationTrack: updatedValidation,
             doubleDetectorUsed: updatedDoubleDetector,
@@ -587,20 +592,31 @@ export function handleBombBustersAction(
       } else if (match1 || match2) {
         // 9.2: Exactly 1 matches! Reveal the matching wire with Info Token!
         const matchedWire = match1 ? w1 : w2;
-        matchedWire.infoToken = matchedWire.value;
-        matchedWire.clues.push(`DoubleDetector: #${matchedWire.value}`);
+        const updatedStands = {
+          ...state.stands,
+          [action.targetPlayerId]: (state.stands[action.targetPlayerId] || []).map((w) =>
+            w.id === matchedWire.id
+              ? {
+                  ...w,
+                  infoToken: matchedWire.value,
+                  clues: [...w.clues, `DoubleDetector: #${matchedWire.value}`],
+                }
+              : w
+          ),
+        };
         const nextTurnPlayerId = getNextActivePlayerId(state, effectivePlayerId);
 
         return {
           newState: {
             ...state,
+            stands: updatedStands,
             doubleDetectorUsed: updatedDoubleDetector,
             currentTurnPlayerId: nextTurnPlayerId,
             history: [
               ...state.history,
               {
                 id: `${Date.now()}`,
-                text: `🔍 DOUBLE DETECTOR: 1 of 2 wires matched #${action.guessedValue}! Revealed Info Token on ${targetName}'s rack. Detonator stability remains safe!`,
+                text: `🔍 DOUBLE DETECTOR: 1 of 2 wires matched #${action.guessedValue}! Revealed Info Token #${matchedWire.value} on ${targetName}'s rack! Detonator stability remains safe!`,
                 time: Date.now(),
                 type: 'info',
               },
@@ -642,8 +658,11 @@ export function handleBombBustersAction(
       if (card.isUsed) return { newState: state, error: 'This card has already been consumed.' };
 
       let logText = '';
+      let updatedStands = state.stands;
+      let nextDetonatorLives = state.detonatorLives;
+
       if (card.effect === 'RESTORE_STABILITY') {
-        state.detonatorLives = Math.min(state.maxDetonatorLives, state.detonatorLives + 1);
+        nextDetonatorLives = Math.min(state.maxDetonatorLives, state.detonatorLives + 1);
         logText = `🔋 HELPER CARD: ${playerName} deployed "${card.nameTh}" and restored +1 Detonator Stability!`;
       } else if (card.effect === 'EXTRA_INFO_TOKEN') {
         const myStand = state.stands[effectivePlayerId];
@@ -651,17 +670,33 @@ export function handleBombBustersAction(
         if (!targetWire || targetWire.isCut) {
           return { newState: state, error: 'Select an uncut wire from your stand to place an extra Info Token.' };
         }
-        targetWire.infoToken = targetWire.value;
-        targetWire.clues.push(`CardToken: #${targetWire.value}`);
+        updatedStands = {
+          ...state.stands,
+          [effectivePlayerId]: (state.stands[effectivePlayerId] || []).map((w) =>
+            w.id === targetWire.id
+              ? {
+                  ...w,
+                  infoToken: targetWire.value,
+                  clues: [...w.clues, `CardToken: #${targetWire.value}`],
+                }
+              : w
+          ),
+        };
         logText = `💡 HELPER CARD: ${playerName} deployed "${card.nameTh}" to place an extra Info Token on wire #${targetWire.value}!`;
       } else if (card.effect === 'PEEK_WIRE') {
         logText = `🔍 HELPER CARD: ${playerName} deployed "${card.nameTh}"!`;
       }
 
-      card.isUsed = true;
+      const updatedHelperCards = state.helperCards.map((c) =>
+        c.id === action.cardId ? { ...c, isUsed: true } : c
+      );
+
       return {
         newState: {
           ...state,
+          stands: updatedStands,
+          detonatorLives: nextDetonatorLives,
+          helperCards: updatedHelperCards,
           history: [
             ...state.history,
             {
@@ -1151,21 +1186,51 @@ export function getBombBustersBotAction(
     }
   }
 
-  // 3. Deduction Duo Cut: find candidate wire that hasn't been ruled out
+  // 3. Deduction Duo Cut: find candidate wire that fits the rack's ascending order constraints!
   for (const bWire of uncutBotWires) {
     if (typeof bWire.value !== 'number') continue;
+    const guessVal = bWire.value;
+
     for (const [pId, wires] of Object.entries(state.stands)) {
       if (pId === botPlayerId) continue;
-      const candidate = wires.find(
-        (w) => !w.isCut && !w.clues.includes(`≠${bWire.value}`)
-      );
-      if (candidate) {
-        return {
-          type: 'CUT_WIRE',
-          myWireId: bWire.id,
-          targetPlayerId: pId,
-          targetWireId: candidate.id,
-        };
+
+      for (let idx = 0; idx < wires.length; idx++) {
+        const candidate = wires[idx];
+        if (candidate.isCut) continue;
+        if (candidate.clues.includes(`≠${guessVal}`)) continue;
+
+        // Ascending Rack Deduction:
+        // Left known bounds (wires[0..idx-1])
+        let minBound = 1;
+        for (let l = 0; l < idx; l++) {
+          const lw = wires[l];
+          if (lw.isCut && typeof lw.value === 'number') {
+            minBound = Math.max(minBound, Math.floor(lw.value));
+          } else if (lw.infoToken !== null && typeof lw.infoToken === 'number') {
+            minBound = Math.max(minBound, Math.floor(lw.infoToken));
+          }
+        }
+
+        // Right known bounds (wires[idx+1..end])
+        let maxBound = state.numberRange || 12;
+        for (let r = idx + 1; r < wires.length; r++) {
+          const rw = wires[r];
+          if (rw.isCut && typeof rw.value === 'number') {
+            maxBound = Math.min(maxBound, Math.floor(rw.value));
+          } else if (rw.infoToken !== null && typeof rw.infoToken === 'number') {
+            maxBound = Math.min(maxBound, Math.floor(rw.infoToken));
+          }
+        }
+
+        // Only guess if mathematically possible within the ascending rack range!
+        if (guessVal >= minBound && guessVal <= maxBound) {
+          return {
+            type: 'CUT_WIRE',
+            myWireId: bWire.id,
+            targetPlayerId: pId,
+            targetWireId: candidate.id,
+          };
+        }
       }
     }
   }

@@ -63,6 +63,7 @@ export default function BombBustersBoard({
   const [ddWireId1, setDdWireId1] = useState<string>('');
   const [ddWireId2, setDdWireId2] = useState<string>('');
   const [ddGuessedValue, setDdGuessedValue] = useState<number>(1);
+  const [helperCardTargetModal, setHelperCardTargetModal] = useState<string | null>(null);
 
   // Auto Bot Turn Runner: Host triggers the server-side bot AI so bot secret wire values remain 100% hidden
   useEffect(() => {
@@ -266,8 +267,8 @@ export default function BombBustersBoard({
       if (selectedMyWireIds.length === 1) {
         targetWireId = selectedMyWireIds[0];
       } else {
-        const firstUnclued = myStand.find((w) => !w.isCut && w.infoToken == null && w.color === 'blue');
-        if (firstUnclued) targetWireId = firstUnclued.id;
+        setHelperCardTargetModal(cardId);
+        return;
       }
     }
     soundFX.playClick();
@@ -276,6 +277,8 @@ export default function BombBustersBoard({
       cardId,
       targetWireId,
     });
+    setHelperCardTargetModal(null);
+    setSelectedMyWireIds([]);
   };
 
   const handleRevealRedWires = () => {
@@ -474,26 +477,27 @@ export default function BombBustersBoard({
                               </span>
                               <div
                                 className="w-2.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: isCut ? '#475569' : wireCol.wire }}
+                                style={{ backgroundColor: isCut ? '#475569' : hasInfoToken ? wireCol.wire : '#475569' }}
                               />
                             </div>
 
                             {/* Center Value / Unknown Glyph / Info Token Value */}
                             <div className="my-auto text-center">
                               {isCut ? (
-                                <span className="font-mono text-base font-black text-slate-400">
-                                  {wire.value}
-                                </span>
-                              ) : wire.value !== null ? (
-                                <span className={`font-mono text-lg font-black ${wireCol.text}`}>
+                                <span className="font-mono text-base font-black text-slate-400 line-through">
                                   {wire.value}
                                 </span>
                               ) : hasInfoToken ? (
-                                <span className={`font-mono text-lg font-black text-amber-400`}>
-                                  {wire.infoToken}
-                                </span>
+                                <div className="flex flex-col items-center leading-none">
+                                  <span className="font-mono text-lg font-black text-amber-300 drop-shadow">
+                                    #{wire.infoToken}
+                                  </span>
+                                  <span className="text-[8px] font-mono font-bold text-amber-400 uppercase tracking-tighter">
+                                    CLUE 💡
+                                  </span>
+                                </div>
                               ) : (
-                                <span className="font-serif text-lg font-black text-slate-400 opacity-60">
+                                <span className="font-serif text-xl font-black text-slate-500/70">
                                   ?
                                 </span>
                               )}
@@ -1362,11 +1366,16 @@ export default function BombBustersBoard({
                   onChange={(e) => setDdGuessedValue(Number(e.target.value))}
                   className="w-full bg-[#141518] border border-[#272930] rounded-xl p-2.5 text-xs text-purple-300 font-mono font-bold focus:outline-none focus:border-purple-500"
                 >
-                  {Array.from({ length: state.numberRange || 12 }, (_, i) => i + 1).map((val) => (
-                    <option key={val} value={val}>
-                      #{val}
-                    </option>
-                  ))}
+                  {Array.from({ length: state.numberRange || 12 }, (_, i) => i + 1).map((val) => {
+                    const track = state.validationTrack?.[val];
+                    const remaining = track ? track.total - track.cut : null;
+                    const isAllCut = track?.isValidated;
+                    return (
+                      <option key={val} value={val} disabled={isAllCut}>
+                        #{val} {isAllCut ? '(All Cut ✓)' : remaining != null ? `(${remaining} remaining)` : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -1391,6 +1400,46 @@ export default function BombBustersBoard({
               >
                 Scan Adjacent Wires
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* HELPER CARD: SELECT WIRE MODAL FOR EXTRA INFO TOKEN */}
+      {helperCardTargetModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#111215] border border-indigo-500/50 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#222429] pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">💡</span>
+                <h3 className="text-sm sm:text-base font-bold text-indigo-200">
+                  Select Wire for Extra Info Token
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHelperCardTargetModal(null)}
+                className="text-zinc-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-zinc-300">
+              Click an uncut wire on your stand to place your Tactical Info Relay token on it:
+            </p>
+            <div className="flex flex-wrap gap-2.5 justify-center p-3 bg-black/40 rounded-xl border border-zinc-800">
+              {myStand.filter((w) => !w.isCut).map((wire, idx) => (
+                <button
+                  key={wire.id}
+                  type="button"
+                  onClick={() => handleUseHelperCard(helperCardTargetModal, wire.id)}
+                  className="w-14 h-20 rounded-xl border border-amber-500/60 bg-amber-500/10 hover:bg-amber-500/30 flex flex-col items-center justify-between p-2 transition font-mono active:scale-95 cursor-pointer shadow-lg hover:border-amber-400"
+                >
+                  <span className="text-[9px] text-zinc-400">#{idx + 1}</span>
+                  <span className="text-base font-black text-amber-300">#{wire.value}</span>
+                  <span className="text-[8px] text-amber-400 font-bold uppercase">Select</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
