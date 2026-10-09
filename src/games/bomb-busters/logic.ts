@@ -448,13 +448,25 @@ export function handleBombBustersAction(
       const valNum = Math.floor(Number(firstVal));
       const track = state.validationTrack[valNum];
 
+      // Official Rule: Player can Solo Cut when all remaining copies of that value are on their stand
+      const otherPlayersHoldThisValue = Object.entries(state.stands).some(([pid, stand]) => {
+        if (pid === effectivePlayerId) return false;
+        return stand.some((w) => !w.isCut && w.value === firstVal);
+      });
+
       const isValidFourCut = wireIds.length === 4;
-      const isValidTwoCut = wireIds.length === 2 && track && track.cut >= 2;
+      const isValidTwoCut = wireIds.length === 2 && !otherPlayersHoldThisValue;
 
       if (!isValidFourCut && !isValidTwoCut) {
+        if (otherPlayersHoldThisValue) {
+          return {
+            newState: state,
+            error: `Solo Cut not allowed: Another operative still holds wire #${firstVal}. Under official rules, you can only Solo Cut when all remaining copies of that number are on your stand!`,
+          };
+        }
         return {
           newState: state,
-          error: `Solo Cut not allowed! You can only Solo Cut 2 wires if 1 pair of #${valNum} was already cut on the board, or 4 wires if you hold all 4 in hand!`,
+          error: `Solo Cut requires cutting either 2 matching wires (when all remaining copies are in your hand) or all 4 copies of #${firstVal}!`,
         };
       }
 

@@ -182,15 +182,17 @@ export default function BombBustersBoard({
     setTargetSelection(null);
   };
 
-  // Solo Cut handler
+  // Solo Cut handler (cuts matching wires on own rack when holding all remaining copies)
   const handleSoloCut = () => {
-    if (selectedMyWireIds.length !== 2) return;
+    if (selectedMyWireIds.length !== 2 && selectedMyWireIds.length !== 4) return;
     soundFX.playWireSnip();
 
     onAction({
       type: 'SOLO_CUT',
       wireId1: selectedMyWireIds[0],
       wireId2: selectedMyWireIds[1],
+      wireId3: selectedMyWireIds[2],
+      wireId4: selectedMyWireIds[3],
     });
 
     setSelectedMyWireIds([]);
@@ -257,7 +259,17 @@ export default function BombBustersBoard({
     setDdWireId2('');
   };
 
-  const handleUseHelperCard = (cardId: string, targetWireId?: string) => {
+  const handleUseHelperCard = (cardId: string, explicitTargetWireId?: string) => {
+    const card = state.helperCards?.find((c) => c.id === cardId);
+    let targetWireId = explicitTargetWireId;
+    if (!targetWireId && card?.effect === 'EXTRA_INFO_TOKEN') {
+      if (selectedMyWireIds.length === 1) {
+        targetWireId = selectedMyWireIds[0];
+      } else {
+        const firstUnclued = myStand.find((w) => !w.isCut && w.infoToken == null && w.color === 'blue');
+        if (firstUnclued) targetWireId = firstUnclued.id;
+      }
+    }
     soundFX.playClick();
     onAction({
       type: 'USE_HELPER_CARD',
@@ -286,10 +298,16 @@ export default function BombBustersBoard({
       if (prev.includes(wireId)) {
         return prev.filter((id) => id !== wireId);
       }
-      if (prev.length >= 2) {
-        return [wireId];
+      const clickedWire = myStand.find((w) => w.id === wireId);
+      const firstSelected = prev.length > 0 ? myStand.find((w) => w.id === prev[0]) : null;
+
+      // If selecting multiple wires for Solo Cut, check if they share the exact same value
+      if (firstSelected && clickedWire && firstSelected.value === clickedWire.value && prev.length < 4) {
+        return [...prev, wireId];
       }
-      return [...prev, wireId];
+
+      // Otherwise switch selection to newly clicked wire
+      return [wireId];
     });
   };
 
@@ -861,11 +879,13 @@ export default function BombBustersBoard({
                       <div className="font-bold text-amber-300 text-sm flex items-center gap-2">
                         <span>SOLO CUT OPPORTUNITY READY!</span>
                         <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/40">
-                          Pair #{selectedMyWires[0].value}
+                          {selectedMyWires.length === 4 ? 'All 4x' : 'Pair'} #{selectedMyWires[0].value}
                         </span>
                       </div>
                       <div className="text-xs text-slate-300">
-                        You selected 2 identical wires in your own stand. If no other player holds wire #{selectedMyWires[0].value}, you can cut both yourself!
+                        {selectedMyWires.length === 4
+                          ? `You hold all 4 wires of #${selectedMyWires[0].value}! You can cut all 4 simultaneously!`
+                          : `You selected 2 identical wires on your rack. You can Solo Cut them directly without asking a teammate!`}
                       </div>
                     </div>
                   </div>
@@ -875,7 +895,7 @@ export default function BombBustersBoard({
                     className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-xl shadow-emerald-950/60 flex items-center justify-center gap-2 transform active:scale-95"
                   >
                     <Scissors className="w-4 h-4" />
-                    <span>EXECUTE SOLO CUT! ✂️</span>
+                    <span>EXECUTE SOLO CUT ({selectedMyWires.length} WIRES)! ✂️</span>
                   </button>
                 </div>
               ) : myStand.filter((w) => !w.isCut).length === 0 ? (
