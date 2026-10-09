@@ -244,6 +244,11 @@ export default function RoomPage({ params }: RoomPageProps) {
           setRoom(data.room);
           setError(null);
         }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (data.error) {
+          setError(data.error);
+        }
       }
     } catch (err) {
       console.error('Action POST failed:', err);

@@ -126,6 +126,12 @@ export async function POST(req: Request, context: RouteContext) {
         let actingId = playerId;
         const botCandidate =
           payload.action?._asPlayerId ||
+          (typeof payload.action?.botId === 'string' &&
+          (payload.action.botId.startsWith('bot_') ||
+            payload.action.botId.startsWith('mouse_bot_') ||
+            payload.action.botId.startsWith('spy_bot_'))
+            ? payload.action.botId
+            : null) ||
           (typeof payload.action?.playerId === 'string' &&
           (payload.action.playerId.startsWith('bot_') ||
             payload.action.playerId.startsWith('mouse_bot_') ||

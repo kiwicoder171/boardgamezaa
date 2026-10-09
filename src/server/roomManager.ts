@@ -420,6 +420,12 @@ class RoomManager {
     let effectivePlayerId = playerId;
     const botCandidate =
       action?._asPlayerId ||
+      (typeof action?.botId === 'string' &&
+      (action.botId.startsWith('bot_') ||
+        action.botId.startsWith('mouse_bot_') ||
+        action.botId.startsWith('spy_bot_'))
+        ? action.botId
+        : null) ||
       (typeof action?.playerId === 'string' &&
       (action.playerId.startsWith('bot_') ||
         action.playerId.startsWith('mouse_bot_') ||

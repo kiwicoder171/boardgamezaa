@@ -79,6 +79,20 @@ export default function BombBustersBoard({
     return () => clearTimeout(timer);
   }, [state.currentTurnPlayerId, state.phase, isHost, onAction]);
 
+  // Audio triggers: match sound on cut, alert sound on miss
+  const prevHistoryLenRef = React.useRef(state.history.length);
+  useEffect(() => {
+    if (state.history.length > prevHistoryLenRef.current) {
+      const latest = state.history[state.history.length - 1];
+      if (latest?.type === 'success') {
+        soundFX.playWireSnip();
+      } else if (latest?.type === 'error' || latest?.type === 'boom') {
+        soundFX.playAlarm();
+      }
+    }
+    prevHistoryLenRef.current = state.history.length;
+  }, [state.history]);
+
   // Victory / Defeat audio triggers
   useEffect(() => {
     if (state.phase === 'victory') {
@@ -104,6 +118,7 @@ export default function BombBustersBoard({
     selectedMyWires[0].color !== 'red';
 
   const myUncutWires = myStand.filter((w) => !w.isCut);
+  const myHasPlacedClue = myStand.some((w) => w.infoToken !== null);
   const hasOnlyRedWires = myUncutWires.length > 0 && myUncutWires.every((w) => w.color === 'red');
   const canUseDoubleDetector = !(state.doubleDetectorUsed && state.doubleDetectorUsed[currentPlayerId]);
 
@@ -155,7 +170,6 @@ export default function BombBustersBoard({
   // Duo Cut handler
   const handleDuoSnip = () => {
     if (selectedMyWireIds.length !== 1 || !targetSelection) return;
-    soundFX.playWireSnip();
 
     onAction({
       type: 'CUT_WIRE',
@@ -401,8 +415,9 @@ export default function BombBustersBoard({
                     <div className="rack-groove rounded-xl p-2.5 flex flex-wrap gap-2 justify-center min-h-[110px] items-end pb-3">
                       {stand.map((wire, idx) => {
                         const isCut = wire.isCut;
+                        const teammateId = teammate.id;
                         const isTargeted =
-                          targetSelection?.playerId === teammate.id &&
+                          targetSelection?.playerId === teammateId &&
                           targetSelection?.wireId === wire.id;
                         const wireCol = getWireColor(wire.value, wire.color);
                         const hasInfoToken = wire.infoToken != null;
@@ -411,13 +426,13 @@ export default function BombBustersBoard({
                           <div
                             key={wire.id}
                             onClick={() => {
-                              if (!isCut && isMyTurn) {
+                              if (!isCut && isMyTurn && state.phase === 'in_progress') {
                                 soundFX.playTileClack();
                                 setTargetSelection(
                                   isTargeted
                                     ? null
                                     : {
-                                        playerId: teammate.id,
+                                        playerId: teammateId,
                                         wireId: wire.id,
                                         slotIndex: idx,
                                       }
@@ -529,13 +544,13 @@ export default function BombBustersBoard({
                     </span>
                   </div>
                   <h3 className="text-sm sm:text-base font-bold text-white">
-                    {isMyTurn ? (
+                    {!myHasPlacedClue ? (
                       <span className="text-amber-200 animate-pulse">
-                        👉 Your turn to place a clue! Click &quot;💡 Clue&quot; on any BLUE wire on your stand below.
+                        👉 Choose your starting clue! Click &quot;💡 Start Clue&quot; on any BLUE wire on your stand below.
                       </span>
                     ) : (
                       <span className="text-slate-300">
-                        Waiting for operative <strong className="text-amber-300">{currentTurnPlayer?.name || 'Teammate'}</strong> to place their starting clue...
+                        ⏳ Starting clue deployed! Waiting for remaining operatives to choose theirs...
                       </span>
                     )}
                   </h3>
@@ -547,7 +562,32 @@ export default function BombBustersBoard({
             </div>
           )}
 
-          {/* OFFICIAL CIRCUIT VALIDATION TRACK (Numbers 1 to 12) */}
+          {/* LATEST ACTION RESULT ALERT BANNER */}
+          {state.history.length > 0 && (() => {
+            const latest = state.history[state.history.length - 1];
+            if (!latest || latest.id === 'start' || latest.id === 'clue_phase') return null;
+            return (
+              <div
+                className={`rounded-2xl p-3.5 flex items-center justify-between gap-3 text-xs sm:text-sm font-bold border shadow-xl transition-all ${
+                  latest.type === 'success'
+                    ? 'bg-emerald-950/70 border-emerald-500/60 text-emerald-200 shadow-emerald-950/40'
+                    : latest.type === 'error' || latest.type === 'boom'
+                    ? 'bg-rose-950/80 border-rose-500/70 text-rose-200 shadow-rose-950/50'
+                    : 'bg-amber-950/60 border-amber-500/50 text-amber-200'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl shrink-0">
+                    {latest.type === 'success' ? '✂️' : latest.type === 'error' || latest.type === 'boom' ? '⚠️' : '💡'}
+                  </span>
+                  <span>{latest.text}</span>
+                </div>
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 shrink-0 px-2 py-0.5 rounded bg-black/40 border border-slate-700">
+                  Last Action
+                </span>
+              </div>
+            );
+          })()}
           {state.validationTrack && Object.keys(state.validationTrack).length > 0 && (
             <div className="bg-black/50 border border-slate-700/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-inner">
               <div className="text-[10px] font-mono uppercase tracking-wider text-slate-300 flex items-center gap-1.5 font-bold">
@@ -653,15 +693,17 @@ export default function BombBustersBoard({
                 <span>Center Clue Token Supply (โทเคนใบ้ตรงกลาง):</span>
               </div>
               <span className="text-[10px] text-amber-300/70 font-mono">
-                Click a token to clue your matching wire, or click &quot;💡 Clue&quot; on your stand
+                {state.phase === 'initial_clue'
+                  ? 'Setup Phase: Click a token to place your opening clue on your blue wire'
+                  : 'Tokens in play: Placed automatically on racks when a cut misses'}
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {Array.from({ length: state.numberRange || 12 }, (_, i) => i + 1).map((val) => {
                 const uncluedTile = myStand.find(
-                  (w) => !w.isCut && w.value === val && w.infoToken == null && (state.phase !== 'initial_clue' || w.color === 'blue')
+                  (w) => !w.isCut && w.value === val && w.infoToken == null && w.color === 'blue'
                 );
-                const canUseThisToken = isMyTurn && Boolean(uncluedTile);
+                const canUseThisToken = state.phase === 'initial_clue' && !myHasPlacedClue && Boolean(uncluedTile);
 
                 return (
                   <button
@@ -675,12 +717,12 @@ export default function BombBustersBoard({
                     }}
                     className={`px-3 py-1.5 rounded-xl font-mono text-xs font-black transition flex items-center gap-1.5 border shadow-sm ${
                       canUseThisToken
-                        ? 'bg-amber-500/25 border-amber-400 text-amber-200 hover:bg-amber-400 hover:text-slate-950 cursor-pointer shadow-amber-900/40 scale-100 hover:scale-105 active:scale-95'
+                        ? 'bg-amber-500/25 border-amber-400 text-amber-200 hover:bg-amber-400 hover:text-slate-950 cursor-pointer shadow-amber-900/40 scale-100 hover:scale-105 active:scale-95 animate-pulse'
                         : 'bg-slate-900/80 border-slate-800 text-slate-500 cursor-not-allowed opacity-50'
                     }`}
                     title={
                       canUseThisToken
-                        ? `Place Info Token #${val} on your rack wire`
+                        ? `Place opening Info Token #${val} on your rack wire`
                         : `Info Token #${val}`
                     }
                   >
@@ -940,23 +982,29 @@ export default function BombBustersBoard({
                       <Scissors className="w-4 h-4" />
                       <span>SNIP WIRE! ✂️</span>
                     </button>
-
-                    {selectedMyWires.length === 1 &&
-                      !selectedMyWires[0].isCut &&
-                      selectedMyWires[0].infoToken === null && (
-                        <button
-                          type="button"
-                          onClick={() => handlePlaceInfoToken(selectedMyWires[0].id)}
-                          className="w-full sm:w-auto px-5 py-3.5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-lg flex items-center justify-center gap-2 transform active:scale-95"
-                          title="Place Info Token from center onto this wire to give your team a clue"
-                        >
-                          <span>💡</span>
-                          <span>PLACE INFO TOKEN (#{selectedMyWires[0].value})</span>
-                        </button>
-                      )}
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* WAITING FOR TEAMMATE TURN INDICATOR (Prevents feeling 'frozen') */}
+          {!isMyTurn && state.phase === 'in_progress' && (
+            <div className="bg-slate-900/80 border border-slate-700/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-inner">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl animate-spin">⏳</span>
+                <div>
+                  <div className="font-bold text-amber-300 text-sm flex items-center gap-2">
+                    <span>OPERATIVE {currentTurnPlayer?.name || 'TEAMMATE'} IS CUTTING WIRES</span>
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-500/40 animate-pulse">
+                      Analyzing Squad Racks...
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    Stand by while your squad member executes a Duo Cut or Solo Cut.
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -1073,22 +1121,18 @@ export default function BombBustersBoard({
                     <div className="absolute -bottom-2.5 z-20 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 border-2 border-amber-600 shadow-lg flex items-center justify-center font-mono text-[9px] font-black text-amber-950">
                       #{wire.infoToken}
                     </div>
-                  ) : !isCut && isMyTurn && (state.phase !== 'initial_clue' || wire.color === 'blue') ? (
+                  ) : !isCut && state.phase === 'initial_clue' && !myHasPlacedClue && wire.color === 'blue' ? (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handlePlaceInfoToken(wire.id);
                       }}
-                      className={`absolute -bottom-3.5 z-20 px-2.5 py-1 rounded-full font-black text-[9px] shadow-lg border uppercase tracking-wider flex items-center gap-1 transition cursor-pointer ${
-                        state.phase === 'initial_clue'
-                          ? 'bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 border-amber-400 animate-bounce scale-110 shadow-amber-500/50'
-                          : 'bg-amber-400 hover:bg-amber-300 text-slate-950 border-amber-500'
-                      }`}
-                      title={`Place Info Token #${wire.value} on this wire`}
+                      className="absolute -bottom-3.5 z-20 px-2.5 py-1 rounded-full font-black text-[9px] shadow-lg border uppercase tracking-wider flex items-center gap-1 transition cursor-pointer bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 border-amber-400 animate-bounce scale-110 shadow-amber-500/50"
+                      title={`Place opening Info Token #${wire.value} on this wire`}
                     >
                       <span>💡</span>
-                      <span>{state.phase === 'initial_clue' ? 'Start Clue' : 'Clue'}</span>
+                      <span>Start Clue</span>
                     </button>
                   ) : null}
                 </div>

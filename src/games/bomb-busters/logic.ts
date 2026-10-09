@@ -151,6 +151,24 @@ export function initBombBustersGame(
 
   const captainName = players.find((p) => p.id === captainPlayerId)?.name || 'Captain';
 
+  // Pre-place starting Info Token for bots so human players don't wait on them
+  players.forEach((p) => {
+    if (p.id.startsWith('bot_') || p.id.startsWith('mouse_bot_') || p.id.startsWith('spy_bot_')) {
+      const stand = stands[p.id] || [];
+      const blueWires = stand.filter((w) => w.color === 'blue' && !w.isCut && w.infoToken === null);
+      if (blueWires.length > 0) {
+        const pick = blueWires[Math.floor(blueWires.length / 2)];
+        pick.infoToken = pick.value;
+        pick.clues.push(`Token: #${pick.value}`);
+      }
+    }
+  });
+
+  const allInitialPlaced = turnOrder.every((pid) => {
+    const s = stands[pid] || [];
+    return s.some((w) => w.infoToken !== null);
+  });
+
   return {
     missionId: mission.id,
     missionName: mission.name,
@@ -163,7 +181,7 @@ export function initBombBustersGame(
     turnOrder,
     totalWiresToCut,
     cutWiresCount: 0,
-    phase: 'initial_clue',
+    phase: allInitialPlaced ? 'in_progress' : 'initial_clue',
     endReason: null,
     validationTrack,
     helperCards,
@@ -235,16 +253,16 @@ export function handleBombBustersAction(
 
   if (state.phase === 'initial_clue') {
     if (action.type !== 'PLACE_INFO_TOKEN' && action.type !== 'BOT_AUTO_TURN') {
-      return { newState: state, error: 'Please finish placing starting clue tokens before cutting wires.' };
+      return { newState: state, error: 'Please place your starting clue token before cutting wires.' };
     }
-  }
-
-  if (
-    state.currentTurnPlayerId !== effectivePlayerId &&
-    action.type !== 'USE_STABILIZER' &&
-    action.type !== 'BOT_AUTO_TURN'
-  ) {
-    return { newState: state, error: 'It is not your turn to cut wires.' };
+  } else {
+    if (
+      state.currentTurnPlayerId !== effectivePlayerId &&
+      action.type !== 'USE_STABILIZER' &&
+      action.type !== 'BOT_AUTO_TURN'
+    ) {
+      return { newState: state, error: 'It is not your turn to cut wires.' };
+    }
   }
 
   switch (action.type) {
@@ -314,9 +332,17 @@ export function handleBombBustersAction(
 
       if (matches) {
         // SUCCESSFUL DUO CUT!
-        myWire.isCut = true;
-        targetWire.isCut = true;
         const newCutCount = state.cutWiresCount + 2;
+
+        const updatedStands = {
+          ...state.stands,
+          [effectivePlayerId]: (state.stands[effectivePlayerId] || []).map((w) =>
+            w.id === myWire.id ? { ...w, isCut: true } : w
+          ),
+          [action.targetPlayerId]: (state.stands[action.targetPlayerId] || []).map((w) =>
+            w.id === targetWire.id ? { ...w, isCut: true } : w
+          ),
+        };
 
         // Update validation track
         const updatedValidation = { ...state.validationTrack };
@@ -336,6 +362,7 @@ export function handleBombBustersAction(
         return {
           newState: {
             ...state,
+            stands: updatedStands,
             cutWiresCount: newCutCount,
             validationTrack: updatedValidation,
             currentTurnPlayerId: nextTurnPlayerId,
@@ -345,7 +372,7 @@ export function handleBombBustersAction(
               ...state.history,
               {
                 id: `${Date.now()}`,
-                text: `✂️ DUO CUT SUCCESS! ${playerName} and ${targetName} matched wire #${myWire.value}! (${newCutCount}/${state.totalWiresToCut} wires cut)`,
+                text: `✂️ MATCH CONFIRMED! ${playerName} and ${targetName} matched wire #${myWire.value}! Both wires safely cut! (${newCutCount}/${state.totalWiresToCut} wires cut)`,
                 time: Date.now(),
                 type: 'success',
               },
@@ -354,17 +381,27 @@ export function handleBombBustersAction(
         };
       } else {
         // WRONG GUESS!
-        // OFFICIAL RULE: Detonator advances by 1, and the teammate places an INFO TOKEN showing the real value!
+        // OFFICIAL RULE: Detonator stability decreases by 1, and the teammate places an INFO TOKEN showing the real value!
         const nextDetonator = state.detonatorLives - 1;
-        targetWire.infoToken = targetWire.value;
-        targetWire.clues.push(`Token: #${targetWire.value}`);
-        targetWire.clues.push(`≠${myWire.value}`);
+        const updatedStands = {
+          ...state.stands,
+          [action.targetPlayerId]: (state.stands[action.targetPlayerId] || []).map((w) =>
+            w.id === targetWire.id
+              ? {
+                  ...w,
+                  infoToken: targetWire.value,
+                  clues: [...w.clues, `Token: #${targetWire.value}`, `≠${myWire.value}`],
+                }
+              : w
+          ),
+        };
 
         const isExploded = nextDetonator <= 0;
 
         return {
           newState: {
             ...state,
+            stands: updatedStands,
             detonatorLives: Math.max(0, nextDetonator),
             currentTurnPlayerId: nextTurnPlayerId,
             phase: isExploded ? 'exploded' : 'in_progress',
@@ -373,7 +410,7 @@ export function handleBombBustersAction(
               ...state.history,
               {
                 id: `${Date.now()}`,
-                text: `⚠️ MISS! ${playerName} guessed #${myWire.value}, but ${targetName}'s wire is #${targetWire.value}! Info Token placed. Stability: ${nextDetonator}.`,
+                text: `⚠️ MISSED CALL! ${playerName} guessed #${myWire.value}, but ${targetName}'s wire was #${targetWire.value}! Revealed with Info Token #${targetWire.value}. Stability: ${nextDetonator}.`,
                 time: Date.now(),
                 type: isExploded ? 'boom' : 'error',
               },
@@ -421,9 +458,12 @@ export function handleBombBustersAction(
         };
       }
 
-      selectedWires.forEach((w) => {
-        w!.isCut = true;
-      });
+      const updatedStands = {
+        ...state.stands,
+        [effectivePlayerId]: (state.stands[effectivePlayerId] || []).map((w) =>
+          wireIds.includes(w.id) ? { ...w, isCut: true } : w
+        ),
+      };
 
       const newCutCount = state.cutWiresCount + wireIds.length;
       const updatedValidation = { ...state.validationTrack };
@@ -443,6 +483,7 @@ export function handleBombBustersAction(
       return {
         newState: {
           ...state,
+          stands: updatedStands,
           cutWiresCount: newCutCount,
           validationTrack: updatedValidation,
           currentTurnPlayerId: nextTurnPlayerId,
@@ -727,96 +768,93 @@ export function handleBombBustersAction(
     }
 
     case 'PLACE_INFO_TOKEN': {
+      if (state.phase !== 'initial_clue') {
+        return {
+          newState: state,
+          error: 'Info Tokens can only be manually placed during the initial clue setup phase.',
+        };
+      }
+
       const myStand = state.stands[effectivePlayerId];
       if (!myStand) return { newState: state, error: 'Stand not found.' };
 
       const targetWire = myStand.find((w) => w.id === action.wireId);
       if (!targetWire) return { newState: state, error: 'Wire not found on your stand.' };
       if (targetWire.isCut) return { newState: state, error: 'Wire is already cut.' };
-      if (targetWire.infoToken !== null) {
-        return { newState: state, error: 'This wire already has an Info Token placed.' };
+      const alreadyPlaced = myStand.some((w) => w.infoToken !== null);
+      if (alreadyPlaced) {
+        return { newState: state, error: 'You have already placed your starting Info Token for this mission.' };
       }
 
-      if (state.phase === 'initial_clue' && targetWire.color !== 'blue') {
+      if (targetWire.color !== 'blue') {
         return { newState: state, error: 'Starting Info Token must be placed on a standard Blue wire.' };
       }
 
-      // Place Info Token showing the wire value
-      targetWire.infoToken = targetWire.value;
-      targetWire.clues.push(`Token: #${targetWire.value}`);
-
-      if (state.phase === 'initial_clue') {
-        const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
-        // Check if all players have now placed their starting Info token
-        const allPlaced = state.turnOrder.every((pid) => {
-          const s = state.stands[pid] || [];
-          return s.some((w) => w.infoToken !== null);
-        });
-
-        if (allPlaced) {
-          const captainName = room.players.find((p) => p.id === state.captainPlayerId)?.name || 'Captain';
-          return {
-            newState: {
-              ...state,
-              phase: 'in_progress',
-              currentTurnPlayerId: state.captainPlayerId,
-              history: [
-                ...state.history,
-                {
-                  id: `${Date.now()}_clue`,
-                  text: `💡 SETUP: ${playerName} placed starting Info Token #${targetWire.value}!`,
-                  time: Date.now(),
-                  type: 'info',
-                },
-                {
-                  id: `${Date.now()}_ready`,
-                  text: `🚀 ALL OPERATIVES HAVE DEPLOYED STARTING CLUES! Captain ${captainName} begins the defusal mission!`,
-                  time: Date.now() + 1,
-                  type: 'success',
-                },
-              ],
-            },
-          };
-        } else {
-          const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
-          const nextPlayerName = room.players.find((p) => p.id === nextTurnPlayerId)?.name || 'Next operative';
-          return {
-            newState: {
-              ...state,
-              currentTurnPlayerId: nextTurnPlayerId,
-              history: [
-                ...state.history,
-                {
-                  id: `${Date.now()}`,
-                  text: `💡 SETUP: ${playerName} placed starting Info Token #${targetWire.value}! Turn passes to ${nextPlayerName}.`,
-                  time: Date.now(),
-                  type: 'info',
-                },
-              ],
-            },
-          };
-        }
-      }
-
-      // Advance turn clockwise (if in_progress)
-      const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
-      const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
-
-      return {
-        newState: {
-          ...state,
-          currentTurnPlayerId: nextTurnPlayerId,
-          history: [
-            ...state.history,
-            {
-              id: `${Date.now()}`,
-              text: `💡 CLUE TOKEN: ${playerName} placed an Info Token from the center on their wire, revealing #${targetWire.value}!`,
-              time: Date.now(),
-              type: 'info',
-            },
-          ],
-        },
+      const updatedStands = {
+        ...state.stands,
+        [effectivePlayerId]: (state.stands[effectivePlayerId] || []).map((w) =>
+          w.id === targetWire.id
+            ? {
+                ...w,
+                infoToken: targetWire.value,
+                clues: [...w.clues, `Token: #${targetWire.value}`],
+              }
+            : w
+        ),
       };
+
+      const currentTurnIndex = state.turnOrder.indexOf(effectivePlayerId);
+      // Check if all players have now placed their starting Info token
+      const allPlaced = state.turnOrder.every((pid) => {
+        const s = updatedStands[pid] || [];
+        return s.some((w) => w.infoToken !== null);
+      });
+
+      if (allPlaced) {
+        const captainName = room.players.find((p) => p.id === state.captainPlayerId)?.name || 'Captain';
+        return {
+          newState: {
+            ...state,
+            stands: updatedStands,
+            phase: 'in_progress',
+            currentTurnPlayerId: state.captainPlayerId,
+            history: [
+              ...state.history,
+              {
+                id: `${Date.now()}_clue`,
+                text: `💡 SETUP: ${playerName} placed starting Info Token #${targetWire.value}!`,
+                time: Date.now(),
+                type: 'info',
+              },
+              {
+                id: `${Date.now()}_ready`,
+                text: `🚀 ALL OPERATIVES HAVE DEPLOYED STARTING CLUES! Captain ${captainName} begins the defusal mission!`,
+                time: Date.now() + 1,
+                type: 'success',
+              },
+            ],
+          },
+        };
+      } else {
+        const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
+        const nextPlayerName = room.players.find((p) => p.id === nextTurnPlayerId)?.name || 'Next operative';
+        return {
+          newState: {
+            ...state,
+            stands: updatedStands,
+            currentTurnPlayerId: nextTurnPlayerId,
+            history: [
+              ...state.history,
+              {
+                id: `${Date.now()}`,
+                text: `💡 SETUP: ${playerName} placed starting Info Token #${targetWire.value}! Waiting for remaining squad operatives.`,
+                time: Date.now(),
+                type: 'info',
+              },
+            ],
+          },
+        };
+      }
     }
 
     case 'OPERATIVE_CALL': {
@@ -1101,18 +1139,7 @@ export function getBombBustersBotAction(
     }
   }
 
-  // 3. Give Clue: Place an Info Token on an unclued blue wire to help the team deduce
-  const uncluedBlue = uncutBotWires.find(
-    (w) => w.color === 'blue' && w.infoToken === null
-  );
-  if (uncluedBlue) {
-    return {
-      type: 'PLACE_INFO_TOKEN',
-      wireId: uncluedBlue.id,
-    };
-  }
-
-  // 4. Deduction Duo Cut: find candidate wire that hasn't been ruled out
+  // 3. Deduction Duo Cut: find candidate wire that hasn't been ruled out
   for (const bWire of uncutBotWires) {
     if (typeof bWire.value !== 'number') continue;
     for (const [pId, wires] of Object.entries(state.stands)) {
