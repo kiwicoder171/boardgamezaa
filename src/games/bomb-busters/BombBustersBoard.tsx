@@ -1333,7 +1333,7 @@ export default function BombBustersBoard({
       )}
 
       {/* GAME OVER (VICTORY OR EXPLODED) MODAL */}
-      {state.phase !== 'in_progress' && (
+      {(state.phase === 'victory' || state.phase === 'exploded') && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
           <div
             className="bg-[#111215] border border-[#222429] rounded-2xl p-6 sm:p-8 max-w-lg w-full text-center space-y-5 shadow-2xl"

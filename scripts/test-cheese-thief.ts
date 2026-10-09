@@ -84,20 +84,26 @@ function runTests() {
   state = cheeseThiefReducer(state, { type: 'advance_hour' }); // hour 4
   state = cheeseThiefReducer(state, { type: 'advance_hour' }); // hour 5
   state = cheeseThiefReducer(state, { type: 'advance_hour' }); // hour 6
-  state = cheeseThiefReducer(state, { type: 'advance_hour' }); // follower selection / dawn
+  state = cheeseThiefReducer(state, { type: 'advance_hour' }); // advances to day directly
 
-  if (state.phase === 'follower_selection') {
-    // Thief recruits follower
-    state = cheeseThiefReducer(state, {
-      type: 'choose_follower',
-      playerId: thief.id,
-      targetId: nonThieves[1].id,
-    });
-    if (state.followerId !== nonThieves[1].id) {
-      throw new Error('Follower not recruited properly');
-    }
-    console.log(`✅ Follower recruited: ${state.players[nonThieves[1].id].name}`);
+  if (state.phase !== 'day') {
+    throw new Error(`Expected day phase after hour 6, got ${state.phase}`);
   }
+  console.log(`✅ Dawn transitions directly to Day phase!`);
+
+  // Test Follower rule: when sleepyhead wakes at the same hour as thief
+  const followerTestState = initCheeseThiefState(testPlayers, false);
+  const fThief = Object.values(followerTestState.players).find((p) => p.role === 'thief')!;
+  const fWitness = Object.values(followerTestState.players).find((p) => p.role === 'sleepyhead')!;
+  followerTestState.phase = 'night';
+  followerTestState.currentHour = 3;
+  fThief.dieValue = 3;
+  fWitness.dieValue = 3;
+  const afterSteal = cheeseThiefReducer(followerTestState, { type: 'steal_cheese', playerId: fThief.id });
+  if (afterSteal.followerId !== fWitness.id || !afterSteal.players[fWitness.id].isFollower) {
+    throw new Error('Expected single witness at thief hour to automatically become follower');
+  }
+  console.log(`✅ Witness at thief hour automatically became the follower: ${fWitness.name}`);
 
   // Day & Voting Phase
   console.log('--- Test 5: Day Discussion & Voting ---');

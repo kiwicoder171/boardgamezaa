@@ -219,11 +219,12 @@ export function cheeseThiefReducer(
     }
 
     case 'choose_follower': {
-      if (state.phase !== 'follower_selection' && state.phase !== 'night') return state;
+      if (state.phase !== 'night') return state;
       const player = state.players[action.playerId];
       const target = state.players[action.targetId];
       if (!player || !target || player.id === target.id) return state;
       if (player.role !== 'thief') return state;
+      if (target.dieValue !== player.dieValue) return state;
 
       const updatedPlayers = {
         ...state.players,
@@ -237,13 +238,11 @@ export function cheeseThiefReducer(
         ...state,
         followerId: target.id,
         players: updatedPlayers,
-        phase: 'day',
-        daySecondsRemaining: state.dayDiscussionSeconds,
         logs: [
           ...state.logs,
           {
             id: `log_${Date.now()}`,
-            text: `Dawn breaks! The sun shines on the mouse tavern. The cheese plate is inspected!`,
+            text: `The Cheese Thief chose a follower among the awake witnesses!`,
             timestamp: Date.now(),
           },
         ],
@@ -324,29 +323,6 @@ export function cheeseThiefReducer(
         };
       }
 
-      if (state.phase === 'follower_selection') {
-        const remaining = state.hourSecondsRemaining - 1;
-        if (remaining <= 0) {
-          // Time expired for follower selection, proceed to day
-          return {
-            ...state,
-            phase: 'day',
-            daySecondsRemaining: state.dayDiscussionSeconds,
-            logs: [
-              ...state.logs,
-              {
-                id: `log_${Date.now()}`,
-                text: 'Dawn breaks over the mouse tavern. The cheese is missing!',
-                timestamp: Date.now(),
-              },
-            ],
-          };
-        }
-        return {
-          ...state,
-          hourSecondsRemaining: remaining,
-        };
-      }
 
       if (state.phase === 'day') {
         const remaining = state.daySecondsRemaining - 1;
@@ -484,14 +460,56 @@ function startNightTransition(state: CheeseThiefState): CheeseThiefState {
 }
 
 function advanceNightHour(state: CheeseThiefState): CheeseThiefState {
-  if (state.currentHour < 6) {
-    const nextHour = state.currentHour + 1;
-    const next = {
-      ...state,
-      currentHour: nextHour,
-      hourSecondsRemaining: state.hourDurationSeconds,
+  let s = { ...state };
+
+  // 1. If cheese was not stolen yet and current hour was the thief's hour, auto-steal it now!
+  const thief = Object.values(s.players).find((p) => p.role === 'thief');
+  if (thief && thief.dieValue === s.currentHour && !s.cheeseStolen) {
+    const awakePlayerIds = s.playerOrder.filter(
+      (id) => s.players[id].dieValue === s.currentHour
+    );
+    const witnessSleepyheads = awakePlayerIds.filter(
+      (id) => s.players[id].role === 'sleepyhead'
+    );
+    let followerId = s.followerId;
+    if (!followerId && witnessSleepyheads.length > 0) {
+      followerId = witnessSleepyheads[0];
+    }
+    const updatedPlayers = { ...s.players };
+    if (followerId && updatedPlayers[followerId]) {
+      updatedPlayers[followerId] = {
+        ...updatedPlayers[followerId],
+        isFollower: true,
+      };
+    }
+    s = {
+      ...s,
+      cheeseStolen: true,
+      stolenAtHour: s.currentHour,
+      stolenBy: thief.id,
+      followerId,
+      players: updatedPlayers,
       logs: [
-        ...state.logs,
+        ...s.logs,
+        {
+          id: `log_${Date.now()}`,
+          hour: s.currentHour,
+          text: `At Hour ${s.currentHour}:00, the Cheese was secretly swiped from the platter!`,
+          timestamp: Date.now(),
+        },
+      ],
+    };
+  }
+
+  // 2. Advance to next hour (1..6)
+  if (s.currentHour < 6) {
+    const nextHour = s.currentHour + 1;
+    const next = {
+      ...s,
+      currentHour: nextHour,
+      hourSecondsRemaining: s.hourDurationSeconds,
+      logs: [
+        ...s.logs,
         {
           id: `log_${Date.now()}`,
           hour: nextHour,
@@ -503,64 +521,15 @@ function advanceNightHour(state: CheeseThiefState): CheeseThiefState {
     return processBotNightActions(next);
   }
 
-  // Finished hour 6. Check follower status
-  const thief = Object.values(state.players).find((p) => p.role === 'thief');
-  if (thief && !state.followerId) {
-    // If thief is a bot, auto-select a follower immediately
-    if (thief.id.startsWith('bot_') || thief.id.startsWith('mouse_bot_')) {
-      const eligibleTargets = state.playerOrder.filter((id) => id !== thief.id);
-      const chosenFollowerId =
-        eligibleTargets[Math.floor(Math.random() * eligibleTargets.length)];
-      const updatedPlayers = { ...state.players };
-      if (chosenFollowerId && updatedPlayers[chosenFollowerId]) {
-        updatedPlayers[chosenFollowerId] = {
-          ...updatedPlayers[chosenFollowerId],
-          isFollower: true,
-        };
-      }
-      return {
-        ...state,
-        phase: 'day',
-        currentHour: 7,
-        followerId: chosenFollowerId,
-        players: updatedPlayers,
-        daySecondsRemaining: state.dayDiscussionSeconds,
-        logs: [
-          ...state.logs,
-          {
-            id: `log_${Date.now()}`,
-            text: 'Dawn breaks over the mouse tavern! All mice wake up. Look at the cheese plate!',
-            timestamp: Date.now(),
-          },
-        ],
-      };
-    }
-
-    // If human thief, give 10 seconds follower selection window
-    return {
-      ...state,
-      phase: 'follower_selection',
-      currentHour: 7,
-      hourSecondsRemaining: 10,
-      logs: [
-        ...state.logs,
-        {
-          id: `log_${Date.now()}`,
-          text: 'Hour 6 ends. The Cheese Thief sneaks in the dark to recruit a secret follower...',
-          timestamp: Date.now(),
-        },
-      ],
-    };
-  }
-
-  // Go directly to day
+  // 3. Finished hour 6. Dawn breaks directly into Day Phase (Discussion)!
+  // Official Rule: Followers are ONLY players who woke up at the same hour as the Thief!
   return {
-    ...state,
+    ...s,
     phase: 'day',
     currentHour: 7,
-    daySecondsRemaining: state.dayDiscussionSeconds,
+    daySecondsRemaining: s.dayDiscussionSeconds,
     logs: [
-      ...state.logs,
+      ...s.logs,
       {
         id: `log_${Date.now()}`,
         text: 'Dawn breaks over the mouse tavern! All mice wake up. Look at the cheese plate!',
@@ -611,16 +580,22 @@ function resolveVoteOutcome(state: CheeseThiefState): CheeseThiefState {
   ) {
     winner = 'fall_mouse';
     winReason = `The Fall Mouse (${fallMouse.name}) deceived everyone into voting for them and won alone!`;
-  } else if (thief && mostVotedIds.includes(thief.id)) {
-    // 2. Sleepyhead victory: The Cheese Thief was among the most voted!
+  } else if (
+    (thief && mostVotedIds.includes(thief.id)) ||
+    (state.followerId && mostVotedIds.includes(state.followerId))
+  ) {
+    // 2. Sleepyhead victory: The Cheese Thief OR their Follower received the most votes!
     winner = 'sleepyheads';
-    winReason = `The Sleepyheads correctly identified the Cheese Thief (${thief.name})! The cheese is saved!`;
+    const caughtRole = (thief && mostVotedIds.includes(thief.id))
+      ? `the Cheese Thief (${thief.name})`
+      : `the Thief's Accomplice (${state.players[state.followerId!]?.name || 'Follower'})`;
+    winReason = `The Sleepyheads successfully caught ${caughtRole}! The cheese is saved!`;
   } else {
-    // 3. Cheese Thief & Follower victory: The Thief avoided being the top accused!
+    // 3. Cheese Thief & Follower victory: Neither the Thief nor the Follower was caught!
     winner = 'thief';
     const follower = state.followerId ? state.players[state.followerId] : null;
     const followerMsg = follower
-      ? ` and Follower ${follower.name}`
+      ? ` and Accomplice ${follower.name}`
       : '';
     winReason = `The Cheese Thief (${thief?.name || 'Thief'})${followerMsg} framed innocent mice and escaped with the golden cheese!`;
   }

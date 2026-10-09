@@ -162,10 +162,10 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
 
   // Host ticker timer - only dispatches transition action when seconds expire
   useEffect(() => {
-    if (state.phase !== 'night' && state.phase !== 'follower_selection' && state.phase !== 'day') return;
+    if (state.phase !== 'night' && state.phase !== 'day') return;
 
     const interval = setInterval(() => {
-      if (state.phase === 'night' || state.phase === 'follower_selection') {
+      if (state.phase === 'night') {
         setLocalHourSeconds((prev) => {
           if (prev <= 1) {
             if (isHost) {
@@ -204,22 +204,6 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [isHost, state.phase, state.players, state.playerOrder, onAction]);
-
-  // Bot automation: Follower selection fallback
-  useEffect(() => {
-    if (!isHost || state.phase !== 'follower_selection') return;
-    const thief = Object.values(state.players).find((p) => p.role === 'thief');
-    if (thief && (thief.id.startsWith('bot_') || thief.id.startsWith('mouse_bot_'))) {
-      const timer = setTimeout(() => {
-        const candidates = state.playerOrder.filter((id) => id !== thief.id);
-        if (candidates.length > 0) {
-          const targetId = candidates[Math.floor(Math.random() * candidates.length)];
-          onAction({ type: 'choose_follower', playerId: thief.id, targetId });
-        }
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
   }, [isHost, state.phase, state.players, state.playerOrder, onAction]);
 
   // Bot automation: Voting
@@ -319,8 +303,6 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
               <span className="text-xl">🕰️</span>
               {state.phase === 'night' ? (
                 <span>{state.currentHour}:00 AM ({localHourSeconds}s)</span>
-              ) : state.phase === 'follower_selection' ? (
-                <span className="text-purple-300">Dawn Sneak ({localHourSeconds}s)</span>
               ) : state.phase === 'day' ? (
                 <span className="text-yellow-300">Discussion ({Math.floor(localDaySeconds / 60)}:{(localDaySeconds % 60).toString().padStart(2, '0')})</span>
               ) : state.phase === 'voting' ? (
@@ -486,7 +468,7 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
               const canISeeCup = isMe || (me?.peekedTargetId === id && me.peekedTargetDie !== null) || state.phase === 'game_over';
               const canIPeekThisTarget = isAloneAwake && !me?.hasPeeked && !isMe;
               const canISelectAsFollower =
-                state.phase === 'follower_selection' && isThief && !isMe;
+                isNight && isMyHour && isThief && !isMe && p.dieValue === state.currentHour && p.role === 'sleepyhead' && !state.followerId;
 
               return (
                 <div
@@ -757,8 +739,8 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
 
             {isFollower && (
               <div className="mt-2 pt-2 border-t border-stone-800 text-indigo-300 font-semibold">
-                🤝 You have been recruited as the <strong>Follower</strong>! Your allegiance is now with the
-                Thief. Protect the Thief to share victory!
+                🤝 You witnessed the theft at Hour {me?.dieValue}:00 AM and became the <strong>Accomplice (Follower)</strong>! Your allegiance is now with the
+                Thief. Protect the Thief so neither of you receives the most votes!
               </div>
             )}
           </div>
@@ -801,9 +783,9 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
               </div>
 
               <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
-                <h4 className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">🤝 Dawn Sneak (Follower Recruitment)</h4>
+                <h4 className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">🤝 The Thief&apos;s Accomplice (Follower)</h4>
                 <p className="text-zinc-400">
-                  After Hour 6:00 AM, the Thief secretly taps one player to recruit as their Follower (accomplice). The Follower joins the Thief&apos;s team to protect them!
+                  If any Sleepyhead shares the same wake-up hour as the Cheese Thief, they witness the crime and become the Thief&apos;s <strong>Accomplice</strong>! The Accomplice switches allegiance and wins if the Thief wins. However, if either the Thief OR the Accomplice receives the most votes, Sleepyheads win! If no one shares the Thief&apos;s hour, the Thief operates alone with no accomplice.
                 </p>
               </div>
 
@@ -817,7 +799,7 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
               <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
                 <h4 className="font-bold text-emerald-400 uppercase tracking-wider text-[11px]">🗳️ Morning Discussion & Verdict</h4>
                 <p className="text-zinc-400">
-                  Day arrives! Players discuss who woke up at which hour, who saw whom, and who stole the cheese. Then everyone points/votes simultaneously. If the Thief gets the most votes, Sleepyheads win! Otherwise, the Thief & Follower win!
+                  Day arrives! Players discuss who woke up at which hour, who saw whom, and who stole the cheese. Then everyone votes simultaneously. If the Cheese Thief (or their Accomplice) is among the most voted (including ties!), the Sleepyheads win! If an innocent mouse receives the most votes, the Thief & Accomplice win!
                 </p>
               </div>
             </div>

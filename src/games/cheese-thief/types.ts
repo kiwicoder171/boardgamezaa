@@ -3,7 +3,6 @@ export type CheeseThiefRole = 'thief' | 'sleepyhead' | 'fall_mouse';
 export type CheeseThiefPhase =
   | 'setup'
   | 'night'
-  | 'follower_selection'
   | 'day'
   | 'voting'
   | 'game_over';
