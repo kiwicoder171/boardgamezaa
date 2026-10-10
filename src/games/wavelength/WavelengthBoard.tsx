@@ -60,10 +60,23 @@ export default function WavelengthBoard({
     state.mode === 'competitive' &&
     state.teams[opposingTeamId].playerIds.includes(currentPlayerId);
 
-  // Teammates or other players who are actively guessing (Psychic is strictly excluded if others exist)
+  // Teammates or other players who are actively guessing (Psychic is strictly excluded from locking if others exist)
   const hasOtherGuesser = players.some((p) => p.id !== state.psychicId);
   const isGuesser = isActiveTeamMember && (!isPsychic || !hasOtherGuesser);
   const showPsychicWaitingScreen = isPsychic && hasOtherGuesser;
+
+  // The designated Dial Captain (คนลาก/คนตอบ) for the active round
+  const dialCaptainId =
+    state.dialCaptainId ||
+    (state.mode === 'coop'
+      ? players.find((p) => p.id !== state.psychicId)?.id
+      : state.teams[state.activeTeam]?.playerIds.find((id) => id !== state.psychicId)) ||
+    state.psychicId;
+  const dialCaptainPlayer = players.find((p) => p.id === dialCaptainId);
+  const isDialCaptain = currentPlayerId === dialCaptainId;
+
+  // Can this player drag the dial? Any active team member (both guessers and psychic can drag)
+  const canDragDial = isActiveTeamMember;
 
   // Sync local angle when external state changes and not dragging
   useEffect(() => {
@@ -187,7 +200,7 @@ export default function WavelengthBoard({
   }, [onAction]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (state.phase !== 'guessing' || !isGuesser) return;
+    if (state.phase !== 'guessing' || !canDragDial) return;
     const angle = getAngleFromPoint(e.clientX, e.clientY);
     if (angle !== null) {
       setIsDragging(true);
@@ -235,7 +248,7 @@ export default function WavelengthBoard({
   }, [isDragging, getAngleFromPoint, emitAngleThrottled, localAngle, state.dialAngle, onAction]);
 
   const nudgeDial = (delta: number) => {
-    if (state.phase !== 'guessing' || !isGuesser) return;
+    if (state.phase !== 'guessing' || !canDragDial) return;
     soundFX.playClick();
     const current = localAngle ?? state.dialAngle;
     const newAngle = Math.max(0, Math.min(180, current + delta));
@@ -390,22 +403,49 @@ export default function WavelengthBoard({
             <div className="text-xs text-zinc-400">{state.currentCard.right}</div>
           </div>
         </div>
+
+        {/* Topic Reroll Button (Psychic only during clue phase) */}
+        {state.phase === 'clue' && isPsychic && (
+          <div className="pt-1 flex justify-center">
+            <button
+              type="button"
+              onClick={() => {
+                soundFX.playClick();
+                onAction({ type: 'REROLL_CARD' });
+              }}
+              className="btn-tactile px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1.5 transition shadow-sm"
+              title="สุ่มการ์ดหัวข้อใหม่หากคิดไม่ออก"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>🔀 เปลี่ยนหัวข้อ (สุ่มการ์ดใหม่)</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Wheel Device */}
       <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center space-y-6 relative overflow-hidden shadow-md">
-        {/* Psychic Status Pill */}
-        <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
-          <span>Psychic:</span>
-          <span className="text-white font-bold flex items-center gap-1">
-            <span>{psychicPlayer?.avatar || '🔮'}</span>
-            <span>{psychicPlayer?.name || 'Psychic'}</span>
-          </span>
-          {isPsychic && (
-            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] font-bold">
-              You are the Psychic!
-            </span>
-          )}
+        {/* Round Roles Announcement: ใครใบ้ vs ใครลาก */}
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-xs font-mono bg-[#18191e] border border-[#272930] px-4 py-2 rounded-xl shadow-sm">
+          <div className="flex items-center gap-1.5 text-amber-300 font-semibold">
+            <span>🔮 คนใบ้:</span>
+            <span className="text-white font-bold">{psychicPlayer?.name || 'Psychic'}</span>
+            {isPsychic && (
+              <span className="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/30 font-bold">
+                (คุณ)
+              </span>
+            )}
+          </div>
+          <span className="text-zinc-600 hidden sm:inline">•</span>
+          <div className="flex items-center gap-1.5 text-sky-300 font-semibold">
+            <span>🎯 คนลาก/คนตอบ:</span>
+            <span className="text-white font-bold">{dialCaptainPlayer?.name || 'ทีมทาย'}</span>
+            {isDialCaptain && !isPsychic && (
+              <span className="text-[10px] bg-sky-500/20 text-sky-400 px-1.5 py-0.5 rounded border border-sky-500/30 font-bold">
+                (คุณ)
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Interactive SVG Dial Wheel */}
@@ -414,7 +454,7 @@ export default function WavelengthBoard({
             ref={dialRef}
             viewBox="0 0 400 220"
             className={`w-full h-full overflow-visible touch-none select-none ${
-              state.phase === 'guessing' && isGuesser
+              state.phase === 'guessing' && canDragDial
                 ? isDragging
                   ? 'cursor-grabbing'
                   : 'cursor-grab'
@@ -537,7 +577,7 @@ export default function WavelengthBoard({
             {/* Needle Pointer */}
             <g className={isDragging ? '' : 'transition-transform duration-75'}>
               {/* Generous touch/grab hit box for easy targeting on mobile & desktop */}
-              {isGuesser && state.phase === 'guessing' && (
+              {canDragDial && state.phase === 'guessing' && (
                 <>
                   <line
                     x1="200"
@@ -579,9 +619,9 @@ export default function WavelengthBoard({
                 fill="#f43f5e"
                 stroke="#ffffff"
                 strokeWidth="2"
-                className={isGuesser && state.phase === 'guessing' ? 'cursor-grab active:cursor-grabbing' : ''}
+                className={canDragDial && state.phase === 'guessing' ? 'cursor-grab active:cursor-grabbing' : ''}
               />
-              {isGuesser && state.phase === 'guessing' && (
+              {canDragDial && state.phase === 'guessing' && (
                 <circle
                   cx={needlePos.x}
                   cy={needlePos.y}
@@ -607,8 +647,8 @@ export default function WavelengthBoard({
           </div>
         </div>
 
-        {/* Fine-Tuning Controls & Range Slider (Guesser only during guess phase) */}
-        {state.phase === 'guessing' && isGuesser && (
+        {/* Fine-Tuning Controls & Range Slider (Active Team during guess phase) */}
+        {state.phase === 'guessing' && canDragDial && (
           <div className="w-full max-w-md space-y-3 pt-2">
             {/* Quick Touch/Mouse Range Slider */}
             <div className="bg-[#18191e] border border-[#272930] rounded-xl p-3 space-y-2">
@@ -682,18 +722,30 @@ export default function WavelengthBoard({
             {isPsychic ? (
               <form onSubmit={handleSubmitClue} className="space-y-3">
                 <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-200">
-                  💡 <strong>Psychic Clue:</strong> Look at the target angle above. Type a single clue representing this point on the spectrum, then transmit it!
+                  💡 <strong>Psychic Clue:</strong> ดูตำแหน่งเป้าหมายด้านบน คิดคำใบ้ที่สื่อถึงจุดนี้บนสเกล แล้วกดส่งคำใบ้ หรือกดเปลี่ยนหัวข้อหากคิดไม่ออก
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <input
                     type="text"
                     value={clueInput}
                     onChange={(e) => setClueInput(e.target.value)}
-                    placeholder="Enter clue (e.g. 'Walking on sunshine', 'Black coffee')..."
-                    className="flex-1 bg-[#18191e] border border-[#272930] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white"
+                    placeholder="พิมพ์คำใบ้ (เช่น 'ซุปร้อนๆ', 'น้ำแข็งไส')..."
+                    className="flex-1 min-w-[200px] bg-[#18191e] border border-[#272930] rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-white"
                     maxLength={60}
                     autoFocus
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundFX.playClick();
+                      onAction({ type: 'REROLL_CARD' });
+                    }}
+                    className="btn-tactile px-3 py-2.5 bg-[#18191e] hover:bg-[#22242a] text-amber-300 border border-amber-500/30 font-semibold rounded-xl text-xs transition flex items-center gap-1.5"
+                    title="สุ่มการ์ดหัวข้อใหม่"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>เปลี่ยนหัวข้อ</span>
+                  </button>
                   <button
                     type="submit"
                     disabled={!clueInput.trim()}
@@ -708,10 +760,10 @@ export default function WavelengthBoard({
               <div className="p-4 bg-[#18191e] border border-[#272930] rounded-xl text-center space-y-2">
                 <div className="flex items-center justify-center gap-2 text-xs text-zinc-300">
                   <span className="animate-spin text-sm">🔮</span>
-                  <span>Waiting for Psychic to think and transmit a clue...</span>
+                  <span>รอคุณ {psychicPlayer?.name} (Psychic) กำลังคิดและส่งคำใบ้...</span>
                 </div>
                 <p className="text-[11px] text-zinc-500">
-                  Psychic is viewing the secret target location.
+                  Psychic กำลังดูตำแหน่งเป้าหมายลับ
                 </p>
               </div>
             )}
@@ -724,7 +776,7 @@ export default function WavelengthBoard({
             {/* Clue Banner */}
             <div className="p-4 bg-[#18191e] border border-[#272930] rounded-xl space-y-1">
               <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
-                Psychic Clue
+                คำใบ้จาก Psychic ({psychicPlayer?.name})
               </span>
               <div className="text-lg font-bold text-white tracking-wide">
                 &ldquo;{state.clue}&rdquo;
@@ -738,16 +790,19 @@ export default function WavelengthBoard({
                   <span>คุณคือ Psychic (ผู้ให้คำใบ้)</span>
                 </div>
                 <p className="text-xs text-zinc-300 leading-relaxed">
-                  โปรดรักษาความเงียบและสีหน้า! เพื่อนร่วมทีมกำลังปรึกษาและหมุนเข็มชี้ไปยังตำแหน่งของ &ldquo;{state.clue}&rdquo;
+                  รักษาสีหน้า! ตาของ <span className="font-bold text-sky-300">{dialCaptainPlayer?.name || 'เพื่อนร่วมทีม'}</span> เป็นคนลากและกดล็อคคำตอบ (คุณสามารถช่วยหมุนเข็มตามที่เพื่อนบอกได้ แต่ปุ่มล็อคคำตอบจะอยู่ที่เพื่อน)
                 </p>
                 <div className="text-[11px] font-mono text-amber-400/80 bg-amber-500/10 rounded-lg py-1.5 px-3 border border-amber-500/20">
-                  🔒 ปุ่มล็อคคำตอบจะแสดงเฉพาะบนหน้าจอของเพื่อนร่วมทีมที่กำลังทาย
+                  🔒 ปุ่มล็อคคำตอบแสดงบนหน้าจอของ {dialCaptainPlayer?.name || 'เพื่อนร่วมทีม'}
                 </div>
               </div>
             ) : isGuesser ? (
               <div className="space-y-2">
                 <p className="text-xs text-zinc-400">
-                  Drag the dial pointer or use the slider/buttons above to point where &ldquo;{state.clue}&rdquo; belongs!
+                  {isDialCaptain ? (
+                    <span className="text-sky-300 font-semibold">🎯 ตาคุณเป็นคนลากและตอบ! </span>
+                  ) : null}
+                  ปรึกษากับเพื่อน ลากเข็มหรือใช้แถบสไลเดอร์ชี้ไปยังตำแหน่งของ &ldquo;{state.clue}&rdquo; แล้วกดล็อคคำตอบ
                 </p>
                 <button
                   onClick={() => {
@@ -762,7 +817,7 @@ export default function WavelengthBoard({
             ) : (
               <div className="p-4 bg-[#18191e] border border-[#272930] rounded-xl text-center space-y-1">
                 <p className="text-xs text-zinc-400">
-                  Team <span className="text-white font-semibold">{activeTeam.name}</span> is currently discussing and aiming the pointer...
+                  Team <span className="text-white font-semibold">{activeTeam.name}</span> กำลังปรึกษาและหมุนเข็มทาย...
                 </p>
               </div>
             )}

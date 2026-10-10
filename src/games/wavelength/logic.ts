@@ -74,6 +74,8 @@ export function initWavelengthState(
 
   const activeTeam: TeamId = 'brain';
   const psychicId = brainPlayers[0] || players[0]?.id || '';
+  const initialGuessers = brainPlayers.filter((id) => id !== psychicId);
+  const dialCaptainId = initialGuessers[0] || (players.length > 1 ? players.find((p) => p.id !== psychicId)?.id : psychicId);
 
   return {
     mode,
@@ -87,14 +89,17 @@ export function initWavelengthState(
         name: 'Team Brain (สมองซีกซ้าย)',
         playerIds: brainPlayers,
         score: 0,
+        psychicIndex: 0,
       },
       mind: {
         name: 'Team Mind (จิตวิญญาณ)',
         playerIds: mindPlayers,
         score: 0,
+        psychicIndex: -1,
       },
     },
     psychicId,
+    dialCaptainId,
     currentCard: initialCard,
     targetAngle,
     dialAngle: 90,
@@ -138,13 +143,6 @@ export function wavelengthReducer(
     case 'ROTATE_DIAL': {
       if (state.phase !== 'guessing') {
         return { newState: state, error: 'Dial can only be rotated during guessing phase' };
-      }
-      const guessingTeam =
-        state.mode === 'coop'
-          ? state.teams.brain.playerIds
-          : state.teams[state.activeTeam].playerIds;
-      if (guessingTeam.length > 1 && playerId === state.psychicId && !playerId.startsWith('bot_')) {
-        return { newState: state, error: 'The Psychic cannot rotate the dial' };
       }
       // Clamped between 0° and 180°
       const clampedAngle = Math.max(0, Math.min(180, Math.round(action.angle)));
@@ -305,6 +303,25 @@ export function wavelengthReducer(
       };
     }
 
+    case 'REROLL_CARD': {
+      if (state.phase !== 'clue') {
+        return { newState: state, error: 'Cannot change card outside clue phase' };
+      }
+      if (playerId !== state.psychicId && !playerId.startsWith('bot_')) {
+        return { newState: state, error: 'Only the Psychic can change the card' };
+      }
+      const nextCard = getRandomSpectrumCard(state.usedCardIds);
+      const nextTargetAngle = generateRandomTargetAngle();
+      return {
+        newState: {
+          ...state,
+          currentCard: nextCard,
+          targetAngle: nextTargetAngle,
+          usedCardIds: [...state.usedCardIds, nextCard.id],
+        },
+      };
+    }
+
     case 'NEXT_ROUND': {
       if (state.phase !== 'reveal') {
         return { newState: state, error: 'Cannot advance until current round is revealed' };
@@ -315,10 +332,16 @@ export function wavelengthReducer(
       const nextTargetAngle = generateRandomTargetAngle();
 
       if (state.mode === 'coop') {
-        // Rotate psychic through players
-        const allPlayers = [...state.teams.brain.playerIds, ...state.teams.mind.playerIds];
+        // Rotate psychic through all players fairly
+        const allPlayers =
+          state.teams.brain.playerIds.length > 0
+            ? state.teams.brain.playerIds
+            : [...state.teams.brain.playerIds, ...state.teams.mind.playerIds];
         const currentIdx = allPlayers.indexOf(state.psychicId);
-        const nextPsychic = allPlayers[(currentIdx + 1) % allPlayers.length] || allPlayers[0];
+        const nextIdx = (currentIdx + 1) % allPlayers.length;
+        const nextPsychic = allPlayers[nextIdx] || allPlayers[0];
+        const guessers = allPlayers.filter((id) => id !== nextPsychic);
+        const nextDialCaptain = guessers[0] || nextPsychic;
 
         return {
           newState: {
@@ -326,6 +349,7 @@ export function wavelengthReducer(
             phase: 'clue',
             round: nextRound,
             psychicId: nextPsychic,
+            dialCaptainId: nextDialCaptain,
             currentCard: nextCard,
             targetAngle: nextTargetAngle,
             dialAngle: 90,
@@ -341,8 +365,14 @@ export function wavelengthReducer(
       // Competitive mode: swap active team
       const nextActiveTeam: TeamId = state.activeTeam === 'brain' ? 'mind' : 'brain';
       const teamPlayers = state.teams[nextActiveTeam].playerIds;
-      const currentPsychicIdx = teamPlayers.indexOf(state.psychicId);
-      const nextPsychic = teamPlayers[(currentPsychicIdx + 1) % teamPlayers.length] || teamPlayers[0] || state.psychicId;
+
+      // Advance this team's psychic index so EVERY team member gets a turn
+      const prevIdx = state.teams[nextActiveTeam].psychicIndex ?? -1;
+      const nextIdx = teamPlayers.length > 0 ? (prevIdx + 1) % teamPlayers.length : 0;
+      const nextPsychic = teamPlayers[nextIdx] || teamPlayers[0] || state.psychicId;
+
+      const teamGuessers = teamPlayers.filter((id) => id !== nextPsychic);
+      const nextDialCaptain = teamGuessers[0] || nextPsychic;
 
       return {
         newState: {
@@ -350,7 +380,15 @@ export function wavelengthReducer(
           phase: 'clue',
           round: nextRound,
           activeTeam: nextActiveTeam,
+          teams: {
+            ...state.teams,
+            [nextActiveTeam]: {
+              ...state.teams[nextActiveTeam],
+              psychicIndex: nextIdx,
+            },
+          },
           psychicId: nextPsychic,
+          dialCaptainId: nextDialCaptain,
           currentCard: nextCard,
           targetAngle: nextTargetAngle,
           dialAngle: 90,

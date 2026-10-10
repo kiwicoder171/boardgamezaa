@@ -44,14 +44,17 @@ export interface WavelengthState {
       name: string;
       playerIds: string[];
       score: number;
+      psychicIndex?: number;
     };
     mind: {
       name: string;
       playerIds: string[];
       score: number;
+      psychicIndex?: number;
     };
   };
   psychicId: string;
+  dialCaptainId?: string; // Designated player who steers the dial for the active team
   currentCard: SpectrumCard;
   targetAngle: number | null; // 15° to 165°, masked for non-psychics until reveal
   dialAngle: number; // 0° to 180°
@@ -76,4 +79,5 @@ export type WavelengthAction =
   | { type: 'LOCK_GUESS' }
   | { type: 'SUBMIT_COUNTER_GUESS'; guess: 'left' | 'right' }
   | { type: 'NEXT_ROUND' }
+  | { type: 'REROLL_CARD' }
   | { type: 'SWITCH_TEAM'; playerId: string; team: TeamId };
