@@ -6,7 +6,8 @@ export interface WireTile {
   value: WireValue;
   color: WireColor;
   isCut: boolean;
-  infoToken: WireValue | null; // Number token placed in front of stand
+  infoToken: WireValue | 'YELLOW' | 'RED' | null; // Number or color token placed in front of stand
+  adjacentToken?: '=' | '≠' | null; // Deduction token between this wire and the next wire
   clues: string[];
 }
 
@@ -15,7 +16,8 @@ export interface ClientWireTile {
   value: WireValue | null; // null if hidden by Fog-of-War
   color: WireColor;
   isCut: boolean;
-  infoToken: WireValue | null; // Visible to everyone if token is placed
+  infoToken: WireValue | 'YELLOW' | 'RED' | null; // Visible to everyone if token is placed
+  adjacentToken?: '=' | '≠' | null;
   clues: string[];
 }
 
@@ -73,6 +75,11 @@ export interface BombBustersState {
     type: 'success' | 'error' | 'boom' | 'info';
   }[];
   numberRange: number;
+  yellowDecimals?: number[];
+  redDecimals?: number[];
+  blueCount?: number;
+  yellowCount?: number;
+  redCount?: number;
 }
 
 export type BombBustersAction =
@@ -107,6 +114,11 @@ export type BombBustersAction =
   | {
       type: 'PLACE_INFO_TOKEN';
       wireId: string;
+    }
+  | {
+      type: 'PLACE_ADJACENT_TOKEN';
+      leftWireId: string;
+      tokenType: '=' | '≠' | null;
     }
   | {
       type: 'OPERATIVE_CALL';
@@ -159,4 +171,9 @@ export interface BombBustersClientState {
   }[];
   numberRange: number;
   allRevealed: boolean;
+  blueCount?: number;
+  yellowCount?: number;
+  redCount?: number;
+  yellowDecimals?: number[];
+  redDecimals?: number[];
 }

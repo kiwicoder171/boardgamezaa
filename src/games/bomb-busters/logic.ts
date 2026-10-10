@@ -4,6 +4,7 @@ import {
   BombBustersClientState,
   BombBustersSettings,
   BombBustersState,
+  HelperCard,
   WireTile,
   WireValue,
 } from './types';
@@ -51,9 +52,13 @@ export function initBombBustersGame(
     }
   }
 
+  const actualYellowDecimals: number[] = [];
+  const actualRedDecimals: number[] = [];
+
   // Yellow Decimal Wires (.1 decimals, e.g. 1.1, 2.1, 3.1)
   if (yellowDecimals.length > 0) {
     yellowDecimals.forEach((dec) => {
+      if (!actualYellowDecimals.includes(dec)) actualYellowDecimals.push(dec);
       rawDeck.push({ value: dec, color: 'yellow' });
       rawDeck.push({ value: dec, color: 'yellow' });
     });
@@ -62,6 +67,7 @@ export function initBombBustersGame(
     const yellowCount = Math.min(range - 1, 3);
     for (let y = 1; y <= yellowCount; y++) {
       const decVal = Number((y + 0.1).toFixed(1));
+      if (!actualYellowDecimals.includes(decVal)) actualYellowDecimals.push(decVal);
       rawDeck.push({ value: decVal, color: 'yellow' });
       rawDeck.push({ value: decVal, color: 'yellow' });
     }
@@ -70,8 +76,12 @@ export function initBombBustersGame(
   // Red Lethal Trap Wires (.5 decimals, e.g. 1.5, 2.5, 3.5)
   for (let r = 0; r < redCount; r++) {
     const redDec = Number(((r % (range - 1)) + 1 + 0.5).toFixed(1));
+    if (!actualRedDecimals.includes(redDec)) actualRedDecimals.push(redDec);
     rawDeck.push({ value: redDec, color: 'red' });
   }
+
+  const blueCount = rawDeck.filter((w) => w.color === 'blue').length;
+  const yellowCount = rawDeck.filter((w) => w.color === 'yellow').length;
 
   // Shuffle deck
   const shuffled = [...rawDeck].sort(() => Math.random() - 0.5);
@@ -191,6 +201,11 @@ export function initBombBustersGame(
       stabilizerAvailable: mission.equipment.stabilizer,
     },
     numberRange: range,
+    yellowDecimals: actualYellowDecimals,
+    redDecimals: actualRedDecimals,
+    blueCount,
+    yellowCount,
+    redCount,
     history: [
       {
         id: 'start',
@@ -222,18 +237,24 @@ function getNextActivePlayerId(state: BombBustersState, currentId: string): stri
   return currentId;
 }
 
-function checkHelperCardsUnlock(state: BombBustersState, cutNumber: number) {
-  state.helperCards.forEach((card) => {
+function checkHelperCardsUnlock(
+  cards: HelperCard[],
+  cutNumber: number
+): { updatedCards: HelperCard[]; newHistoryEvents: { id: string; text: string; time: number; type: 'info' }[] } {
+  const newEvents: { id: string; text: string; time: number; type: 'info' }[] = [];
+  const updatedCards = (cards || []).map((card) => {
     if (card.requiredNumber === cutNumber && !card.isUnlocked) {
-      card.isUnlocked = true;
-      state.history.push({
+      newEvents.push({
         id: `unlock_${Date.now()}_${card.id}`,
-        text: `✨ HELPER CARD UNLOCKED! "${card.nameTh} (${card.name})" is now available for deployment!`,
+        text: `✨ HELPER CARD UNLOCKED! "${card.nameTh} (${card.name})" is now ready for deployment!`,
         time: Date.now(),
         type: 'info',
       });
+      return { ...card, isUnlocked: true };
     }
+    return card;
   });
+  return { updatedCards, newHistoryEvents: newEvents };
 }
 
 export function handleBombBustersAction(
@@ -356,7 +377,7 @@ export function handleBombBustersAction(
           };
         }
 
-        checkHelperCardsUnlock(state, valNum);
+        const { updatedCards, newHistoryEvents } = checkHelperCardsUnlock(state.helperCards, valNum);
         const isDefused = newCutCount >= state.totalWiresToCut;
 
         return {
@@ -365,11 +386,13 @@ export function handleBombBustersAction(
             stands: updatedStands,
             cutWiresCount: newCutCount,
             validationTrack: updatedValidation,
+            helperCards: updatedCards,
             currentTurnPlayerId: nextTurnPlayerId,
             phase: isDefused ? 'victory' : 'in_progress',
             endReason: isDefused ? `🎉 BOMB DEFUSED! All circuits were disarmed cleanly without detonating!` : null,
             history: [
               ...state.history,
+              ...newHistoryEvents,
               {
                 id: `${Date.now()}`,
                 text: `✂️ MATCH CONFIRMED! ${playerName} and ${targetName} matched wire #${myWire.value}! Both wires safely cut! (${newCutCount}/${state.totalWiresToCut} wires cut)`,
@@ -383,14 +406,19 @@ export function handleBombBustersAction(
         // WRONG GUESS!
         // OFFICIAL RULE: Detonator stability decreases by 1, and the teammate places an INFO TOKEN showing the real value!
         const nextDetonator = state.detonatorLives - 1;
+        const revealedToken: WireValue | 'YELLOW' | 'RED' =
+          targetWire.color === 'yellow' ? 'YELLOW' : targetWire.value;
+        const revealedLabel =
+          targetWire.color === 'yellow' ? 'Yellow Wire 🟡' : `#${targetWire.value}`;
+
         const updatedStands = {
           ...state.stands,
           [action.targetPlayerId]: (state.stands[action.targetPlayerId] || []).map((w) =>
             w.id === targetWire.id
               ? {
                   ...w,
-                  infoToken: targetWire.value,
-                  clues: [...w.clues, `Token: #${targetWire.value}`, `≠${myWire.value}`],
+                  infoToken: revealedToken,
+                  clues: [...w.clues, `Token: ${revealedLabel}`, `≠${myWire.value}`],
                 }
               : w
           ),
@@ -410,7 +438,7 @@ export function handleBombBustersAction(
               ...state.history,
               {
                 id: `${Date.now()}`,
-                text: `⚠️ MISSED CALL! ${playerName} guessed #${myWire.value}, but ${targetName}'s wire was #${targetWire.value}! Revealed with Info Token #${targetWire.value}. Stability: ${nextDetonator}.`,
+                text: `⚠️ MISSED CALL! ${playerName} guessed #${myWire.value}, but ${targetName}'s wire was ${revealedLabel}! Revealed with Info Token (${revealedLabel}). Stability: ${nextDetonator}.`,
                 time: Date.now(),
                 type: isExploded ? 'boom' : 'error',
               },
@@ -488,7 +516,7 @@ export function handleBombBustersAction(
         };
       }
 
-      checkHelperCardsUnlock(state, valNum);
+      const { updatedCards, newHistoryEvents } = checkHelperCardsUnlock(state.helperCards, valNum);
       const nextTurnPlayerId = getNextActivePlayerId(state, effectivePlayerId);
       const isDefused = newCutCount >= state.totalWiresToCut;
 
@@ -498,11 +526,13 @@ export function handleBombBustersAction(
           stands: updatedStands,
           cutWiresCount: newCutCount,
           validationTrack: updatedValidation,
+          helperCards: updatedCards,
           currentTurnPlayerId: nextTurnPlayerId,
           phase: isDefused ? 'victory' : 'in_progress',
           endReason: isDefused ? `🎉 BOMB DEFUSED! All circuits were disarmed cleanly!` : null,
           history: [
             ...state.history,
+            ...newHistoryEvents,
             {
               id: `${Date.now()}`,
               text: `🎯 SOLO CUT! ${playerName} cleared ${wireIds.length} wires of #${firstVal} independently! (${newCutCount}/${state.totalWiresToCut} cut)`,
@@ -564,7 +594,7 @@ export function handleBombBustersAction(
             isValidated: cutSoFar >= updatedValidation[valNum].total,
           };
         }
-        checkHelperCardsUnlock(state, valNum);
+        const { updatedCards, newHistoryEvents } = checkHelperCardsUnlock(state.helperCards, valNum);
         const isDefused = newCutCount >= state.totalWiresToCut;
         const nextTurnPlayerId = getNextActivePlayerId(state, effectivePlayerId);
 
@@ -574,12 +604,14 @@ export function handleBombBustersAction(
             stands: updatedStands,
             cutWiresCount: newCutCount,
             validationTrack: updatedValidation,
+            helperCards: updatedCards,
             doubleDetectorUsed: updatedDoubleDetector,
             currentTurnPlayerId: nextTurnPlayerId,
             phase: isDefused ? 'victory' : 'in_progress',
             endReason: isDefused ? `🎉 BOMB DEFUSED! All circuits were disarmed cleanly!` : null,
             history: [
               ...state.history,
+              ...newHistoryEvents,
               {
                 id: `${Date.now()}`,
                 text: `⚡ DOUBLE DETECTOR PERFECT HIT! ${playerName} guessed #${action.guessedValue} and matched BOTH adjacent wires on ${targetName}'s stand! Cut both!`,
@@ -670,19 +702,21 @@ export function handleBombBustersAction(
         if (!targetWire || targetWire.isCut) {
           return { newState: state, error: 'Select an uncut wire from your stand to place an extra Info Token.' };
         }
+        const clueVal =
+          targetWire.color === 'yellow' ? 'YELLOW' : targetWire.color === 'red' ? 'RED' : targetWire.value;
         updatedStands = {
           ...state.stands,
           [effectivePlayerId]: (state.stands[effectivePlayerId] || []).map((w) =>
             w.id === targetWire.id
               ? {
                   ...w,
-                  infoToken: targetWire.value,
-                  clues: [...w.clues, `CardToken: #${targetWire.value}`],
+                  infoToken: clueVal,
+                  clues: [...w.clues, `CardToken: #${clueVal}`],
                 }
               : w
           ),
         };
-        logText = `💡 HELPER CARD: ${playerName} deployed "${card.nameTh}" to place an extra Info Token on wire #${targetWire.value}!`;
+        logText = `💡 HELPER CARD: ${playerName} deployed "${card.nameTh}" to place an extra Info Token on wire #${clueVal}!`;
       } else if (card.effect === 'PEEK_WIRE') {
         logText = `🔍 HELPER CARD: ${playerName} deployed "${card.nameTh}"!`;
       }
@@ -833,8 +867,17 @@ export function handleBombBustersAction(
         return { newState: state, error: 'You have already placed your starting Info Token for this mission.' };
       }
 
-      if (targetWire.color !== 'blue') {
-        return { newState: state, error: 'Starting Info Token must be placed on a standard Blue wire.' };
+      let tokenValue: WireValue | 'YELLOW' | 'RED';
+      let clueText: string;
+      if (targetWire.color === 'yellow') {
+        tokenValue = 'YELLOW';
+        clueText = 'Yellow Wire 🟡';
+      } else if (targetWire.color === 'red') {
+        tokenValue = 'RED';
+        clueText = 'Danger Red 🔴';
+      } else {
+        tokenValue = targetWire.value;
+        clueText = `#${targetWire.value}`;
       }
 
       const updatedStands = {
@@ -843,8 +886,8 @@ export function handleBombBustersAction(
           w.id === targetWire.id
             ? {
                 ...w,
-                infoToken: targetWire.value,
-                clues: [...w.clues, `Token: #${targetWire.value}`],
+                infoToken: tokenValue,
+                clues: [...w.clues, `Token: ${clueText}`],
               }
             : w
         ),
@@ -869,7 +912,7 @@ export function handleBombBustersAction(
               ...state.history,
               {
                 id: `${Date.now()}_clue`,
-                text: `💡 SETUP: ${playerName} placed starting Info Token #${targetWire.value}!`,
+                text: `💡 SETUP: ${playerName} placed starting Info Token (${clueText})!`,
                 time: Date.now(),
                 type: 'info',
               },
@@ -884,7 +927,6 @@ export function handleBombBustersAction(
         };
       } else {
         const nextTurnPlayerId = state.turnOrder[(currentTurnIndex + 1) % state.turnOrder.length];
-        const nextPlayerName = room.players.find((p) => p.id === nextTurnPlayerId)?.name || 'Next operative';
         return {
           newState: {
             ...state,
@@ -894,7 +936,7 @@ export function handleBombBustersAction(
               ...state.history,
               {
                 id: `${Date.now()}`,
-                text: `💡 SETUP: ${playerName} placed starting Info Token #${targetWire.value}! Waiting for remaining squad operatives.`,
+                text: `💡 SETUP: ${playerName} placed starting Info Token (${clueText})! Waiting for remaining squad operatives.`,
                 time: Date.now(),
                 type: 'info',
               },
@@ -902,6 +944,62 @@ export function handleBombBustersAction(
           },
         };
       }
+    }
+
+    case 'PLACE_ADJACENT_TOKEN': {
+      const myStand = state.stands[effectivePlayerId];
+      if (!myStand) return { newState: state, error: 'Stand not found.' };
+
+      const leftWireIdx = myStand.findIndex((w) => w.id === action.leftWireId);
+      if (leftWireIdx === -1 || leftWireIdx >= myStand.length - 1) {
+        return { newState: state, error: 'Selected wire must have a wire immediately to its right on the rack.' };
+      }
+
+      const leftWire = myStand[leftWireIdx];
+      const rightWire = myStand[leftWireIdx + 1];
+
+      const nextToken =
+        action.tokenType === null || leftWire.adjacentToken === action.tokenType
+          ? null
+          : action.tokenType;
+
+      // Validate equality if token is being placed
+      if (nextToken === '=') {
+        if (leftWire.value !== rightWire.value) {
+          return { newState: state, error: 'Cannot place Equal (=) token: These adjacent wires do not have identical values!' };
+        }
+      } else if (nextToken === '≠') {
+        if (leftWire.value === rightWire.value) {
+          return { newState: state, error: 'Cannot place Not-Equal (≠) token: These adjacent wires have the exact same value!' };
+        }
+      }
+
+      const updatedStands = {
+        ...state.stands,
+        [effectivePlayerId]: myStand.map((w, idx) =>
+          idx === leftWireIdx
+            ? { ...w, adjacentToken: nextToken }
+            : w
+        ),
+      };
+
+      const tokenLabel = nextToken === '=' ? 'Equal (=)' : nextToken === '≠' ? 'Not-Equal (≠)' : 'Cleared Token';
+
+      return {
+        newState: {
+          ...state,
+          stands: updatedStands,
+          history: [
+            ...state.history,
+            {
+              id: `${Date.now()}`,
+              text: `📍 DEDUCTION TOKEN: ${playerName} ${nextToken ? `placed ${tokenLabel}` : 'cleared deduction token'} between adjacent slots #${leftWireIdx + 1} & #${leftWireIdx + 2}!`,
+              time: Date.now(),
+              type: 'info',
+            },
+          ],
+        },
+      };
     }
 
     case 'OPERATIVE_CALL': {
@@ -1061,6 +1159,7 @@ export function sanitizeBombBustersState(
         color: canSeeValue ? wire.color : 'blue',
         isCut: wire.isCut,
         infoToken: wire.infoToken,
+        adjacentToken: wire.adjacentToken ?? null,
         clues: wire.clues,
       };
     });
@@ -1087,6 +1186,11 @@ export function sanitizeBombBustersState(
     history: state.history,
     numberRange: state.numberRange || 12,
     allRevealed: isGameOver,
+    blueCount: state.blueCount ?? 48,
+    yellowCount: state.yellowCount ?? 0,
+    redCount: state.redCount ?? 0,
+    yellowDecimals: state.yellowDecimals ?? [],
+    redDecimals: state.redDecimals ?? [],
   };
 }
 

@@ -130,42 +130,41 @@ export default function BombBustersBoard({
     if (value === 'RED' || color === 'red') {
       return {
         name: 'RED DANGER',
-        bg: 'bg-rose-600',
-        text: 'text-rose-600',
+        bg: 'bg-rose-700',
+        text: 'text-white',
         border: 'border-rose-500',
-        wire: '#ef4444',
-        accent: 'from-rose-600 to-rose-700',
+        wire: '#dc2626',
+        accent: 'from-rose-600 to-rose-800',
       };
     }
     if (color === 'yellow' || (typeof value === 'number' && !Number.isInteger(value))) {
       return {
         name: 'YELLOW DECIMAL',
         bg: 'bg-amber-400',
-        text: 'text-amber-500',
-        border: 'border-amber-400',
+        text: 'text-stone-950 font-black',
+        border: 'border-amber-500',
         wire: '#f59e0b',
-        accent: 'from-amber-400 to-yellow-500',
+        accent: 'from-amber-300 to-amber-500',
       };
     }
-    const colors = [
-      { name: 'Azure', bg: 'bg-blue-600', text: 'text-blue-600', border: 'border-blue-500', wire: '#2563eb', accent: 'from-blue-600 to-blue-700' },
-      { name: 'Amber', bg: 'bg-amber-500', text: 'text-amber-600', border: 'border-amber-500', wire: '#d97706', accent: 'from-amber-500 to-amber-600' },
-      { name: 'Emerald', bg: 'bg-emerald-600', text: 'text-emerald-600', border: 'border-emerald-500', wire: '#059669', accent: 'from-emerald-600 to-emerald-700' },
-      { name: 'Purple', bg: 'bg-purple-600', text: 'text-purple-600', border: 'border-purple-500', wire: '#7c3aed', accent: 'from-purple-600 to-purple-700' },
-      { name: 'Orange', bg: 'bg-orange-600', text: 'text-orange-600', border: 'border-orange-500', wire: '#ea580c', accent: 'from-orange-600 to-orange-700' },
-      { name: 'Cyan', bg: 'bg-cyan-600', text: 'text-cyan-600', border: 'border-cyan-500', wire: '#0891b2', accent: 'from-cyan-600 to-cyan-700' },
-      { name: 'Pink', bg: 'bg-pink-600', text: 'text-pink-600', border: 'border-pink-500', wire: '#db2777', accent: 'from-pink-600 to-pink-700' },
-      { name: 'Indigo', bg: 'bg-indigo-600', text: 'text-indigo-600', border: 'border-indigo-500', wire: '#4f46e5', accent: 'from-indigo-600 to-indigo-700' },
-      { name: 'Lime', bg: 'bg-lime-600', text: 'text-lime-600', border: 'border-lime-500', wire: '#65a30d', accent: 'from-lime-600 to-lime-700' },
-      { name: 'Gold', bg: 'bg-yellow-500', text: 'text-yellow-600', border: 'border-yellow-500', wire: '#ca8a04', accent: 'from-yellow-500 to-yellow-600' },
-      { name: 'Teal', bg: 'bg-teal-600', text: 'text-teal-600', border: 'border-teal-500', wire: '#0d9488', accent: 'from-teal-600 to-teal-700' },
-      { name: 'Ruby', bg: 'bg-rose-600', text: 'text-rose-600', border: 'border-rose-500', wire: '#e11d48', accent: 'from-rose-600 to-rose-700' },
-    ];
-    const num = typeof value === 'number' ? Math.floor(value) : typeof value === 'string' ? parseInt(value, 10) : NaN;
-    if (!isNaN(num) && num >= 1 && num <= 12) {
-      return colors[num - 1];
-    }
-    return { name: 'Unknown', bg: 'bg-slate-600', text: 'text-slate-400', border: 'border-slate-500', wire: '#64748b', accent: 'from-slate-600 to-slate-700' };
+    // Authentic Bomb Busters: All regular number wires 1-12 are Cobalt Blue
+    return {
+      name: 'Cobalt Blue',
+      bg: 'bg-blue-600',
+      text: 'text-white',
+      border: 'border-blue-400',
+      wire: '#2563eb',
+      accent: 'from-blue-600 to-blue-700',
+    };
+  };
+
+  const handlePlaceAdjacentToken = (leftWireId: string, tokenType: '=' | '≠') => {
+    soundFX.playClick();
+    onAction({
+      type: 'PLACE_ADJACENT_TOKEN',
+      leftWireId,
+      tokenType,
+    });
   };
 
   // Duo Cut handler
@@ -315,13 +314,13 @@ export default function BombBustersBoard({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-6">
+    <div className="w-full max-w-6xl mx-auto space-y-4">
       {/* LUXURY PHYSICAL TABLETOP FELT */}
-      <div className="tabletop-felt rounded-[36px] sm:rounded-[44px] p-5 sm:p-8 space-y-8 relative overflow-hidden shadow-2xl">
-        {/* Table Top Controls & Mission Dossier */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-amber-950/40 pb-4">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl p-2.5 bg-amber-950/40 rounded-2xl border border-amber-900/40 shadow-inner">
+      <div className="tabletop-felt rounded-[32px] sm:rounded-[40px] p-4 sm:p-6 space-y-4 relative overflow-hidden shadow-2xl">
+        {/* Table Top Controls & Tactical Mission Post-It Memo */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-950/40 pb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl sm:text-3xl p-2 bg-amber-950/40 rounded-2xl border border-amber-900/40 shadow-inner">
               💣
             </span>
             <div>
@@ -329,22 +328,49 @@ export default function BombBustersBoard({
                 <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-[10px] font-mono font-bold text-amber-300 uppercase">
                   Mission #{state.missionId || 1}
                 </span>
-                <h2 className="text-lg sm:text-xl font-black text-amber-100 tracking-wide font-serif">
+                <h2 className="text-base sm:text-lg font-black text-amber-100 tracking-wide font-serif">
                   {state.missionName || 'Bomb Busters Tabletop'}
                 </h2>
               </div>
-              <p className="text-xs text-amber-300/70 font-sans line-clamp-1 max-w-lg mt-0.5">
+              <p className="text-xs text-amber-300/70 font-sans line-clamp-1 max-w-sm mt-0.5">
                 {state.missionBriefing || 'Cooperative Wire-Defusal Operation'}
               </p>
             </div>
           </div>
 
+          {/* TACTICAL MISSION POST-IT MEMO (โน้ตภารกิจ / สเปกสายไฟ) */}
+          <div className="relative bg-gradient-to-br from-amber-100 via-yellow-100 to-amber-200 text-stone-900 rounded-xl p-2.5 shadow-xl border-2 border-amber-300/80 -rotate-1 shrink-0 font-sans select-none min-w-[190px]">
+            <div className="w-8 h-1.5 bg-amber-400/60 rounded-sm mx-auto mb-1 opacity-70" />
+            <div className="text-[10px] font-black uppercase tracking-wider text-amber-950 border-b border-amber-300 pb-0.5 flex items-center justify-between">
+              <span>📌 MISSION DOSSIER</span>
+              <span className="text-[9px] font-mono font-bold bg-amber-300/60 px-1 rounded">#{state.missionId || 1}</span>
+            </div>
+            <div className="mt-1 space-y-0.5 text-[10px] font-mono font-bold">
+              <div className="flex justify-between text-blue-900">
+                <span>🔵 Normal (Blue):</span>
+                <span>{state.blueCount ?? 48}</span>
+              </div>
+              <div className="flex justify-between text-amber-900">
+                <span>🟡 Decimals (.1):</span>
+                <span>{state.yellowCount ?? 0}</span>
+              </div>
+              <div className="flex justify-between text-rose-900">
+                <span>🔴 Traps (.5 Red):</span>
+                <span>{state.redCount ?? 0}</span>
+              </div>
+              <div className="pt-0.5 border-t border-amber-300 flex justify-between text-stone-950 font-black text-[10px]">
+                <span>DEFUSE GOAL:</span>
+                <span>{state.totalWiresToCut} wires</span>
+              </div>
+            </div>
+          </div>
+
           {/* Current Turn Badge */}
-          <div className="px-4 py-2 rounded-2xl bg-black/40 border border-amber-900/40 text-xs sm:text-sm font-semibold shadow-inner">
+          <div className="px-3.5 py-1.5 rounded-2xl bg-black/40 border border-amber-900/40 text-xs sm:text-sm font-semibold shadow-inner">
             {isMyTurn ? (
               <span className="text-amber-300 font-black animate-pulse flex items-center gap-2">
                 <Scissors className="w-4 h-4 text-rose-400" />
-                <span>YOUR TURN: Duo Cut with a teammate, or Solo Cut your own pair!</span>
+                <span>YOUR TURN: Duo Cut with a teammate, or Solo Cut!</span>
               </span>
             ) : (
               <span className="text-slate-300 flex items-center gap-2">
@@ -360,7 +386,7 @@ export default function BombBustersBoard({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowManual(true)}
-              className="p-2.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-900/50 transition shadow-md flex items-center gap-1.5 text-xs font-bold"
+              className="p-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-900/50 transition shadow-md flex items-center gap-1.5 text-xs font-bold"
               title="Bomb Disposal Field Manual & Rules"
             >
               <span>📖</span>
@@ -368,14 +394,14 @@ export default function BombBustersBoard({
             </button>
             <button
               onClick={toggleSound}
-              className="p-2.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-200 border border-amber-900/50 transition shadow-md"
+              className="p-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-200 border border-amber-900/50 transition shadow-md"
               title={soundEnabled ? 'Mute Audio' : 'Enable Audio'}
             >
               {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-rose-400" />}
             </button>
             <button
               onClick={onReturnToLobby}
-              className="px-3.5 py-2 text-xs font-bold rounded-xl bg-amber-950/50 hover:bg-amber-900/70 text-amber-100 border border-amber-800/60 transition shadow-md"
+              className="px-3 py-2 text-xs font-bold rounded-xl bg-amber-950/50 hover:bg-amber-900/70 text-amber-100 border border-amber-800/60 transition shadow-md"
               title="Return to Room Lobby"
             >
               {isHost ? 'End Mission' : 'Lobby'}
@@ -433,7 +459,7 @@ export default function BombBustersBoard({
                     </div>
 
                     {/* Wooden Rack Groove with Upright Chunky Domino Tiles */}
-                    <div className="rack-groove rounded-xl p-2.5 flex flex-wrap gap-2 justify-center min-h-[110px] items-end pb-3">
+                    <div className="rack-groove rounded-xl p-2 flex flex-wrap gap-1.5 justify-center min-h-[96px] items-end pb-2.5">
                       {stand.map((wire, idx) => {
                         const isCut = wire.isCut;
                         const teammateId = teammate.id;
@@ -442,96 +468,138 @@ export default function BombBustersBoard({
                           targetSelection?.wireId === wire.id;
                         const wireCol = getWireColor(wire.value, wire.color);
                         const hasInfoToken = wire.infoToken != null;
+                        const hasAdjacentToken = wire.adjacentToken != null;
 
                         return (
-                          <div
-                            key={wire.id}
-                            onClick={() => {
-                              if (!isCut && isMyTurn && state.phase === 'in_progress') {
-                                soundFX.playTileClack();
-                                setTargetSelection(
-                                  isTargeted
-                                    ? null
-                                    : {
-                                        playerId: teammateId,
-                                        wireId: wire.id,
-                                        slotIndex: idx,
-                                      }
-                                );
-                              }
-                            }}
-                            className={`relative w-12 h-20 sm:w-14 sm:h-22 rounded-lg flex flex-col items-center justify-between p-1.5 select-none transition-all cursor-pointer ${
-                              isCut
-                                ? 'tile-cut'
-                                : isTargeted
-                                ? 'chunky-tile -translate-y-3 ring-4 ring-cyan-400 shadow-2xl scale-105'
-                                : isMyTurn
-                                ? 'chunky-tile hover:-translate-y-1 hover:ring-2 hover:ring-cyan-300/60'
-                                : 'chunky-tile'
-                            }`}
-                          >
-                            {/* Insulated Wire Header Cord on Tile */}
-                            <div className="w-full flex items-center justify-between px-0.5">
-                              <span className="text-[8px] font-mono font-black text-slate-500">
-                                #{idx + 1}
-                              </span>
-                              <div
-                                className="w-2.5 h-1.5 rounded-full"
-                                style={{ backgroundColor: isCut ? '#475569' : hasInfoToken ? wireCol.wire : '#475569' }}
-                              />
-                            </div>
-
-                            {/* Center Value / Unknown Glyph / Info Token Value */}
-                            <div className="my-auto text-center">
-                              {isCut ? (
-                                <span className="font-mono text-base font-black text-slate-400 line-through">
-                                  {wire.value}
+                          <React.Fragment key={wire.id}>
+                            <div
+                              onClick={() => {
+                                if (!isCut && isMyTurn && state.phase === 'in_progress') {
+                                  soundFX.playTileClack();
+                                  setTargetSelection(
+                                    isTargeted
+                                      ? null
+                                      : {
+                                          playerId: teammateId,
+                                          wireId: wire.id,
+                                          slotIndex: idx,
+                                        }
+                                  );
+                                }
+                              }}
+                              className={`relative w-11 h-18 sm:w-12 sm:h-20 rounded-lg flex flex-col items-center justify-between p-1 select-none transition-all cursor-pointer ${
+                                isCut
+                                  ? 'tile-cut'
+                                  : isTargeted
+                                  ? 'chunky-tile -translate-y-2 ring-4 ring-cyan-400 shadow-2xl scale-105'
+                                  : isMyTurn
+                                  ? 'chunky-tile hover:-translate-y-1 hover:ring-2 hover:ring-cyan-300/60'
+                                  : 'chunky-tile'
+                              }`}
+                            >
+                              {/* Insulated Wire Header Cord on Tile */}
+                              <div className="w-full flex items-center justify-between px-0.5">
+                                <span className="text-[7px] font-mono font-black text-slate-500">
+                                  #{idx + 1}
                                 </span>
-                              ) : hasInfoToken ? (
-                                <div className="flex flex-col items-center leading-none">
-                                  <span className="font-mono text-lg font-black text-amber-300 drop-shadow">
-                                    #{wire.infoToken}
+                                <div
+                                  className="w-2.5 h-1.5 rounded-full"
+                                  style={{ backgroundColor: isCut ? '#475569' : hasInfoToken ? wireCol.wire : '#475569' }}
+                                />
+                              </div>
+
+                              {/* Center Value / Unknown Glyph / Info Token Value */}
+                              <div className="my-auto text-center">
+                                {isCut ? (
+                                  <span className="font-mono text-sm sm:text-base font-black text-slate-400 line-through">
+                                    {wire.value}
                                   </span>
-                                  <span className="text-[8px] font-mono font-bold text-amber-400 uppercase tracking-tighter">
-                                    CLUE 💡
+                                ) : wire.infoToken === 'YELLOW' ? (
+                                  <div className="flex flex-col items-center leading-none">
+                                    <span className="font-mono text-xs font-black text-amber-300 drop-shadow">
+                                      🟡 .1
+                                    </span>
+                                    <span className="text-[7px] font-mono font-bold text-amber-400 uppercase tracking-tighter">
+                                      YELLOW
+                                    </span>
+                                  </div>
+                                ) : wire.infoToken === 'RED' ? (
+                                  <div className="flex flex-col items-center leading-none">
+                                    <span className="font-mono text-xs font-black text-rose-400 drop-shadow">
+                                      🚨 .5
+                                    </span>
+                                    <span className="text-[7px] font-mono font-bold text-rose-400 uppercase tracking-tighter">
+                                      TRAP
+                                    </span>
+                                  </div>
+                                ) : hasInfoToken ? (
+                                  <div className="flex flex-col items-center leading-none">
+                                    <span className="font-mono text-base font-black text-amber-300 drop-shadow">
+                                      #{wire.infoToken}
+                                    </span>
+                                    <span className="text-[7px] font-mono font-bold text-amber-400 uppercase tracking-tighter">
+                                      CLUE 💡
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="font-serif text-lg font-black text-slate-500/70">
+                                    ?
                                   </span>
+                                )}
+                              </div>
+
+                              {/* Clues / Sticky Notes Attached to Tile */}
+                              <div className="w-full flex flex-wrap justify-center gap-0.5 min-h-[12px]">
+                                {isCut ? (
+                                  <span className="text-[7px] font-black text-emerald-500 uppercase">
+                                    CUT ✓
+                                  </span>
+                                ) : (
+                                  wire.clues.slice(-1).map((c, cIdx) => (
+                                    <span
+                                      key={cIdx}
+                                      className="text-[7px] font-mono font-black px-1 rounded shadow-sm bg-amber-100 text-amber-900 border border-amber-300 truncate max-w-full"
+                                    >
+                                      {c}
+                                    </span>
+                                  ))
+                                )}
+                              </div>
+
+                              {/* OFFICIAL INFO TOKEN BADGE PINNED AT BASE OF TILE */}
+                              {hasInfoToken && !isCut && (
+                                <div
+                                  className={`absolute -bottom-2 z-20 px-1.5 py-0.2 rounded-full border shadow-lg flex items-center justify-center font-mono text-[8px] font-black ${
+                                    wire.infoToken === 'YELLOW'
+                                      ? 'bg-amber-400 text-stone-950 border-amber-600'
+                                      : wire.infoToken === 'RED'
+                                      ? 'bg-rose-700 text-white border-rose-900'
+                                      : 'bg-amber-200 text-amber-950 border-amber-600'
+                                  }`}
+                                >
+                                  {wire.infoToken === 'YELLOW' ? '🟡 YEL' : wire.infoToken === 'RED' ? '🚨 RED' : `#${wire.infoToken}`}
                                 </div>
-                              ) : (
-                                <span className="font-serif text-xl font-black text-slate-500/70">
-                                  ?
-                                </span>
                               )}
                             </div>
 
-                            {/* Clues / Sticky Notes Attached to Tile */}
-                            <div className="w-full flex flex-wrap justify-center gap-0.5 min-h-[14px]">
-                              {isCut ? (
-                                <span className="text-[8px] font-black text-emerald-600 uppercase">
-                                  CUT ✓
+                            {/* Adjacent Deduction Token between Teammate Tiles */}
+                            {idx < stand.length - 1 && hasAdjacentToken && (
+                              <div
+                                className="flex items-center justify-center self-center z-10 -mx-1"
+                                title={`Operative Deduction: ${wire.adjacentToken === '=' ? 'Equal (=)' : 'Not Equal (≠)'}`}
+                              >
+                                <span
+                                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black shadow-md border ${
+                                    wire.adjacentToken === '='
+                                      ? 'bg-amber-400 text-stone-950 border-amber-600'
+                                      : 'bg-rose-700 text-white border-rose-900'
+                                  }`}
+                                >
+                                  {wire.adjacentToken}
                                 </span>
-                              ) : (
-                                wire.clues.slice(-2).map((c, cIdx) => (
-                                  <span
-                                    key={cIdx}
-                                    className={`text-[8px] font-mono font-black px-1 rounded shadow-sm ${
-                                      c.startsWith('=') || c.startsWith('Token')
-                                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                        : 'bg-rose-100 text-rose-800 border border-rose-300'
-                                    }`}
-                                  >
-                                    {c}
-                                  </span>
-                                ))
-                              )}
-                            </div>
-
-                            {/* OFFICIAL INFO TOKEN BADGE PINNED AT BASE OF TILE */}
-                            {hasInfoToken && !isCut && (
-                              <div className="absolute -bottom-2.5 z-20 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 border-2 border-amber-600 shadow-lg flex items-center justify-center font-mono text-[9px] font-black text-amber-950">
-                                #{wire.infoToken}
                               </div>
                             )}
-                          </div>
+                          </React.Fragment>
                         );
                       })}
                     </div>
@@ -610,36 +678,82 @@ export default function BombBustersBoard({
               </div>
             );
           })()}
-          {state.validationTrack && Object.keys(state.validationTrack).length > 0 && (
-            <div className="bg-black/50 border border-slate-700/80 rounded-2xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-inner">
+          {/* OFFICIAL CIRCUIT VALIDATION TRACK WITH YELLOW & RED DECIMAL PEGS (Matching Picture 3) */}
+          <div className="bg-black/60 border border-slate-700/80 rounded-2xl p-3.5 space-y-2 shadow-inner">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-[10px] font-mono uppercase tracking-wider text-slate-300 flex items-center gap-1.5 font-bold">
                 <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Circuit Validation Track:</span>
+                <span>Circuit Validation Track & Wire Markers:</span>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {Object.entries(state.validationTrack).map(([numStr, track]) => {
-                  const num = Number(numStr);
-                  return (
-                    <div
-                      key={num}
-                      className={`px-2 py-1 rounded-lg border font-mono text-xs flex items-center gap-1 transition ${
-                        track.isValidated
-                          ? 'bg-emerald-500/20 border-emerald-500/70 text-emerald-300 font-black shadow-sm'
-                          : track.cut > 0
-                          ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 font-bold'
-                          : 'bg-slate-900/80 border-slate-800 text-slate-500'
-                      }`}
-                    >
-                      <span>#{num}</span>
-                      <span className="text-[9px]">
-                        {track.isValidated ? '✓' : `${track.cut}/${track.total}`}
-                      </span>
-                    </div>
-                  );
-                })}
+              <div className="flex items-center gap-3 text-[10px] font-mono">
+                {state.yellowDecimals && state.yellowDecimals.length > 0 && (
+                  <span className="flex items-center gap-1 text-amber-300">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 inline-block shadow-sm" />
+                    Yellow Pegs: {state.yellowDecimals.map((d) => `${d}`).join(', ')}
+                  </span>
+                )}
+                {state.redDecimals && state.redDecimals.length > 0 && (
+                  <span className="flex items-center gap-1 text-rose-400">
+                    <span className="w-2 h-2 rounded-full bg-rose-600 inline-block shadow-sm animate-pulse" />
+                    Red Traps: {state.redDecimals.map((d) => `${d}`).join(', ')}
+                  </span>
+                )}
               </div>
             </div>
-          )}
+
+            <div className="grid grid-cols-6 sm:grid-cols-12 gap-1.5">
+              {Array.from({ length: state.numberRange || 12 }, (_, i) => i + 1).map((num) => {
+                const track = state.validationTrack?.[num];
+                const hasYellow = state.yellowDecimals?.some((d) => Math.floor(d) === num);
+                const yellowVal = state.yellowDecimals?.find((d) => Math.floor(d) === num);
+                const hasRed = state.redDecimals?.some((d) => Math.floor(d) === num);
+                const redVal = state.redDecimals?.find((d) => Math.floor(d) === num);
+
+                return (
+                  <div
+                    key={num}
+                    className={`relative rounded-xl border p-1.5 flex flex-col items-center justify-between min-h-[58px] transition ${
+                      track?.isValidated
+                        ? 'bg-emerald-950/60 border-emerald-500/70 text-emerald-300 shadow-sm'
+                        : track && track.cut > 0
+                        ? 'bg-blue-950/60 border-blue-500/60 text-blue-300'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full px-0.5">
+                      <span className="font-mono text-xs font-black">#{num}</span>
+                      <span className="text-[9px] font-mono font-bold">
+                        {track?.isValidated ? '✓' : track ? `${track.cut}/${track.total}` : ''}
+                      </span>
+                    </div>
+
+                    {/* Peg slots on the circuit track */}
+                    <div className="flex items-center gap-1 mt-1">
+                      {hasYellow && (
+                        <span
+                          className="px-1 py-0.2 rounded bg-amber-400 text-stone-950 font-mono font-black text-[8px] shadow border border-amber-600"
+                          title={`Yellow Decimal Wire in Mission: ${yellowVal}`}
+                        >
+                          .{yellowVal?.toString().split('.')[1] || '1'}
+                        </span>
+                      )}
+                      {hasRed && (
+                        <span
+                          className="px-1 py-0.2 rounded bg-rose-600 text-white font-mono font-black text-[8px] shadow border border-rose-800 animate-pulse"
+                          title={`Red Hazard Wire in Mission: ${redVal}`}
+                        >
+                          .{redVal?.toString().split('.')[1] || '5'}
+                        </span>
+                      )}
+                      {!hasYellow && !hasRed && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-800 border border-slate-700 inline-block opacity-40" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
           {/* TACTICAL HELPER CARDS (การ์ดตัวช่วย) */}
           {state.helperCards && state.helperCards.length > 0 && (
@@ -716,7 +830,7 @@ export default function BombBustersBoard({
               </div>
               <span className="text-[10px] text-amber-300/70 font-mono">
                 {state.phase === 'initial_clue'
-                  ? 'Setup Phase: Click a token to place your opening clue on your blue wire'
+                  ? 'Setup Phase: Click a token (Blue, Yellow, or Red) to place your opening clue on your stand'
                   : 'Tokens in play: Placed automatically on racks when a cut misses'}
               </span>
             </div>
@@ -753,6 +867,60 @@ export default function BombBustersBoard({
                   </button>
                 );
               })}
+
+              {/* Yellow Decimal Token Option */}
+              {Boolean(state.yellowCount && state.yellowCount > 0) && (() => {
+                const uncluedYellow = myStand.find(
+                  (w) => !w.isCut && w.color === 'yellow' && w.infoToken == null
+                );
+                const canUseYellow = state.phase === 'initial_clue' && !myHasPlacedClue && Boolean(uncluedYellow);
+                return (
+                  <button
+                    type="button"
+                    disabled={!canUseYellow}
+                    onClick={() => {
+                      if (uncluedYellow) handlePlaceInfoToken(uncluedYellow.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-mono text-xs font-black transition flex items-center gap-1.5 border shadow-sm ${
+                      canUseYellow
+                        ? 'bg-amber-400 text-stone-950 border-amber-500 hover:bg-amber-300 cursor-pointer shadow-amber-900/40 hover:scale-105 active:scale-95 animate-pulse'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                    }`}
+                    title={canUseYellow ? 'Place Yellow Decimal Clue Token' : 'Yellow Clue Token (.1)'}
+                  >
+                    <span>🟡</span>
+                    <span>Yellow Clue (.1)</span>
+                    {canUseYellow && <span className="text-[10px]">💡</span>}
+                  </button>
+                );
+              })()}
+
+              {/* Red Hazard Clue Token Option */}
+              {Boolean(state.redCount && state.redCount > 0) && (() => {
+                const uncluedRed = myStand.find(
+                  (w) => !w.isCut && w.color === 'red' && w.infoToken == null
+                );
+                const canUseRed = state.phase === 'initial_clue' && !myHasPlacedClue && Boolean(uncluedRed);
+                return (
+                  <button
+                    type="button"
+                    disabled={!canUseRed}
+                    onClick={() => {
+                      if (uncluedRed) handlePlaceInfoToken(uncluedRed.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-mono text-xs font-black transition flex items-center gap-1.5 border shadow-sm ${
+                      canUseRed
+                        ? 'bg-rose-700 text-white border-rose-500 hover:bg-rose-600 cursor-pointer shadow-rose-950/40 hover:scale-105 active:scale-95 animate-pulse'
+                        : 'bg-slate-900/80 border-slate-800 text-slate-500 cursor-not-allowed opacity-50'
+                    }`}
+                    title={canUseRed ? 'Place Red Hazard Clue Marker' : 'Red Hazard Marker (.5)'}
+                  >
+                    <span>🚨</span>
+                    <span>Red Danger (.5)</span>
+                    {canUseRed && <span className="text-[10px]">💡</span>}
+                  </button>
+                );
+              })()}
             </div>
           </div>
 
@@ -1060,8 +1228,8 @@ export default function BombBustersBoard({
             </span>
           </div>
 
-          {/* Recessed Mahogany Rack Groove with Standing Resin Tiles */}
-          <div className="rack-groove rounded-2xl p-4 flex flex-wrap gap-3.5 items-end justify-center min-h-[145px] pb-4">
+          {/* Recessed Mahogany Rack Groove with Standing Resin Tiles & Adjacent Deduction Pins */}
+          <div className="rack-groove rounded-2xl p-3 sm:p-4 flex flex-wrap gap-2 sm:gap-2.5 items-end justify-center min-h-[130px] pb-3.5">
             {myStand.map((wire, idx) => {
               const isSelected = selectedMyWireIds.includes(wire.id);
               const isCut = wire.isCut;
@@ -1070,96 +1238,161 @@ export default function BombBustersBoard({
               const wireCol = getWireColor(wire.value, wire.color);
               const hasInfoToken = wire.infoToken != null;
 
+              // Authentic High-Contrast Tile Styling
+              let tileTheme = 'bg-gradient-to-b from-blue-600 via-blue-700 to-blue-800 border-2 border-blue-400 text-white shadow-blue-950/40';
+              let textTheme = 'text-white font-black';
+
+              if (isCut) {
+                tileTheme = 'bg-slate-800/80 border-2 border-slate-700 text-slate-500 line-through opacity-50';
+                textTheme = 'text-slate-500 line-through';
+              } else if (isYellow) {
+                // Vibrant Amber tile with Deep Black text for Maximum Legibility
+                tileTheme = 'bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 border-2 border-amber-500 text-stone-950 shadow-amber-950/40';
+                textTheme = 'text-stone-950 font-black drop-shadow-none';
+              } else if (isRed) {
+                tileTheme = 'bg-gradient-to-b from-rose-700 via-rose-800 to-rose-900 border-2 border-rose-500 text-white shadow-rose-950/40';
+                textTheme = 'text-white font-black animate-pulse';
+              }
+
               return (
-                <div
-                  key={wire.id}
-                  onClick={() => {
-                    if (!isCut && isMyTurn) {
-                      toggleMyWireSelection(wire.id);
-                    }
-                  }}
-                  className={`relative w-16 h-28 sm:w-20 sm:h-32 rounded-xl flex flex-col justify-between p-2 select-none cursor-pointer transition-all ${
-                    isCut
-                      ? 'tile-cut'
-                      : isSelected
-                      ? 'chunky-tile -translate-y-4 ring-4 ring-amber-400 shadow-2xl scale-105'
-                      : isMyTurn
-                      ? 'chunky-tile hover:-translate-y-2 hover:ring-2 hover:ring-amber-300/60'
-                      : 'chunky-tile'
-                  }`}
-                >
-                  {/* Top Insulated Cable Wire on Tile */}
-                  <div className="w-full flex items-center justify-between">
-                    <span className="text-[10px] font-mono font-black text-slate-500">
-                      #{idx + 1}
-                    </span>
-                    <div
-                      className="w-4 h-2 rounded-full border border-black/20"
-                      style={{ backgroundColor: isCut ? '#475569' : wireCol.wire }}
-                    />
-                  </div>
-
-                  {/* Wire Big Value Embossed on Tile */}
-                  <div className="text-center my-auto">
-                    <div
-                      className={`text-2xl sm:text-3xl font-mono font-black ${
-                        isRed
-                          ? 'text-rose-600 animate-pulse'
-                          : isYellow
-                          ? 'text-amber-500'
-                          : isCut
-                          ? 'text-slate-400'
-                          : wireCol.text
-                      }`}
-                    >
-                      {wire.value}
-                    </div>
-                    {isRed && !isCut && (
-                      <div className="text-[8px] font-black uppercase text-rose-600 tracking-wider">
-                        DANGER RED
-                      </div>
-                    )}
-                    {isYellow && !isCut && (
-                      <div className="text-[8px] font-black uppercase text-amber-500 tracking-wider">
-                        YELLOW DECIMAL
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bottom Tile Status */}
-                  <div className="w-full flex justify-center">
-                    {isCut ? (
-                      <span className="text-[9px] uppercase font-black text-slate-400">
-                        CUT ✓
+                <React.Fragment key={wire.id}>
+                  <div
+                    onClick={() => {
+                      if (!isCut && isMyTurn) {
+                        toggleMyWireSelection(wire.id);
+                      }
+                    }}
+                    className={`relative w-13 h-24 sm:w-16 sm:h-28 rounded-xl flex flex-col justify-between p-1.5 select-none cursor-pointer transition-all shadow-lg ${tileTheme} ${
+                      isCut
+                        ? 'tile-cut'
+                        : isSelected
+                        ? '-translate-y-3 ring-4 ring-amber-300 shadow-2xl scale-105'
+                        : isMyTurn
+                        ? 'hover:-translate-y-1.5 hover:ring-2 hover:ring-amber-300/60'
+                        : ''
+                    }`}
+                  >
+                    {/* Top Insulated Cable Wire on Tile */}
+                    <div className="w-full flex items-center justify-between px-0.5">
+                      <span className={`text-[8px] font-mono font-black ${isYellow ? 'text-amber-950/70' : 'text-slate-300'}`}>
+                        #{idx + 1}
                       </span>
-                    ) : (
                       <div
-                        className="w-2.5 h-2.5 rounded-full border border-black/30"
-                        style={{ backgroundColor: wireCol.wire }}
+                        className="w-3.5 h-1.5 rounded-full border border-black/20"
+                        style={{ backgroundColor: isCut ? '#475569' : wireCol.wire }}
                       />
-                    )}
+                    </div>
+
+                    {/* Wire Big Value Embossed on Tile */}
+                    <div className="text-center my-auto">
+                      <div className={`text-xl sm:text-2xl font-mono font-black tracking-tight ${textTheme}`}>
+                        {wire.value}
+                      </div>
+                      {isRed && !isCut && (
+                        <div className="text-[7px] font-black uppercase text-rose-200 tracking-wider">
+                          DANGER RED
+                        </div>
+                      )}
+                      {isYellow && !isCut && (
+                        <div className="text-[7px] font-black uppercase text-amber-950 tracking-wider">
+                          YELLOW .1
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Tile Status */}
+                    <div className="w-full flex justify-center">
+                      {isCut ? (
+                        <span className="text-[8px] uppercase font-black text-slate-400">
+                          CUT ✓
+                        </span>
+                      ) : (
+                        <div
+                          className="w-2 h-2 rounded-full border border-black/20"
+                          style={{ backgroundColor: isYellow ? '#78350f' : isRed ? '#fecdd3' : '#93c5fd' }}
+                        />
+                      )}
+                    </div>
+
+                    {/* INFO TOKEN PINNED AT BASE OF TILE OR CLUE BUTTON */}
+                    {hasInfoToken && !isCut ? (
+                      <div
+                        className={`absolute -bottom-2.5 z-20 px-2 py-0.5 rounded-full border-2 shadow-lg flex items-center justify-center font-mono text-[8px] font-black ${
+                          wire.infoToken === 'YELLOW'
+                            ? 'bg-amber-400 text-stone-950 border-amber-700'
+                            : wire.infoToken === 'RED'
+                            ? 'bg-rose-700 text-white border-rose-950'
+                            : 'bg-amber-200 text-amber-950 border-amber-600'
+                        }`}
+                      >
+                        {wire.infoToken === 'YELLOW' ? '🟡 YELLOW' : wire.infoToken === 'RED' ? '🚨 RED' : `#${wire.infoToken}`}
+                      </div>
+                    ) : !isCut && state.phase === 'initial_clue' && !myHasPlacedClue ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePlaceInfoToken(wire.id);
+                        }}
+                        className="absolute -bottom-3 z-20 px-2 py-0.5 rounded-full font-black text-[8px] shadow-lg border uppercase tracking-wider flex items-center gap-0.5 transition cursor-pointer bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 border-amber-400 animate-bounce scale-105 shadow-amber-500/50"
+                        title={`Place opening clue on this wire`}
+                      >
+                        <span>💡</span>
+                        <span>
+                          {wire.color === 'yellow' ? 'Clue (Yel)' : wire.color === 'red' ? 'Clue (Red)' : `Clue #${wire.value}`}
+                        </span>
+                      </button>
+                    ) : null}
                   </div>
 
-                  {/* INFO TOKEN PINNED AT BASE OF TILE OR CLUE BUTTON */}
-                  {hasInfoToken && !isCut ? (
-                    <div className="absolute -bottom-2.5 z-20 px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 border-2 border-amber-600 shadow-lg flex items-center justify-center font-mono text-[9px] font-black text-amber-950">
-                      #{wire.infoToken}
+                  {/* ADJACENT DEDUCTION TOKEN SLOT (Between wire idx and idx + 1) */}
+                  {idx < myStand.length - 1 && (
+                    <div className="flex flex-col items-center justify-center self-center z-10 -mx-1 select-none">
+                      {wire.adjacentToken ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlaceAdjacentToken(wire.id, wire.adjacentToken!);
+                          }}
+                          className={`w-5 h-5 rounded-full flex items-center justify-center font-mono font-black text-[10px] shadow-md border transition cursor-pointer hover:scale-110 active:scale-95 ${
+                            wire.adjacentToken === '='
+                              ? 'bg-amber-400 text-stone-950 border-amber-600 shadow-amber-900/40'
+                              : 'bg-rose-700 text-white border-rose-900 shadow-rose-950/40'
+                          }`}
+                          title={`Adjacent deduction: ${wire.adjacentToken === '=' ? 'Equal (=)' : 'Not Equal (≠)'}. Click to clear.`}
+                        >
+                          {wire.adjacentToken}
+                        </button>
+                      ) : !wire.isCut && !myStand[idx + 1].isCut ? (
+                        <div className="flex flex-col gap-0.5 opacity-30 hover:opacity-100 transition">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlaceAdjacentToken(wire.id, '=');
+                            }}
+                            className="w-4 h-3.5 rounded bg-amber-950/80 hover:bg-amber-400 hover:text-stone-950 text-amber-300 text-[8px] font-black border border-amber-600/50 transition flex items-center justify-center shadow"
+                            title="Pin Equal (=) deduction token"
+                          >
+                            =
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlaceAdjacentToken(wire.id, '≠');
+                            }}
+                            className="w-4 h-3.5 rounded bg-rose-950/80 hover:bg-rose-600 hover:text-white text-rose-300 text-[8px] font-black border border-rose-600/50 transition flex items-center justify-center shadow"
+                            title="Pin Not-Equal (≠) deduction token"
+                          >
+                            ≠
+                          </button>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : !isCut && state.phase === 'initial_clue' && !myHasPlacedClue && wire.color === 'blue' ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePlaceInfoToken(wire.id);
-                      }}
-                      className="absolute -bottom-3.5 z-20 px-2.5 py-1 rounded-full font-black text-[9px] shadow-lg border uppercase tracking-wider flex items-center gap-1 transition cursor-pointer bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 border-amber-400 animate-bounce scale-110 shadow-amber-500/50"
-                      title={`Place opening Info Token #${wire.value} on this wire`}
-                    >
-                      <span>💡</span>
-                      <span>Start Clue</span>
-                    </button>
-                  ) : null}
-                </div>
+                  )}
+                </React.Fragment>
               );
             })}
           </div>
@@ -1428,18 +1661,32 @@ export default function BombBustersBoard({
               Click an uncut wire on your stand to place your Tactical Info Relay token on it:
             </p>
             <div className="flex flex-wrap gap-2.5 justify-center p-3 bg-black/40 rounded-xl border border-zinc-800">
-              {myStand.filter((w) => !w.isCut).map((wire, idx) => (
-                <button
-                  key={wire.id}
-                  type="button"
-                  onClick={() => handleUseHelperCard(helperCardTargetModal, wire.id)}
-                  className="w-14 h-20 rounded-xl border border-amber-500/60 bg-amber-500/10 hover:bg-amber-500/30 flex flex-col items-center justify-between p-2 transition font-mono active:scale-95 cursor-pointer shadow-lg hover:border-amber-400"
-                >
-                  <span className="text-[9px] text-zinc-400">#{idx + 1}</span>
-                  <span className="text-base font-black text-amber-300">#{wire.value}</span>
-                  <span className="text-[8px] text-amber-400 font-bold uppercase">Select</span>
-                </button>
-              ))}
+              {myStand.filter((w) => !w.isCut).map((wire, idx) => {
+                const isYellow = wire.color === 'yellow';
+                const isRed = wire.color === 'red';
+                return (
+                  <button
+                    key={wire.id}
+                    type="button"
+                    onClick={() => handleUseHelperCard(helperCardTargetModal, wire.id)}
+                    className={`w-14 h-20 rounded-xl border flex flex-col items-center justify-between p-2 transition font-mono active:scale-95 cursor-pointer shadow-lg ${
+                      isYellow
+                        ? 'bg-amber-400 border-amber-600 text-stone-950 hover:bg-amber-300'
+                        : isRed
+                        ? 'bg-rose-700 border-rose-500 text-white hover:bg-rose-600'
+                        : 'bg-blue-600 border-blue-400 text-white hover:bg-blue-500'
+                    }`}
+                  >
+                    <span className="text-[9px] opacity-80">#{idx + 1}</span>
+                    <span className="text-base font-black">
+                      {isYellow ? `${wire.value}` : isRed ? `${wire.value}` : `#${wire.value}`}
+                    </span>
+                    <span className="text-[8px] font-bold uppercase">
+                      {isYellow ? 'Yellow' : isRed ? 'Danger' : 'Select'}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
