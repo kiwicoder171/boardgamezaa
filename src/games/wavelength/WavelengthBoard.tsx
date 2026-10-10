@@ -60,23 +60,29 @@ export default function WavelengthBoard({
     state.mode === 'competitive' &&
     state.teams[opposingTeamId].playerIds.includes(currentPlayerId);
 
-  // Teammates or other players who are actively guessing (Psychic is strictly excluded from locking if others exist)
-  const hasOtherGuesser = players.some((p) => p.id !== state.psychicId);
-  const isGuesser = isActiveTeamMember && (!isPsychic || !hasOtherGuesser);
-  const showPsychicWaitingScreen = isPsychic && hasOtherGuesser;
-
   // The designated Dial Captain (คนลาก/คนตอบ) for the active round
+  const activeTeamTeammates =
+    state.teams[state.activeTeam]?.playerIds.filter((id) => id !== state.psychicId) || [];
   const dialCaptainId =
-    state.dialCaptainId ||
-    (state.mode === 'coop'
-      ? players.find((p) => p.id !== state.psychicId)?.id
-      : state.teams[state.activeTeam]?.playerIds.find((id) => id !== state.psychicId)) ||
-    state.psychicId;
+    state.dialCaptainId && state.dialCaptainId !== state.psychicId
+      ? state.dialCaptainId
+      : activeTeamTeammates[0] ||
+        players.find((p) => p.id !== state.psychicId)?.id ||
+        state.psychicId;
   const dialCaptainPlayer = players.find((p) => p.id === dialCaptainId);
   const isDialCaptain = currentPlayerId === dialCaptainId;
 
-  // Can this player drag the dial? Any active team member (both guessers and psychic can drag)
-  const canDragDial = isActiveTeamMember;
+  // Check if there are other players who can guess/lock
+  const hasOtherGuesser = players.some((p) => p.id !== state.psychicId);
+
+  // Anyone who is NOT the psychic (or the dial captain, or active teammate) is a guesser!
+  const isGuesser =
+    (!isPsychic || !hasOtherGuesser) &&
+    (isActiveTeamMember || isDialCaptain || !activeTeamTeammates.length);
+  const showPsychicWaitingScreen = isPsychic && hasOtherGuesser;
+
+  // Can this player drag the dial? During guessing phase, the Dial Captain, all guessers, and the active team (including psychic) can drag!
+  const canDragDial = isDialCaptain || isGuesser || isActiveTeamMember || state.mode === 'coop';
 
   // Sync local angle when external state changes and not dragging
   useEffect(() => {
