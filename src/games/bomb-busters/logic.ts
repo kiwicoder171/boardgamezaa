@@ -718,7 +718,37 @@ export function handleBombBustersAction(
         };
         logText = `💡 HELPER CARD: ${playerName} deployed "${card.nameTh}" to place an extra Info Token on wire #${clueVal}!`;
       } else if (card.effect === 'PEEK_WIRE') {
-        logText = `🔍 HELPER CARD: ${playerName} deployed "${card.nameTh}"!`;
+        const targetPlayerId = action.targetPlayerId;
+        if (!targetPlayerId || targetPlayerId === effectivePlayerId) {
+          return { newState: state, error: 'Select a teammate stand to use Safe X-Ray Probe.' };
+        }
+        const targetStand = state.stands[targetPlayerId];
+        const targetWire = targetStand?.find((w) => w.id === action.targetWireId);
+        if (!targetWire || targetWire.isCut) {
+          return { newState: state, error: 'Select an uncut wire on a teammate stand to scan with Safe X-Ray Probe.' };
+        }
+        const clueVal =
+          targetWire.color === 'yellow' ? 'YELLOW' : targetWire.color === 'red' ? 'RED' : targetWire.value;
+        const clueLabel =
+          targetWire.color === 'yellow' ? 'Yellow Wire 🟡' : targetWire.color === 'red' ? 'Danger Red 🔴' : `#${targetWire.value}`;
+        const targetPlayer = room.players.find((p) => p.id === targetPlayerId);
+        const targetName = targetPlayer?.name || 'Teammate';
+        const fullStand = targetStand || [];
+        const slotNum = fullStand.findIndex((w) => w.id === targetWire.id) + 1;
+
+        updatedStands = {
+          ...state.stands,
+          [targetPlayerId]: (state.stands[targetPlayerId] || []).map((w) =>
+            w.id === targetWire.id
+              ? {
+                  ...w,
+                  infoToken: clueVal,
+                  clues: [...w.clues, `X-Ray: ${clueLabel}`],
+                }
+              : w
+          ),
+        };
+        logText = `🔍 SAFE X-RAY PROBE: ${playerName} scanned ${targetName}'s wire at slot #${slotNum} and safely revealed ${clueLabel}!`;
       }
 
       const updatedHelperCards = state.helperCards.map((c) =>
@@ -1230,6 +1260,40 @@ export function getBombBustersBotAction(
   );
   if (unlockedCoolant) {
     return { type: 'USE_HELPER_CARD', cardId: unlockedCoolant.id };
+  }
+
+  // If helper card is unlocked for X-Ray probe, scan a teammate's unclued wire
+  const unlockedXRay = state.helperCards.find(
+    (c) => c.isUnlocked && !c.isUsed && c.effect === 'PEEK_WIRE'
+  );
+  if (unlockedXRay) {
+    for (const [pId, wires] of Object.entries(state.stands)) {
+      if (pId === botPlayerId) continue;
+      const uncluedWire = wires.find((w) => !w.isCut && w.infoToken === null);
+      if (uncluedWire) {
+        return {
+          type: 'USE_HELPER_CARD',
+          cardId: unlockedXRay.id,
+          targetPlayerId: pId,
+          targetWireId: uncluedWire.id,
+        };
+      }
+    }
+  }
+
+  // If helper card is unlocked for extra clue, clue own wire
+  const unlockedRelay = state.helperCards.find(
+    (c) => c.isUnlocked && !c.isUsed && c.effect === 'EXTRA_INFO_TOKEN'
+  );
+  if (unlockedRelay) {
+    const uncluedMyWire = uncutBotWires.find((w) => w.infoToken === null);
+    if (uncluedMyWire) {
+      return {
+        type: 'USE_HELPER_CARD',
+        cardId: unlockedRelay.id,
+        targetWireId: uncluedMyWire.id,
+      };
+    }
   }
 
   // If bot has no uncut wires remaining, make an operative call or pass

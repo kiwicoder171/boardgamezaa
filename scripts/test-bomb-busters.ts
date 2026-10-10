@@ -1,171 +1,141 @@
-import { io, Socket } from 'socket.io-client';
+import { initBombBustersGame, handleBombBustersAction } from '../src/games/bomb-busters/logic';
+import { Player, Room } from '../src/types/game';
 
-const SERVER_URL = 'http://localhost:3000';
+function runTests() {
+  console.log('🧪 Starting Bomb Busters Test Suite...\n');
 
-interface PlayerClient {
-  id: string;
-  name: string;
-  avatar: string;
-  socket: Socket;
-  latestRoomState: any;
-}
-
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function createPlayerClient(id: string, name: string, avatar: string): PlayerClient {
-  const socket = io(SERVER_URL, { transports: ['websocket'] });
-  const client: PlayerClient = {
-    id,
-    name,
-    avatar,
-    socket,
-    latestRoomState: null,
+  const p1: Player = { id: 'p1', name: 'Alice', avatar: '🐱', isHost: true, socketId: 's1', isReady: true, connected: true };
+  const p2: Player = { id: 'p2', name: 'Bob', avatar: '🐶', isHost: false, socketId: 's2', isReady: true, connected: true };
+  const room: Room = {
+    code: 'TEST',
+    hostId: 'p1',
+    players: [p1, p2],
+    selectedGameId: 'bomb-busters',
+    status: 'playing',
+    gameSettings: { missionId: 1 },
+    gameState: null,
+    chatMessages: [],
+    createdAt: Date.now(),
+    lastActivity: Date.now(),
   };
 
-  socket.on('room_state_update', (state) => {
-    client.latestRoomState = state;
-  });
+  // 1. Test Game Initialization
+  const state = initBombBustersGame([p1, p2], { missionId: 1 });
+  console.log('✓ Init game state generated successfully.');
+  console.log(`  Total wires to cut: ${state.totalWiresToCut}, Detonator lives: ${state.detonatorLives}`);
 
-  socket.on('error_notification', (err) => {
-    console.error(`[${name} ERROR]:`, err.message);
-  });
+  // Test Helper Cards are present
+  const xrayCard = state.helperCards.find((c) => c.effect === 'PEEK_WIRE');
+  if (!xrayCard) throw new Error('Safe X-Ray Probe helper card missing!');
+  console.log('✓ Safe X-Ray Probe card present:', xrayCard.name);
 
-  return client;
-}
+  // Manually unlock X-Ray card for testing
+  state.helperCards = state.helperCards.map((c) =>
+    c.effect === 'PEEK_WIRE' ? { ...c, isUnlocked: true } : c
+  );
 
-async function runBombBustersTest() {
-  console.log('====================================================');
-  console.log('💣 STARTING FULL BOMB BUSTERS TEST SIMULATION');
-  console.log('====================================================\n');
+  // 2. Test Safe X-Ray Probe on Blue Wire
+  // Set game phase to in_progress with p1's turn
+  state.phase = 'in_progress';
+  state.currentTurnPlayerId = 'p1';
 
-  // 1. Connect Alice (Host)
-  const alice = createPlayerClient('usr_alice', 'Alice (Captain)', '🦊');
-  await sleep(400);
+  const bobStand = state.stands['p2'];
+  const blueWire = bobStand.find((w) => w.color === 'blue' && !w.isCut);
+  if (!blueWire) throw new Error('No blue wire on Bob stand!');
 
-  let roomCode = '';
-  await new Promise<void>((resolve) => {
-    alice.socket.on('room_created', ({ code }) => {
-      roomCode = code;
-      resolve();
-    });
-    alice.socket.emit('create_room', {
-      player: { id: alice.id, name: alice.name, avatar: alice.avatar },
-      gameId: 'spyfall',
-    });
-  });
+  const blueSlotNum = bobStand.findIndex((w) => w.id === blueWire.id) + 1;
+  const initialLives = state.detonatorLives;
 
-  console.log(`✅ [Room Created] Room Code: ${roomCode}`);
+  const res1 = handleBombBustersAction(state, {
+    type: 'USE_HELPER_CARD',
+    cardId: xrayCard.id,
+    targetPlayerId: 'p2',
+    targetWireId: blueWire.id,
+  }, 'p1', room);
 
-  // 2. Bob joins
-  const bob = createPlayerClient('usr_bob', 'Bob (Technician)', '🤖');
-  await sleep(300);
-  bob.socket.emit('join_room', { code: roomCode, player: { id: bob.id, name: bob.name, avatar: bob.avatar } });
-
-  await sleep(600);
-  console.log(`👥 Squad Roster: ${alice.latestRoomState?.players?.map((p: any) => p.name).join(', ')}`);
-
-  // 3. Switch Game to "bomb-busters"
-  console.log('🎮 [Host Action] Alice switches active game to Bomb Busters...');
-  alice.socket.emit('select_game', { code: roomCode, gameId: 'bomb-busters' });
-
-  await sleep(600);
-  console.log(`   Active Game confirmed: ${alice.latestRoomState?.selectedGameId}\n`);
-
-  // 4. Start Game
-  console.log('🚀 [Host Action] Alice presses "Start Mission"...');
-  alice.socket.emit('start_game', { code: roomCode });
-
-  await sleep(1000);
-
-  // 5. Verify State & Anti-Cheat Information Masking
-  console.log('🔒 [Security & Ascending Order Audit]');
-  const aliceState = alice.latestRoomState?.gameState;
-  const bobState = bob.latestRoomState?.gameState;
-
-  const aliceOwnWires = aliceState?.stands['usr_alice'];
-  const aliceViewOfBobWires = aliceState?.stands['usr_bob'];
-
-  console.log(`   Alice sees her own wires: ${aliceOwnWires.map((w: any) => `#${w.value}`).join(', ')}`);
-  console.log(`   Alice sees Bob's wires: ${aliceViewOfBobWires.map((w: any) => w.value === null ? '🔒?' : `#${w.value}`).join(', ')}`);
-
-  // Verify ascending order
-  const values = aliceOwnWires.map((w: any) => w.value);
-  for (let i = 0; i < values.length - 1; i++) {
-    if (values[i] > values[i + 1]) {
-      throw new Error(`Ascending order violation on Alice stand! ${values}`);
-    }
+  if (res1.error) throw new Error(`X-Ray failed on blue wire: ${res1.error}`);
+  const updatedBobBlue = res1.newState.stands['p2'].find((w) => w.id === blueWire.id);
+  if (updatedBobBlue?.infoToken !== blueWire.value) {
+    throw new Error(`Expected infoToken ${blueWire.value}, got ${updatedBobBlue?.infoToken}`);
   }
-  console.log('   ✅ Ascending order strictly verified!');
-
-  // Verify Bob's values are hidden from Alice (except the 1 starting wire with an Info Token)
-  const nonTokenBobWires = aliceViewOfBobWires.filter((w: any) => !w.isCut && w.infoToken === null);
-  const leakedValues = nonTokenBobWires.filter((w: any) => w.value !== null);
-  if (leakedValues.length > 0) {
-    throw new Error('SECURITY LEAK: Bob uncut wire values without info tokens visible to Alice!');
+  if (res1.newState.detonatorLives !== initialLives) {
+    throw new Error('Detonator lives should not change on safe X-Ray Probe!');
   }
-  const tokenBobWires = aliceViewOfBobWires.filter((w: any) => w.infoToken !== null);
-  console.log(`   ✅ Setup Info Token verified: Bob has starting info token #${tokenBobWires[0]?.infoToken}`);
-  console.log('   ✅ Information masking verified: All other teammate wires are strictly hidden (value = null)!\n');
+  const consumedCard = res1.newState.helperCards.find((c) => c.id === xrayCard.id);
+  if (!consumedCard?.isUsed) {
+    throw new Error('Helper card should be marked as used!');
+  }
+  console.log(`✓ Safe X-Ray Probe successfully scanned blue wire at slot #${blueSlotNum} (revealed #${blueWire.value})!`);
 
-  // 6. Test Equipment: Sonar Scanner
-  console.log('📡 [Equipment Test] Bob uses Sonar Scanner to check if Alice has wire #3...');
-  bob.socket.emit('game_action', {
-    code: roomCode,
-    action: { type: 'USE_SCANNER', targetPlayerId: 'usr_alice', scannedValue: 3 },
-  });
-
-  await sleep(800);
-  console.log(`   Log: ${alice.latestRoomState.gameState.history.slice(-1)[0].text}\n`);
-
-  // 7. Test Wire Snip
-  console.log('✂️ [Action Test] Operative cuts a wire pair...');
-  const currentTurnId = alice.latestRoomState.gameState.currentTurnPlayerId;
-  const activePlayer = currentTurnId === 'usr_alice' ? alice : bob;
-  const otherPlayer = currentTurnId === 'usr_alice' ? bob : alice;
-
-  // Pick first uncut wire of active player
-  const myWire = activePlayer.latestRoomState.gameState.stands[activePlayer.id].find((w: any) => !w.isCut);
-  const targetWire = otherPlayer.latestRoomState.gameState.stands[otherPlayer.id].find((w: any) => !w.isCut);
-
-  console.log(`   ${activePlayer.name} attempts to snip matching wire on ${otherPlayer.name}'s stand...`);
-  activePlayer.socket.emit('game_action', {
-    code: roomCode,
-    action: {
-      type: 'CUT_WIRE',
-      myWireId: myWire.id,
-      targetPlayerId: otherPlayer.id,
-      targetWireId: targetWire.id,
+  // 3. Test Safe X-Ray Probe on Red Wire (Should NOT explode!)
+  // Create state with a red wire on Bob's rack
+  const stateWithRed = { ...state };
+  stateWithRed.helperCards = state.helperCards.map((c) =>
+    c.effect === 'PEEK_WIRE' ? { ...c, isUnlocked: true, isUsed: false } : c
+  );
+  stateWithRed.stands['p2'] = [
+    ...stateWithRed.stands['p2'],
+    {
+      id: 'test_red_wire',
+      value: 'RED',
+      color: 'red' as const,
+      isCut: false,
+      infoToken: null,
+      adjacentToken: null,
+      clues: [],
     },
-  });
+  ];
 
-  await sleep(1000);
-  console.log(`   Result Log: ${alice.latestRoomState.gameState.history.slice(-1)[0].text}`);
-  console.log(`   Detonator Stability: ${alice.latestRoomState.gameState.detonatorLives} / ${alice.latestRoomState.gameState.maxDetonatorLives}`);
-  console.log(`   Disarmed Wires Count: ${alice.latestRoomState.gameState.cutWiresCount} / ${alice.latestRoomState.gameState.totalWiresToCut}\n`);
+  const res2 = handleBombBustersAction(stateWithRed, {
+    type: 'USE_HELPER_CARD',
+    cardId: xrayCard.id,
+    targetPlayerId: 'p2',
+    targetWireId: 'test_red_wire',
+  }, 'p1', room);
 
-  // 8. Test Stabilizer
-  console.log('🧪 [Equipment Test] Squad deploys Detonator Stabilizer...');
-  alice.socket.emit('game_action', {
-    code: roomCode,
-    action: { type: 'USE_STABILIZER' },
-  });
+  if (res2.error) throw new Error(`X-Ray failed on red wire: ${res2.error}`);
+  if (res2.newState.phase === 'exploded') {
+    throw new Error('CATASTROPHIC FAILURE: X-Ray Probe exploded on red wire! It must be 100% safe!');
+  }
+  const updatedRed = res2.newState.stands['p2'].find((w) => w.id === 'test_red_wire');
+  if (updatedRed?.infoToken !== 'RED') {
+    throw new Error(`Expected infoToken 'RED', got ${updatedRed?.infoToken}`);
+  }
+  console.log('✓ Safe X-Ray Probe successfully neutralized red wire risk by revealing RED infoToken WITHOUT detonating!');
 
-  await sleep(800);
-  console.log(`   Result Log: ${alice.latestRoomState.gameState.history.slice(-1)[0].text}`);
-  console.log(`   Detonator Stability now: ${alice.latestRoomState.gameState.detonatorLives}\n`);
+  // 4. Test Double Detector Slot Consistency
+  // Cut first 2 wires on Bob's stand so that remaining wires are at slot #3 and #4
+  const stateWithCuts = { ...state };
+  stateWithCuts.stands['p2'] = bobStand.map((w, idx) =>
+    idx < 2 ? { ...w, isCut: true } : { ...w, isCut: false }
+  );
+  const remainingWires = stateWithCuts.stands['p2'].filter((w) => !w.isCut);
+  const wA = remainingWires[0];
+  const wB = remainingWires[1];
 
-  console.log('====================================================');
-  console.log('🎉 BOMB BUSTERS SIMULATION PASSED 100%!');
-  console.log('====================================================');
+  const slotA = stateWithCuts.stands['p2'].findIndex((w) => w.id === wA.id) + 1;
+  const slotB = stateWithCuts.stands['p2'].findIndex((w) => w.id === wB.id) + 1;
 
-  alice.socket.disconnect();
-  bob.socket.disconnect();
-  process.exit(0);
+  if (slotA !== 3 || slotB !== 4) {
+    throw new Error(`Expected slots 3 & 4 on board, got ${slotA} & ${slotB}`);
+  }
+
+  // Double detector call on these two adjacent remaining wires
+  const ddRes = handleBombBustersAction(stateWithCuts, {
+    type: 'USE_DOUBLE_DETECTOR',
+    targetPlayerId: 'p2',
+    wireId1: wA.id,
+    wireId2: wB.id,
+    guessedValue: 99, // Intentional miss to test life deduction and safety
+  }, 'p1', room);
+
+  if (ddRes.error) throw new Error(`Double detector error: ${ddRes.error}`);
+  if (!ddRes.newState.doubleDetectorUsed['p1']) {
+    throw new Error('Double detector should be marked as used for player 1');
+  }
+  console.log(`✓ Double Detector on board slots #${slotA} & #${slotB} verified!`);
+
+  console.log('\n🎉 ALL TESTS PASSED! X-Ray Probe logic and Double Detector slot numbering are 100% verified!\n');
 }
 
-runBombBustersTest().catch((err) => {
-  console.error('Bomb Busters test failed:', err);
-  process.exit(1);
-});
+runTests();

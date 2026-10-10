@@ -107,6 +107,7 @@ export type BombBustersAction =
       type: 'USE_HELPER_CARD';
       cardId: string;
       targetWireId?: string;
+      targetPlayerId?: string;
     }
   | {
       type: 'REVEAL_RED_WIRES';
