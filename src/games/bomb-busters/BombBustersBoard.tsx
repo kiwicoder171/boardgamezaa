@@ -275,28 +275,29 @@ export default function BombBustersBoard({
     let targetPlayerId = explicitTargetPlayerId;
 
     if (card?.effect === 'EXTRA_INFO_TOKEN') {
-      if (!targetWireId) {
-        if (selectedMyWireIds.length === 1) {
-          targetWireId = selectedMyWireIds[0];
-        } else {
-          setHelperCardTargetModal(cardId);
-          return;
-        }
+      if (!explicitTargetWireId) {
+        setHelperCardTargetModal(cardId);
+        return;
       }
+      targetWireId = explicitTargetWireId;
     } else if (card?.effect === 'PEEK_WIRE') {
-      if (!targetWireId || !targetPlayerId) {
-        if (targetSelection) {
-          targetPlayerId = targetSelection.playerId;
-          targetWireId = targetSelection.wireId;
-        } else {
-          const firstOther = players.find((p) => p.id !== currentPlayerId);
-          setXrayTargetPlayerId(firstOther?.id || '');
-          setXrayTargetWireId('');
-          setXrayCardId(cardId);
-          setXrayModalOpen(true);
-          return;
-        }
+      if (!explicitTargetWireId || !explicitTargetPlayerId) {
+        // GUARANTEED: ALWAYS open the interactive targeting modal!
+        const otherPlayers = players.filter((p) => p.id !== currentPlayerId);
+        const defaultPlayerId =
+          targetSelection?.playerId && targetSelection.playerId !== currentPlayerId
+            ? targetSelection.playerId
+            : otherPlayers[0]?.id || '';
+        const defaultWireId =
+          targetSelection?.playerId === defaultPlayerId ? targetSelection.wireId : '';
+        setXrayTargetPlayerId(defaultPlayerId);
+        setXrayTargetWireId(defaultWireId);
+        setXrayCardId(cardId);
+        setXrayModalOpen(true);
+        return;
       }
+      targetWireId = explicitTargetWireId;
+      targetPlayerId = explicitTargetPlayerId;
     }
 
     soundFX.playClick();
@@ -1884,41 +1885,52 @@ export default function BombBustersBoard({
 
             <div className="space-y-3">
               {/* 1. Select Teammate */}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-zinc-300">1. Select Teammate to Scan:</label>
-                <select
-                  value={xrayTargetPlayerId}
-                  onChange={(e) => {
-                    setXrayTargetPlayerId(e.target.value);
-                    setXrayTargetWireId('');
-                  }}
-                  className="w-full bg-[#141518] border border-[#272930] rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-cyan-500"
-                >
+                <div className="flex flex-wrap gap-2">
                   {players
                     .filter((p) => p.id !== currentPlayerId)
                     .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.avatar} {p.name}
-                      </option>
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setXrayTargetPlayerId(p.id);
+                          setXrayTargetWireId('');
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                          xrayTargetPlayerId === p.id
+                            ? 'bg-cyan-600 border-cyan-400 text-white shadow-md shadow-cyan-950/60 scale-102 ring-2 ring-cyan-400/50'
+                            : 'bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white'
+                        }`}
+                      >
+                        <span className="text-base">{p.avatar}</span>
+                        <span>{p.name}</span>
+                        {p.id === state.captainPlayerId && (
+                          <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1 rounded">👑</span>
+                        )}
+                      </button>
                     ))}
-                </select>
+                </div>
               </div>
 
               {/* 2. Select Wire to Scan */}
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-zinc-300">2. Select Wire on Stand (Actual Slot #):</label>
-                  <span className="text-[10px] text-cyan-400">
-                    {xrayTargetWireId ? '✓ Wire selected' : 'Click a wire to scan'}
+                  <label className="text-xs font-semibold text-zinc-300">
+                    2. Select Wire on Stand (Board Slot #):
+                  </label>
+                  <span className="text-[10px] font-mono text-cyan-400 font-bold">
+                    {xrayTargetWireId ? '✓ Wire Selected' : '👉 Click a wire below to scan'}
                   </span>
                 </div>
 
-                <div className="flex flex-wrap gap-2 p-3 bg-black/40 rounded-xl border border-zinc-800 justify-center min-h-[90px]">
+                <div className="flex flex-wrap gap-2.5 p-3 bg-black/50 rounded-xl border border-zinc-800 justify-center min-h-[95px] items-center">
                   {(() => {
                     const fullStand = state.stands[xrayTargetPlayerId] || [];
                     const uncutWires = fullStand.filter((w) => !w.isCut);
                     if (uncutWires.length === 0) {
-                      return <span className="text-xs text-zinc-500 self-center">No uncut wires remaining</span>;
+                      return <span className="text-xs text-zinc-500 self-center">No uncut wires remaining on this stand</span>;
                     }
                     return uncutWires.map((wire, idx) => {
                       const isSelected = wire.id === xrayTargetWireId;
@@ -1930,24 +1942,30 @@ export default function BombBustersBoard({
                           key={wire.id}
                           type="button"
                           onClick={() => setXrayTargetWireId(wire.id)}
-                          className={`w-11 h-16 rounded-xl border flex flex-col items-center justify-between p-1.5 transition font-mono cursor-pointer ${
+                          className={`w-12 h-18 rounded-xl border flex flex-col items-center justify-between p-1.5 transition font-mono cursor-pointer active:scale-95 ${
                             isSelected
-                              ? 'bg-cyan-600 border-cyan-300 text-white shadow-lg shadow-cyan-900/60 scale-105'
-                              : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-cyan-400 hover:text-white'
+                              ? 'bg-cyan-600 border-cyan-300 text-white shadow-xl shadow-cyan-900/60 scale-105 ring-2 ring-cyan-300'
+                              : 'bg-zinc-800/90 border-zinc-700 text-zinc-300 hover:border-cyan-400 hover:text-white'
                           }`}
                         >
-                          <span className="text-[8px] opacity-70">#{boardSlotNumber}</span>
-                          <span className="text-xs font-black">
+                          <span className="text-[9px] font-bold opacity-80">#{boardSlotNumber}</span>
+                          <span className="text-sm font-black">
                             {wire.infoToken === 'YELLOW'
-                              ? '🟡 .1'
+                              ? '🟡'
                               : wire.infoToken === 'RED'
-                              ? '🚨 .5'
+                              ? '🚨'
                               : wire.infoToken != null
                               ? `#${wire.infoToken}`
                               : '?'}
                           </span>
-                          <span className="text-[7px] uppercase font-bold text-cyan-300">
-                            {isSelected ? 'Ready' : wire.infoToken ? 'Clued' : 'Scan'}
+                          <span className={`text-[8px] uppercase font-black px-1 rounded ${
+                            isSelected
+                              ? 'bg-white text-cyan-900'
+                              : wire.infoToken
+                              ? 'bg-amber-400/20 text-amber-300'
+                              : 'text-cyan-300'
+                          }`}>
+                            {isSelected ? 'READY' : wire.infoToken ? 'CLUED' : 'SCAN'}
                           </span>
                         </button>
                       );
@@ -1976,7 +1994,7 @@ export default function BombBustersBoard({
                 onClick={() => handleUseHelperCard(xrayCardId, xrayTargetWireId, xrayTargetPlayerId)}
                 className="px-5 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold transition shadow-md disabled:opacity-40 cursor-pointer"
               >
-                Deploy Safe X-Ray Probe 🔍
+                {!xrayTargetWireId ? 'Select a Wire Above 👆' : 'Deploy Safe X-Ray Probe 🔍'}
               </button>
             </div>
           </div>
