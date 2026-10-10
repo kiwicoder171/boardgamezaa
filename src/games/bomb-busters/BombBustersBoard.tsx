@@ -371,31 +371,92 @@ export default function BombBustersBoard({
           </div>
 
           {/* TACTICAL MISSION POST-IT MEMO (โน้ตภารกิจ / สเปกสายไฟ) */}
-          <div className="relative bg-gradient-to-br from-amber-100 via-yellow-100 to-amber-200 text-stone-900 rounded-xl p-2.5 shadow-xl border-2 border-amber-300/80 -rotate-1 shrink-0 font-sans select-none min-w-[190px]">
-            <div className="w-8 h-1.5 bg-amber-400/60 rounded-sm mx-auto mb-1 opacity-70" />
-            <div className="text-[10px] font-black uppercase tracking-wider text-amber-950 border-b border-amber-300 pb-0.5 flex items-center justify-between">
-              <span>📌 MISSION DOSSIER</span>
-              <span className="text-[9px] font-mono font-bold bg-amber-300/60 px-1 rounded">#{state.missionId || 1}</span>
-            </div>
-            <div className="mt-1 space-y-0.5 text-[10px] font-mono font-bold">
-              <div className="flex justify-between text-blue-900">
-                <span>🔵 Normal (Blue):</span>
-                <span>{state.blueCount ?? 48}</span>
+          {(() => {
+            const yellowPairs = state.yellowDecimals && state.yellowDecimals.length > 0
+              ? state.yellowDecimals.length
+              : Math.floor((state.yellowCount || 0) / 2);
+            const redTrapsCount = state.redCount || 0;
+
+            return (
+              <div className="relative bg-gradient-to-br from-amber-100 via-yellow-100 to-amber-200 text-stone-900 rounded-xl p-3 shadow-2xl border-2 border-amber-300/90 -rotate-1 shrink-0 font-sans select-none min-w-[210px]">
+                {/* Top Tape Strip */}
+                <div className="w-12 h-2 bg-amber-400/50 rounded-sm mx-auto mb-1.5 opacity-80 shadow-sm" />
+                <div className="text-[10px] font-black uppercase tracking-wider text-amber-950 border-b border-amber-300 pb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <span>📌</span>
+                    <span>MISSION WIRE NOTE</span>
+                  </span>
+                  <span className="text-[9px] font-mono font-bold bg-amber-300/80 px-1.5 py-0.2 rounded border border-amber-400/60">
+                    #{state.missionId || 1}
+                  </span>
+                </div>
+
+                <div className="mt-1.5 space-y-1 text-[10px] font-mono">
+                  <div className="flex justify-between items-center text-blue-950 font-bold">
+                    <span>🔵 Normal (Blue):</span>
+                    <span>{state.blueCount ?? 48} wires</span>
+                  </div>
+
+                  {/* Yellow Pairs Spec */}
+                  <div className={`flex flex-col px-1.5 py-0.5 rounded border ${
+                    yellowPairs > 0
+                      ? 'bg-amber-300/50 border-amber-500/70 text-amber-950'
+                      : 'bg-stone-200/50 border-stone-300 text-stone-600'
+                  }`}>
+                    <div className="flex justify-between items-center font-bold">
+                      <span>🟡 Yellow Wires:</span>
+                      <span className="font-black">
+                        {yellowPairs > 0 ? (
+                          <span className="bg-amber-400 text-stone-950 px-1 rounded shadow-xs">
+                            {yellowPairs} {yellowPairs === 1 ? 'Pair' : 'Pairs'} ({yellowPairs * 2} wires)
+                          </span>
+                        ) : (
+                          'None (0)'
+                        )}
+                      </span>
+                    </div>
+                    {state.yellowDecimals && state.yellowDecimals.length > 0 && (
+                      <div className="text-[9px] text-amber-900 font-bold tracking-tight mt-0.5">
+                        Pegs: {state.yellowDecimals.map((d) => `${d}`).join(', ')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Red Traps Spec */}
+                  <div className={`flex flex-col px-1.5 py-0.5 rounded border ${
+                    redTrapsCount > 0
+                      ? 'bg-rose-500/20 border-rose-400/70 text-rose-950'
+                      : 'bg-stone-200/50 border-stone-300 text-stone-600'
+                  }`}>
+                    <div className="flex justify-between items-center font-bold">
+                      <span>🔴 Red Traps:</span>
+                      <span className="font-black">
+                        {redTrapsCount > 0 ? (
+                          <span className="bg-rose-600 text-white px-1 rounded shadow-xs animate-pulse">
+                            {redTrapsCount} {redTrapsCount === 1 ? 'Trap' : 'Traps'}
+                          </span>
+                        ) : (
+                          'None (0)'
+                        )}
+                      </span>
+                    </div>
+                    {state.redDecimals && state.redDecimals.length > 0 && (
+                      <div className="text-[9px] text-rose-900 font-bold tracking-tight mt-0.5">
+                        Hazards: {state.redDecimals.map((d) => `${d}`).join(', ')}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-1 border-t border-amber-300/80 flex justify-between items-center text-stone-950 font-black text-[10px]">
+                    <span>DEFUSE GOAL:</span>
+                    <span className="bg-emerald-600 text-white px-1.5 py-0.2 rounded font-mono">
+                      {state.totalWiresToCut} wires
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between text-amber-900">
-                <span>🟡 Decimals (.1):</span>
-                <span>{state.yellowCount ?? 0}</span>
-              </div>
-              <div className="flex justify-between text-rose-900">
-                <span>🔴 Traps (.5 Red):</span>
-                <span>{state.redCount ?? 0}</span>
-              </div>
-              <div className="pt-0.5 border-t border-amber-300 flex justify-between text-stone-950 font-black text-[10px]">
-                <span>DEFUSE GOAL:</span>
-                <span>{state.totalWiresToCut} wires</span>
-              </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Current Turn Badge */}
           <div className="px-3.5 py-1.5 rounded-2xl bg-black/40 border border-amber-900/40 text-xs sm:text-sm font-semibold shadow-inner">
@@ -679,6 +740,21 @@ export default function BombBustersBoard({
                   <p className="text-xs text-slate-400">
                     Official Rule: Each operative places 1 Info Token on a wire (reveals Number for blue wires, or Color for decimal yellow/red wires) to give the squad an opening clue before defusal begins.
                   </p>
+                  {(Boolean(state.yellowDecimals?.length) || Boolean(state.redDecimals?.length)) && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-[10px]">
+                      <span className="text-amber-400 font-bold">📋 Mission Wire Spec:</span>
+                      {Boolean(state.yellowDecimals?.length) && (
+                        <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded font-bold">
+                          🟡 {state.yellowDecimals!.length} {state.yellowDecimals!.length === 1 ? 'Pair' : 'Pairs'} of Yellow Wires ({state.yellowDecimals!.length * 2} wires)
+                        </span>
+                      )}
+                      {Boolean(state.redDecimals?.length) && (
+                        <span className="bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded font-bold">
+                          🔴 {state.redDecimals!.length} {state.redDecimals!.length === 1 ? 'Red Trap Wire' : 'Red Trap Wires'} (Avoid cutting!)
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -717,17 +793,29 @@ export default function BombBustersBoard({
                 <Check className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Circuit Validation Track & Wire Markers:</span>
               </div>
-              <div className="flex items-center gap-3 text-[10px] font-mono">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[10px] font-mono">
                 {state.yellowDecimals && state.yellowDecimals.length > 0 && (
-                  <span className="flex items-center gap-1 text-amber-300">
+                  <span className="flex items-center gap-1.5 text-amber-300 bg-amber-950/70 px-2 py-0.5 rounded-lg border border-amber-500/50 shadow-sm">
                     <span className="w-2 h-2 rounded-full bg-amber-400 inline-block shadow-sm" />
-                    Yellow Pegs: {state.yellowDecimals.map((d) => `${d}`).join(', ')}
+                    <span className="font-bold">Yellow Wires:</span>
+                    <span className="text-amber-200">
+                      {state.yellowDecimals.length} {state.yellowDecimals.length === 1 ? 'Pair' : 'Pairs'} ({state.yellowDecimals.length * 2} wires)
+                    </span>
+                    <span className="text-amber-400/80 text-[9px]">
+                      [{state.yellowDecimals.map((d) => `${d}`).join(', ')}]
+                    </span>
                   </span>
                 )}
                 {state.redDecimals && state.redDecimals.length > 0 && (
-                  <span className="flex items-center gap-1 text-rose-400">
+                  <span className="flex items-center gap-1.5 text-rose-300 bg-rose-950/70 px-2 py-0.5 rounded-lg border border-rose-500/50 shadow-sm">
                     <span className="w-2 h-2 rounded-full bg-rose-600 inline-block shadow-sm animate-pulse" />
-                    Red Traps: {state.redDecimals.map((d) => `${d}`).join(', ')}
+                    <span className="font-bold">Red Traps:</span>
+                    <span className="text-rose-200">
+                      {state.redDecimals.length} {state.redDecimals.length === 1 ? 'Wire' : 'Wires'}
+                    </span>
+                    <span className="text-rose-400/80 text-[9px]">
+                      [{state.redDecimals.map((d) => `${d}`).join(', ')}]
+                    </span>
                   </span>
                 )}
               </div>
@@ -1253,6 +1341,21 @@ export default function BombBustersBoard({
                 <p className="text-xs text-amber-300/70 font-sans">
                   Sorted strictly ascending (1 ➔ 12). Select 1 wire for a Duo Cut, or select 2 identical wires for a Solo Cut!
                 </p>
+                {(Boolean(state.yellowDecimals?.length) || Boolean(state.redDecimals?.length)) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-1 text-[10px] font-mono">
+                    <span className="text-amber-400 font-bold">📋 Mission Spec:</span>
+                    {Boolean(state.yellowDecimals?.length) && (
+                      <span className="text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded-full border border-amber-600/50 font-bold">
+                        🟡 {state.yellowDecimals!.length} {state.yellowDecimals!.length === 1 ? 'Pair' : 'Pairs'} of Yellow ({state.yellowDecimals!.length * 2} wires)
+                      </span>
+                    )}
+                    {Boolean(state.redDecimals?.length) && (
+                      <span className="text-rose-300 bg-rose-950/80 px-2 py-0.5 rounded-full border border-rose-600/50 font-bold animate-pulse">
+                        🔴 {state.redDecimals!.length} {state.redDecimals!.length === 1 ? 'Red Hazard Wire' : 'Red Hazard Wires'}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             <span className="text-xs font-mono font-bold text-amber-300 bg-amber-950/60 px-3 py-1 rounded-full border border-amber-800/60 shadow-inner">
