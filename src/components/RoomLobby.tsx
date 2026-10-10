@@ -49,6 +49,7 @@ const GAME_FONTS: Record<string, string> = {
   'one-night-werewolf': 'font-fantasy text-purple-300',
   'for-sale': 'font-mono text-emerald-400',
   'coup': 'font-serifDisplay text-rose-300',
+  'kakerlaken-poker': 'font-serifDisplay text-amber-400',
 };
 
 export default function RoomLobby({
