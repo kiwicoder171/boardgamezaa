@@ -361,10 +361,8 @@ export function handleBombBustersAction(
         };
       }
 
-      // 2. Matching values or matching yellow wire check
-      const matches =
-        myWire.value === targetWire.value ||
-        (myWire.color === 'yellow' && targetWire.color === 'yellow');
+      // 2. Matching values check (wires must share the exact same numeric/decimal value!)
+      const matches = myWire.value === targetWire.value;
 
       if (matches) {
         // SUCCESSFUL DUO CUT!
@@ -380,19 +378,29 @@ export function handleBombBustersAction(
           ),
         };
 
-        // Update validation track
+        // Update validation track: ONLY for standard whole-number Blue wires!
         const updatedValidation = { ...state.validationTrack };
-        const valNum = Math.floor(Number(myWire.value));
-        if (updatedValidation[valNum]) {
-          const cutSoFar = updatedValidation[valNum].cut + 2;
-          updatedValidation[valNum] = {
-            ...updatedValidation[valNum],
-            cut: cutSoFar,
-            isValidated: cutSoFar >= updatedValidation[valNum].total,
-          };
+        let unlockedCards = state.helperCards;
+        let newHistoryEvents: { id: string; text: string; time: number; type: 'info' }[] = [];
+
+        if (myWire.color === 'blue' && typeof myWire.value === 'number') {
+          const valNum = myWire.value;
+          if (updatedValidation[valNum]) {
+            const cutSoFar = updatedValidation[valNum].cut + 2;
+            const allBlueOfNumCut = Object.values(updatedStands).every((stand) =>
+              stand.filter((w) => w.color === 'blue' && w.value === valNum && !w.isCut).length === 0
+            );
+            updatedValidation[valNum] = {
+              ...updatedValidation[valNum],
+              cut: cutSoFar,
+              isValidated: allBlueOfNumCut,
+            };
+          }
+          const unlockRes = checkHelperCardsUnlock(state.helperCards, valNum);
+          unlockedCards = unlockRes.updatedCards;
+          newHistoryEvents = unlockRes.newHistoryEvents;
         }
 
-        const { updatedCards, newHistoryEvents } = checkHelperCardsUnlock(state.helperCards, valNum);
         const isDefused = newCutCount >= state.totalWiresToCut;
 
         return {
@@ -401,7 +409,7 @@ export function handleBombBustersAction(
             stands: updatedStands,
             cutWiresCount: newCutCount,
             validationTrack: updatedValidation,
-            helperCards: updatedCards,
+            helperCards: unlockedCards,
             currentTurnPlayerId: nextTurnPlayerId,
             phase: isDefused ? 'victory' : 'in_progress',
             endReason: isDefused ? `🎉 BOMB DEFUSED! All circuits were disarmed cleanly without detonating!` : null,
@@ -522,16 +530,26 @@ export function handleBombBustersAction(
 
       const newCutCount = state.cutWiresCount + wireIds.length;
       const updatedValidation = { ...state.validationTrack };
-      if (updatedValidation[valNum]) {
-        const cutSoFar = updatedValidation[valNum].cut + wireIds.length;
-        updatedValidation[valNum] = {
-          ...updatedValidation[valNum],
-          cut: cutSoFar,
-          isValidated: cutSoFar >= updatedValidation[valNum].total,
-        };
-      }
+      let unlockedCards = state.helperCards;
+      let newHistoryEvents: { id: string; text: string; time: number; type: 'info' }[] = [];
 
-      const { updatedCards, newHistoryEvents } = checkHelperCardsUnlock(state.helperCards, valNum);
+      if (selectedWires[0]!.color === 'blue' && typeof firstVal === 'number') {
+        const valNum = firstVal;
+        if (updatedValidation[valNum]) {
+          const cutSoFar = updatedValidation[valNum].cut + wireIds.length;
+          const allBlueOfNumCut = Object.values(updatedStands).every((stand) =>
+            stand.filter((w) => w.color === 'blue' && w.value === valNum && !w.isCut).length === 0
+          );
+          updatedValidation[valNum] = {
+            ...updatedValidation[valNum],
+            cut: cutSoFar,
+            isValidated: allBlueOfNumCut,
+          };
+        }
+        const unlockRes = checkHelperCardsUnlock(state.helperCards, valNum);
+        unlockedCards = unlockRes.updatedCards;
+        newHistoryEvents = unlockRes.newHistoryEvents;
+      }
       const nextTurnPlayerId = getNextActivePlayerId(state, effectivePlayerId);
       const isDefused = newCutCount >= state.totalWiresToCut;
 
@@ -541,7 +559,7 @@ export function handleBombBustersAction(
           stands: updatedStands,
           cutWiresCount: newCutCount,
           validationTrack: updatedValidation,
-          helperCards: updatedCards,
+          helperCards: unlockedCards,
           currentTurnPlayerId: nextTurnPlayerId,
           phase: isDefused ? 'victory' : 'in_progress',
           endReason: isDefused ? `🎉 BOMB DEFUSED! All circuits were disarmed cleanly!` : null,
@@ -600,16 +618,26 @@ export function handleBombBustersAction(
         };
         const newCutCount = state.cutWiresCount + 2;
         const updatedValidation = { ...state.validationTrack };
-        const valNum = Math.floor(Number(action.guessedValue));
-        if (updatedValidation[valNum]) {
-          const cutSoFar = updatedValidation[valNum].cut + 2;
-          updatedValidation[valNum] = {
-            ...updatedValidation[valNum],
-            cut: cutSoFar,
-            isValidated: cutSoFar >= updatedValidation[valNum].total,
-          };
+        let unlockedCards = state.helperCards;
+        let newHistoryEvents: { id: string; text: string; time: number; type: 'info' }[] = [];
+
+        if (w1.color === 'blue' && typeof action.guessedValue === 'number') {
+          const valNum = action.guessedValue;
+          if (updatedValidation[valNum]) {
+            const cutSoFar = updatedValidation[valNum].cut + 2;
+            const allBlueOfNumCut = Object.values(updatedStands).every((stand) =>
+              stand.filter((w) => w.color === 'blue' && w.value === valNum && !w.isCut).length === 0
+            );
+            updatedValidation[valNum] = {
+              ...updatedValidation[valNum],
+              cut: cutSoFar,
+              isValidated: allBlueOfNumCut,
+            };
+          }
+          const unlockRes = checkHelperCardsUnlock(state.helperCards, valNum);
+          unlockedCards = unlockRes.updatedCards;
+          newHistoryEvents = unlockRes.newHistoryEvents;
         }
-        const { updatedCards, newHistoryEvents } = checkHelperCardsUnlock(state.helperCards, valNum);
         const isDefused = newCutCount >= state.totalWiresToCut;
         const nextTurnPlayerId = getNextActivePlayerId(state, effectivePlayerId);
 
@@ -619,7 +647,7 @@ export function handleBombBustersAction(
             stands: updatedStands,
             cutWiresCount: newCutCount,
             validationTrack: updatedValidation,
-            helperCards: updatedCards,
+            helperCards: unlockedCards,
             doubleDetectorUsed: updatedDoubleDetector,
             currentTurnPlayerId: nextTurnPlayerId,
             phase: isDefused ? 'victory' : 'in_progress',
@@ -1089,14 +1117,19 @@ export function handleBombBustersAction(
         const newCutCount = state.cutWiresCount + 1;
 
         const updatedValidation = { ...state.validationTrack };
-        const valNum = Number(targetWire.value);
-        if (updatedValidation[valNum]) {
-          const cutSoFar = updatedValidation[valNum].cut + 1;
-          updatedValidation[valNum] = {
-            ...updatedValidation[valNum],
-            cut: cutSoFar,
-            isValidated: cutSoFar >= updatedValidation[valNum].total,
-          };
+        if (targetWire.color === 'blue' && typeof targetWire.value === 'number') {
+          const valNum = targetWire.value;
+          if (updatedValidation[valNum]) {
+            const cutSoFar = updatedValidation[valNum].cut + 1;
+            const allBlueOfNumCut = Object.values(state.stands).every((stand) =>
+              stand.filter((w) => w.color === 'blue' && w.value === valNum && !w.isCut).length === 0
+            );
+            updatedValidation[valNum] = {
+              ...updatedValidation[valNum],
+              cut: cutSoFar,
+              isValidated: allBlueOfNumCut,
+            };
+          }
         }
 
         const isDefused = newCutCount >= state.totalWiresToCut;

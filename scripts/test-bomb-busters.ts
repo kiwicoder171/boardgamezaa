@@ -183,7 +183,80 @@ function runTests() {
   }
   console.log('✓ Initial clue on Red Danger wire reveals color: "RED"');
 
-  console.log('\n🎉 ALL TESTS PASSED! Full number wires give numbers, decimal wires give colors!\n');
+  // 6. Test Yellow Wire Matching (2.1 vs 3.1 must fail, 2.1 vs 2.1 must succeed)
+  const cutTestState = initBombBustersGame([p1, p2], { missionId: 2 });
+  cutTestState.phase = 'in_progress';
+  cutTestState.currentTurnPlayerId = 'p1';
+  cutTestState.stands['p1'] = [
+    { id: 'w_y21_p1', value: 2.1, color: 'yellow', isCut: false, infoToken: null, clues: [] },
+    { id: 'w_b1_p1', value: 1, color: 'blue', isCut: false, infoToken: null, clues: [] },
+  ];
+  cutTestState.stands['p2'] = [
+    { id: 'w_y31_p2', value: 3.1, color: 'yellow', isCut: false, infoToken: null, clues: [] },
+    { id: 'w_y21_p2', value: 2.1, color: 'yellow', isCut: false, infoToken: null, clues: [] },
+  ];
+
+  // A. Attempting to cut 2.1 with 3.1 must MISMATCH (not cut, lose detonator life!)
+  const initLivesCut = cutTestState.detonatorLives;
+  const resMismatch = handleBombBustersAction(cutTestState, {
+    type: 'CUT_WIRE',
+    myWireId: 'w_y21_p1',
+    targetPlayerId: 'p2',
+    targetWireId: 'w_y31_p2',
+  }, 'p1', room);
+
+  const targetWireAfterMiss = resMismatch.newState.stands['p2'].find((w) => w.id === 'w_y31_p2');
+  if (targetWireAfterMiss?.isCut) {
+    throw new Error('BUG! 2.1 wire incorrectly cut 3.1 wire!');
+  }
+  if (resMismatch.newState.detonatorLives !== initLivesCut - 1) {
+    throw new Error('Expected detonator stability to drop on mismatched yellow wires');
+  }
+  console.log('✓ 2.1 wire does NOT cut 3.1 wire (mismatch detected properly!)');
+
+  // B. Attempting to cut 2.1 with 2.1 must SUCCEED!
+  const stateMatchTest = { ...resMismatch.newState };
+  stateMatchTest.currentTurnPlayerId = 'p1';
+  const resMatch = handleBombBustersAction(stateMatchTest, {
+    type: 'CUT_WIRE',
+    myWireId: 'w_y21_p1',
+    targetPlayerId: 'p2',
+    targetWireId: 'w_y21_p2',
+  }, 'p1', room);
+
+  const myWireAfterMatch = resMatch.newState.stands['p1'].find((w) => w.id === 'w_y21_p1');
+  const targetWireAfterMatch = resMatch.newState.stands['p2'].find((w) => w.id === 'w_y21_p2');
+  if (!myWireAfterMatch?.isCut || !targetWireAfterMatch?.isCut) {
+    throw new Error('Expected matching 2.1 and 2.1 wires to both be cut!');
+  }
+  console.log('✓ 2.1 wire successfully cuts matching 2.1 wire!');
+
+  // C. Test that cutting yellow 1.1 does NOT set validationTrack[1].isValidated when blue 1 is uncut
+  const valTestState = initBombBustersGame([p1, p2], { missionId: 2 });
+  valTestState.phase = 'in_progress';
+  valTestState.currentTurnPlayerId = 'p1';
+  valTestState.stands['p1'] = [
+    { id: 'w_y11_p1', value: 1.1, color: 'yellow', isCut: false, infoToken: null, clues: [] },
+    { id: 'w_b1_p1', value: 1, color: 'blue', isCut: false, infoToken: null, clues: [] },
+  ];
+  valTestState.stands['p2'] = [
+    { id: 'w_y11_p2', value: 1.1, color: 'yellow', isCut: false, infoToken: null, clues: [] },
+    { id: 'w_b1_p2', value: 1, color: 'blue', isCut: false, infoToken: null, clues: [] },
+  ];
+
+  const resValCut = handleBombBustersAction(valTestState, {
+    type: 'CUT_WIRE',
+    myWireId: 'w_y11_p1',
+    targetPlayerId: 'p2',
+    targetWireId: 'w_y11_p2',
+  }, 'p1', room);
+
+  if (resValCut.newState.validationTrack[1]?.isValidated) {
+    throw new Error('BUG! Cutting 1.1 marked whole number 1 as validated while blue 1 wires are still uncut!');
+  }
+  console.log('✓ Cutting yellow 1.1 leaves validationTrack[1].isValidated as FALSE because Blue 1 is still uncut!');
+
+  console.log('\n🎉 ALL TESTS PASSED! Bugs resolved and game logic 100% verified!\n');
 }
 
 runTests();

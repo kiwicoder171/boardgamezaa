@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Player } from '@/types/game';
 import { BombBustersAction, BombBustersClientState, ClientWireTile, WireValue } from './types';
 import { soundFX } from '@/lib/sounds';
@@ -70,6 +70,93 @@ export default function BombBustersBoard({
   const [xrayTargetPlayerId, setXrayTargetPlayerId] = useState<string>('');
   const [xrayTargetWireId, setXrayTargetWireId] = useState<string>('');
   const [xrayCardId, setXrayCardId] = useState<string>('helper_probe');
+
+  // Draggable Tactical Post-It Memo State
+  const [postItPos, setPostItPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingPostIt, setIsDraggingPostIt] = useState(false);
+  const postItDragRef = useRef<{ startX: number; startY: number; initialX: number; initialY: number } | null>(null);
+  const postItElemRef = useRef<HTMLDivElement | null>(null);
+
+  const handlePostItMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+
+    e.preventDefault();
+    const rect = postItElemRef.current?.getBoundingClientRect();
+    const currentX = rect ? rect.left : 80;
+    const currentY = rect ? rect.top : 80;
+
+    postItDragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initialX: currentX,
+      initialY: currentY,
+    };
+    setIsDraggingPostIt(true);
+  };
+
+  const handlePostItTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+
+    const touch = e.touches[0];
+    const rect = postItElemRef.current?.getBoundingClientRect();
+    const currentX = rect ? rect.left : 80;
+    const currentY = rect ? rect.top : 80;
+
+    postItDragRef.current = {
+      startX: touch.clientX,
+      startY: touch.clientY,
+      initialX: currentX,
+      initialY: currentY,
+    };
+    setIsDraggingPostIt(true);
+  };
+
+  useEffect(() => {
+    if (!isDraggingPostIt) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!postItDragRef.current) return;
+      const dx = e.clientX - postItDragRef.current.startX;
+      const dy = e.clientY - postItDragRef.current.startY;
+      const newX = Math.max(10, Math.min(window.innerWidth - 250, postItDragRef.current.initialX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 220, postItDragRef.current.initialY + dy));
+      setPostItPos({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingPostIt(false);
+      postItDragRef.current = null;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!postItDragRef.current) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - postItDragRef.current.startX;
+      const dy = touch.clientY - postItDragRef.current.startY;
+      const newX = Math.max(10, Math.min(window.innerWidth - 250, postItDragRef.current.initialX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 220, postItDragRef.current.initialY + dy));
+      setPostItPos({ x: newX, y: newY });
+    };
+
+    const handleTouchEnd = () => {
+      setIsDraggingPostIt(false);
+      postItDragRef.current = null;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDraggingPostIt]);
 
   // Auto Bot Turn Runner: Host triggers the server-side bot AI so bot secret wire values remain 100% hidden
   useEffect(() => {
@@ -371,7 +458,7 @@ export default function BombBustersBoard({
             </div>
           </div>
 
-          {/* TACTICAL MISSION POST-IT MEMO (โน้ตภารกิจ / สเปกสายไฟ) */}
+          {/* TACTICAL MISSION POST-IT MEMO (โน้ตภารกิจ / สเปกสายไฟ - DRAGGABLE AROUND DESK) */}
           {(() => {
             const yellowPairs = state.yellowDecimals && state.yellowDecimals.length > 0
               ? state.yellowDecimals.length
@@ -379,83 +466,140 @@ export default function BombBustersBoard({
             const redTrapsCount = state.redCount || 0;
 
             return (
-              <div className="relative bg-gradient-to-br from-amber-100 via-yellow-100 to-amber-200 text-stone-900 rounded-xl p-3 shadow-2xl border-2 border-amber-300/90 -rotate-1 shrink-0 font-sans select-none min-w-[210px]">
-                {/* Top Tape Strip */}
-                <div className="w-12 h-2 bg-amber-400/50 rounded-sm mx-auto mb-1.5 opacity-80 shadow-sm" />
-                <div className="text-[10px] font-black uppercase tracking-wider text-amber-950 border-b border-amber-300 pb-1 flex items-center justify-between">
-                  <span className="flex items-center gap-1">
+              <>
+                {/* Header placeholder if note is floating */}
+                {postItPos !== null && (
+                  <button
+                    type="button"
+                    onClick={() => setPostItPos(null)}
+                    className="px-2.5 py-1.5 rounded-xl border border-dashed border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-mono text-[10px] flex items-center gap-1.5 transition cursor-pointer shrink-0"
+                    title="Click to dock sticky note back to header"
+                  >
                     <span>📌</span>
-                    <span>MISSION WIRE NOTE</span>
-                  </span>
-                  <span className="text-[9px] font-mono font-bold bg-amber-300/80 px-1.5 py-0.2 rounded border border-amber-400/60">
-                    #{state.missionId || 1}
-                  </span>
-                </div>
+                    <span>Note Floating on Desk (Click to Dock)</span>
+                  </button>
+                )}
 
-                <div className="mt-1.5 space-y-1 text-[10px] font-mono">
-                  <div className="flex justify-between items-center text-blue-950 font-bold">
-                    <span>🔵 Normal (Blue):</span>
-                    <span>{state.blueCount ?? 48} wires</span>
+                <div
+                  ref={postItElemRef}
+                  onMouseDown={handlePostItMouseDown}
+                  onTouchStart={handlePostItTouchStart}
+                  style={
+                    postItPos !== null
+                      ? {
+                          position: 'fixed',
+                          left: `${postItPos.x}px`,
+                          top: `${postItPos.y}px`,
+                          zIndex: 45,
+                        }
+                      : undefined
+                  }
+                  className={`bg-gradient-to-br from-amber-100 via-yellow-100 to-amber-200 text-stone-900 rounded-xl p-3 shadow-2xl border-2 border-amber-300/90 shrink-0 font-sans select-none min-w-[210px] max-w-[240px] transition-transform ${
+                    isDraggingPostIt
+                      ? 'cursor-grabbing scale-105 shadow-2xl ring-4 ring-amber-400/80 -rotate-2'
+                      : 'cursor-grab -rotate-1 hover:rotate-0'
+                  } ${postItPos !== null ? 'fixed' : 'relative'}`}
+                  title="Click and drag anywhere on desk!"
+                >
+                  {/* Top Tape Strip / Drag Handle */}
+                  <div className="w-16 h-3 bg-amber-400/60 hover:bg-amber-400/90 rounded-sm mx-auto mb-1 opacity-90 shadow-sm flex items-center justify-center text-[7px] font-mono font-bold tracking-wider text-amber-950 uppercase">
+                    🖐️ Drag Memo
                   </div>
 
-                  {/* Yellow Pairs Spec */}
-                  <div className={`flex flex-col px-1.5 py-0.5 rounded border ${
-                    yellowPairs > 0
-                      ? 'bg-amber-300/50 border-amber-500/70 text-amber-950'
-                      : 'bg-stone-200/50 border-stone-300 text-stone-600'
-                  }`}>
-                    <div className="flex justify-between items-center font-bold">
-                      <span>🟡 Yellow Wires:</span>
-                      <span className="font-black">
-                        {yellowPairs > 0 ? (
-                          <span className="bg-amber-400 text-stone-950 px-1 rounded shadow-xs">
-                            {yellowPairs} {yellowPairs === 1 ? 'Pair' : 'Pairs'} ({yellowPairs * 2} wires)
-                          </span>
-                        ) : (
-                          'None (0)'
-                        )}
-                      </span>
-                    </div>
-                    {state.yellowDecimals && state.yellowDecimals.length > 0 && (
-                      <div className="text-[9px] text-amber-900 font-bold tracking-tight mt-0.5">
-                        Pegs: {state.yellowDecimals.map((d) => `${d}`).join(', ')}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Red Traps Spec */}
-                  <div className={`flex flex-col px-1.5 py-0.5 rounded border ${
-                    redTrapsCount > 0
-                      ? 'bg-rose-500/20 border-rose-400/70 text-rose-950'
-                      : 'bg-stone-200/50 border-stone-300 text-stone-600'
-                  }`}>
-                    <div className="flex justify-between items-center font-bold">
-                      <span>🔴 Red Traps:</span>
-                      <span className="font-black">
-                        {redTrapsCount > 0 ? (
-                          <span className="bg-rose-600 text-white px-1 rounded shadow-xs animate-pulse">
-                            {redTrapsCount} {redTrapsCount === 1 ? 'Trap' : 'Traps'}
-                          </span>
-                        ) : (
-                          'None (0)'
-                        )}
-                      </span>
-                    </div>
-                    {state.redDecimals && state.redDecimals.length > 0 && (
-                      <div className="text-[9px] text-rose-900 font-bold tracking-tight mt-0.5">
-                        Hazards: {state.redDecimals.map((d) => `${d}`).join(', ')}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="pt-1 border-t border-amber-300/80 flex justify-between items-center text-stone-950 font-black text-[10px]">
-                    <span>DEFUSE GOAL:</span>
-                    <span className="bg-emerald-600 text-white px-1.5 py-0.2 rounded font-mono">
-                      {state.totalWiresToCut} wires
+                  <div className="text-[10px] font-black uppercase tracking-wider text-amber-950 border-b border-amber-300 pb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <span>📌</span>
+                      <span>MISSION NOTE</span>
                     </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] font-mono font-bold bg-amber-300/80 px-1 py-0.2 rounded border border-amber-400/60">
+                        #{state.missionId || 1}
+                      </span>
+                      {postItPos !== null && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPostItPos(null);
+                          }}
+                          className="px-1 py-0.2 rounded bg-amber-300 hover:bg-amber-400 text-stone-950 text-[8px] font-bold border border-amber-400 transition cursor-pointer"
+                          title="Dock back to header"
+                        >
+                          Dock
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-1.5 space-y-1 text-[10px] font-mono">
+                    <div className="flex justify-between items-center text-blue-950 font-bold">
+                      <span>🔵 Normal (Blue):</span>
+                      <span>{state.blueCount ?? 48} wires</span>
+                    </div>
+
+                    {/* Yellow Pairs Spec */}
+                    <div
+                      className={`flex flex-col px-1.5 py-0.5 rounded border ${
+                        yellowPairs > 0
+                          ? 'bg-amber-300/50 border-amber-500/70 text-amber-950'
+                          : 'bg-stone-200/50 border-stone-300 text-stone-600'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center font-bold">
+                        <span>🟡 Yellow Wires:</span>
+                        <span className="font-black">
+                          {yellowPairs > 0 ? (
+                            <span className="bg-amber-400 text-stone-950 px-1 rounded shadow-xs">
+                              {yellowPairs} {yellowPairs === 1 ? 'Pair' : 'Pairs'} ({yellowPairs * 2} wires)
+                            </span>
+                          ) : (
+                            'None (0)'
+                          )}
+                        </span>
+                      </div>
+                      {state.yellowDecimals && state.yellowDecimals.length > 0 && (
+                        <div className="text-[9px] text-amber-900 font-bold tracking-tight mt-0.5">
+                          Pegs: {state.yellowDecimals.map((d) => `${d}`).join(', ')}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Red Traps Spec */}
+                    <div
+                      className={`flex flex-col px-1.5 py-0.5 rounded border ${
+                        redTrapsCount > 0
+                          ? 'bg-rose-500/20 border-rose-400/70 text-rose-950'
+                          : 'bg-stone-200/50 border-stone-300 text-stone-600'
+                      }`}
+                    >
+                      <div className="flex justify-between items-center font-bold">
+                        <span>🔴 Red Traps:</span>
+                        <span className="font-black">
+                          {redTrapsCount > 0 ? (
+                            <span className="bg-rose-600 text-white px-1 rounded shadow-xs animate-pulse">
+                              {redTrapsCount} {redTrapsCount === 1 ? 'Trap' : 'Traps'}
+                            </span>
+                          ) : (
+                            'None (0)'
+                          )}
+                        </span>
+                      </div>
+                      {state.redDecimals && state.redDecimals.length > 0 && (
+                        <div className="text-[9px] text-rose-900 font-bold tracking-tight mt-0.5">
+                          Hazards: {state.redDecimals.map((d) => `${d}`).join(', ')}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-1 border-t border-amber-300/80 flex justify-between items-center text-stone-950 font-black text-[10px]">
+                      <span>DEFUSE GOAL:</span>
+                      <span className="bg-emerald-600 text-white px-1.5 py-0.2 rounded font-mono">
+                        {state.totalWiresToCut} wires
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
             );
           })()}
 
@@ -830,12 +974,23 @@ export default function BombBustersBoard({
                 const hasRed = state.redDecimals?.some((d) => Math.floor(d) === num);
                 const redVal = state.redDecimals?.find((d) => Math.floor(d) === num);
 
+                // Compute true validation: all Blue whole-number wires of #num across all player racks must be cut!
+                const allBlueOfNumCut = Object.values(state.stands).every((stand) =>
+                  stand.filter((w) => w.color === 'blue' && w.value === num && !w.isCut).length === 0
+                );
+                const isTrulyValidated = allBlueOfNumCut && (Boolean(track?.isValidated) || (Boolean(track) && track!.cut >= track!.total));
+
+                // Check if yellow decimal peg is cut
+                const isYellowPegCut = yellowVal != null && Object.values(state.stands).every((stand) =>
+                  stand.filter((w) => w.color === 'yellow' && w.value === yellowVal && !w.isCut).length === 0
+                );
+
                 return (
                   <div
                     key={num}
                     className={`relative rounded-xl border p-1.5 flex flex-col items-center justify-between min-h-[58px] transition ${
-                      track?.isValidated
-                        ? 'bg-emerald-950/60 border-emerald-500/70 text-emerald-300 shadow-sm'
+                      isTrulyValidated
+                        ? 'bg-emerald-950/70 border-emerald-500/80 text-emerald-300 shadow-md ring-1 ring-emerald-500/50'
                         : track && track.cut > 0
                         ? 'bg-blue-950/60 border-blue-500/60 text-blue-300'
                         : 'bg-slate-900/80 border-slate-800 text-slate-400'
@@ -844,7 +999,7 @@ export default function BombBustersBoard({
                     <div className="flex items-center justify-between w-full px-0.5">
                       <span className="font-mono text-xs font-black">#{num}</span>
                       <span className="text-[9px] font-mono font-bold">
-                        {track?.isValidated ? '✓' : track ? `${track.cut}/${track.total}` : ''}
+                        {isTrulyValidated ? '✓' : track ? `${track.cut}/${track.total}` : ''}
                       </span>
                     </div>
 
@@ -852,10 +1007,14 @@ export default function BombBustersBoard({
                     <div className="flex items-center gap-1 mt-1">
                       {hasYellow && (
                         <span
-                          className="px-1 py-0.2 rounded bg-amber-400 text-stone-950 font-mono font-black text-[8px] shadow border border-amber-600"
-                          title={`Yellow Decimal Wire in Mission: ${yellowVal}`}
+                          className={`px-1 py-0.2 rounded font-mono font-black text-[8px] shadow border transition ${
+                            isYellowPegCut
+                              ? 'bg-amber-500/25 text-amber-300 border-amber-600/40 line-through opacity-60'
+                              : 'bg-amber-400 text-stone-950 border-amber-600'
+                          }`}
+                          title={`Yellow Decimal Wire in Mission: ${yellowVal} ${isYellowPegCut ? '(Cut ✓)' : '(Active)'}`}
                         >
-                          .{yellowVal?.toString().split('.')[1] || '1'}
+                          {isYellowPegCut ? '✓ ' : ''}.{yellowVal?.toString().split('.')[1] || '1'}
                         </span>
                       )}
                       {hasRed && (
