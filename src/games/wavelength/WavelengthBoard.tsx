@@ -39,10 +39,13 @@ export default function WavelengthBoard({
   onReturnToLobby,
 }: WavelengthBoardProps) {
   const [clueInput, setClueInput] = useState('');
+  const [localAngle, setLocalAngle] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
   const dialRef = useRef<SVGSVGElement | null>(null);
+  const lastSentAngleRef = useRef<number>(state.dialAngle);
+  const throttleTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const isPsychic = state.psychicId === currentPlayerId;
   const activeTeam = state.teams[state.activeTeam];
@@ -56,6 +59,19 @@ export default function WavelengthBoard({
   const isOpposingMember =
     state.mode === 'competitive' &&
     state.teams[opposingTeamId].playerIds.includes(currentPlayerId);
+
+  // Teammates or other players who are actively guessing (Psychic is strictly excluded if others exist)
+  const hasOtherGuesser = players.some((p) => p.id !== state.psychicId);
+  const isGuesser = isActiveTeamMember && (!isPsychic || !hasOtherGuesser);
+  const showPsychicWaitingScreen = isPsychic && hasOtherGuesser;
+
+  // Sync local angle when external state changes and not dragging
+  useEffect(() => {
+    if (!isDragging) {
+      setLocalAngle(null);
+      lastSentAngleRef.current = state.dialAngle;
+    }
+  }, [state.dialAngle, isDragging]);
 
   // Play audio on phase transitions
   useEffect(() => {
@@ -130,53 +146,101 @@ export default function WavelengthBoard({
     }
   }, [isHost, state, players, opposingTeamId, onAction]);
 
-  // Handle rotational angle calculation from mouse/touch event
-  const calculateAngleFromEvent = useCallback(
-    (clientX: number, clientY: number) => {
-      if (!dialRef.current) return;
-      const rect = dialRef.current.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.bottom; // Dial base is at bottom center
+  // Compute angle precisely from pointer coordinates
+  const getAngleFromPoint = useCallback((clientX: number, clientY: number): number | null => {
+    if (!dialRef.current) return null;
+    const rect = dialRef.current.getBoundingClientRect();
+    if (!rect || rect.width === 0) return null;
 
-      const dx = clientX - centerX;
-      const dy = centerY - clientY; // inverted Y
+    // Dial SVG viewBox is "0 0 400 220" and the pivot center hub is at (200, 200)
+    const scale = rect.width / 400;
+    const centerX = rect.left + 200 * scale;
+    const centerY = rect.top + 200 * scale;
 
-      if (dy <= 0) return; // Ignore drag below the baseline
+    const dx = clientX - centerX;
+    const dy = centerY - clientY; // dy > 0 when cursor is above the center pivot
 
-      // atan2 returns angle in radians from positive X axis
+    let deg: number;
+    if (dy <= 0) {
+      // Cursor is below or near the baseline: clamp cleanly to extreme left or right without freezing
+      deg = dx < 0 ? 0 : 180;
+    } else {
       const rad = Math.atan2(dy, dx);
-      let deg = 180 - (rad * 180) / Math.PI;
-      deg = Math.max(0, Math.min(180, Math.round(deg)));
+      deg = 180 - (rad * 180) / Math.PI;
+    }
 
-      onAction({ type: 'ROTATE_DIAL', angle: deg });
-    },
-    [onAction]
-  );
+    deg = Math.max(0, Math.min(180, Math.round(deg)));
+    return deg;
+  }, []);
+
+  // Throttle action dispatches during drag so we don't saturate network/audio
+  const emitAngleThrottled = useCallback((angle: number) => {
+    if (Math.abs(angle - lastSentAngleRef.current) < 1) return;
+
+    if (!throttleTimerRef.current) {
+      throttleTimerRef.current = setTimeout(() => {
+        throttleTimerRef.current = null;
+        lastSentAngleRef.current = angle;
+        onAction({ type: 'ROTATE_DIAL', angle });
+      }, 50);
+    }
+  }, [onAction]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (state.phase !== 'guessing' || !isActiveTeamMember) return;
-    setIsDragging(true);
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    calculateAngleFromEvent(e.clientX, e.clientY);
-  };
-
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging) return;
-    calculateAngleFromEvent(e.clientX, e.clientY);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (isDragging) {
-      setIsDragging(false);
-      soundFX.playClick();
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+    if (state.phase !== 'guessing' || !isGuesser) return;
+    const angle = getAngleFromPoint(e.clientX, e.clientY);
+    if (angle !== null) {
+      setIsDragging(true);
+      setLocalAngle(angle);
+      emitAngleThrottled(angle);
     }
   };
 
+  // Window-level pointer listeners ensure buttery smooth dragging across the entire screen
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleWindowPointerMove = (e: PointerEvent) => {
+      const angle = getAngleFromPoint(e.clientX, e.clientY);
+      if (angle !== null) {
+        setLocalAngle(angle);
+        emitAngleThrottled(angle);
+      }
+    };
+
+    const handleWindowPointerUp = (e: PointerEvent) => {
+      setIsDragging(false);
+      soundFX.playClick();
+      const angle = getAngleFromPoint(e.clientX, e.clientY);
+      const finalAngle = angle !== null ? angle : (localAngle ?? state.dialAngle);
+      setLocalAngle(finalAngle);
+
+      if (throttleTimerRef.current) {
+        clearTimeout(throttleTimerRef.current);
+        throttleTimerRef.current = null;
+      }
+      lastSentAngleRef.current = finalAngle;
+      onAction({ type: 'ROTATE_DIAL', angle: finalAngle });
+    };
+
+    window.addEventListener('pointermove', handleWindowPointerMove);
+    window.addEventListener('pointerup', handleWindowPointerUp);
+    window.addEventListener('pointercancel', handleWindowPointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handleWindowPointerMove);
+      window.removeEventListener('pointerup', handleWindowPointerUp);
+      window.removeEventListener('pointercancel', handleWindowPointerUp);
+    };
+  }, [isDragging, getAngleFromPoint, emitAngleThrottled, localAngle, state.dialAngle, onAction]);
+
   const nudgeDial = (delta: number) => {
-    if (state.phase !== 'guessing' || !isActiveTeamMember) return;
+    if (state.phase !== 'guessing' || !isGuesser) return;
     soundFX.playClick();
-    const newAngle = Math.max(0, Math.min(180, state.dialAngle + delta));
+    const current = localAngle ?? state.dialAngle;
+    const newAngle = Math.max(0, Math.min(180, current + delta));
+    setLocalAngle(newAngle);
+    lastSentAngleRef.current = newAngle;
     onAction({ type: 'ROTATE_DIAL', angle: newAngle });
   };
 
@@ -227,7 +291,8 @@ export default function WavelengthBoard({
   const targetAngle = state.targetAngle ?? 90;
   const isTargetVisible = state.shutterOpen || isPsychic;
 
-  const needlePos = polarToCartesian(200, 200, 165, state.dialAngle);
+  const currentAngle = isDragging && localAngle !== null ? localAngle : state.dialAngle;
+  const needlePos = polarToCartesian(200, 200, 165, currentAngle);
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 pb-12 select-none">
@@ -348,10 +413,14 @@ export default function WavelengthBoard({
           <svg
             ref={dialRef}
             viewBox="0 0 400 220"
-            className="w-full h-full overflow-visible touch-none cursor-pointer"
+            className={`w-full h-full overflow-visible touch-none select-none ${
+              state.phase === 'guessing' && isGuesser
+                ? isDragging
+                  ? 'cursor-grabbing'
+                  : 'cursor-grab'
+                : 'cursor-default'
+            }`}
             onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
           >
             {/* Background semi-circle housing */}
             <path
@@ -466,7 +535,31 @@ export default function WavelengthBoard({
             <circle cx="200" cy="200" r="10" fill="#f43f5e" />
 
             {/* Needle Pointer */}
-            <g className="transition-transform duration-75">
+            <g className={isDragging ? '' : 'transition-transform duration-75'}>
+              {/* Generous touch/grab hit box for easy targeting on mobile & desktop */}
+              {isGuesser && state.phase === 'guessing' && (
+                <>
+                  <line
+                    x1="200"
+                    y1="200"
+                    x2={needlePos.x}
+                    y2={needlePos.y}
+                    stroke="transparent"
+                    strokeWidth="36"
+                    strokeLinecap="round"
+                    className="cursor-grab active:cursor-grabbing"
+                  />
+                  <circle
+                    cx={needlePos.x}
+                    cy={needlePos.y}
+                    r="26"
+                    fill="transparent"
+                    className="cursor-grab active:cursor-grabbing"
+                  />
+                </>
+              )}
+
+              {/* Glowing needle beam */}
               <line
                 x1="200"
                 y1="200"
@@ -475,49 +568,109 @@ export default function WavelengthBoard({
                 stroke="#f43f5e"
                 strokeWidth="4"
                 strokeLinecap="round"
+                className="drop-shadow-[0_0_8px_rgba(244,63,94,0.6)]"
               />
-              <circle cx={needlePos.x} cy={needlePos.y} r="6" fill="#f43f5e" />
+
+              {/* Tactile Needle Head Grab Knob */}
+              <circle
+                cx={needlePos.x}
+                cy={needlePos.y}
+                r="8"
+                fill="#f43f5e"
+                stroke="#ffffff"
+                strokeWidth="2"
+                className={isGuesser && state.phase === 'guessing' ? 'cursor-grab active:cursor-grabbing' : ''}
+              />
+              {isGuesser && state.phase === 'guessing' && (
+                <circle
+                  cx={needlePos.x}
+                  cy={needlePos.y}
+                  r="13"
+                  fill="none"
+                  stroke="#f43f5e"
+                  strokeWidth="1.5"
+                  strokeDasharray="3 2"
+                  className="animate-pulse"
+                />
+              )}
             </g>
           </svg>
 
           {/* Current Needle Angle Pill */}
-          <div className="absolute -bottom-2 px-3 py-1 bg-[#18191e] border border-[#272930] rounded-lg text-xs font-mono font-bold text-white shadow">
-            Pointer: {state.dialAngle}°
+          <div className="absolute -bottom-2 px-3 py-1 bg-[#18191e] border border-[#272930] rounded-lg text-xs font-mono font-bold text-white shadow flex items-center gap-1.5">
+            {isDragging ? (
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+            ) : (
+              <span className="w-2 h-2 rounded-full bg-rose-500" />
+            )}
+            <span>Pointer: {currentAngle}°</span>
           </div>
         </div>
 
-        {/* Nudge Fine-Tuning Buttons (Only active team during guess phase) */}
-        {state.phase === 'guessing' && isActiveTeamMember && (
-          <div className="flex items-center gap-2 pt-2">
-            <button
-              onClick={() => nudgeDial(-5)}
-              className="btn-tactile px-2.5 py-1.5 rounded-xl bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] text-xs font-mono"
-              title="Nudge 5° Left"
-            >
-              -5°
-            </button>
-            <button
-              onClick={() => nudgeDial(-1)}
-              className="btn-tactile px-2.5 py-1.5 rounded-xl bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] text-xs font-mono"
-              title="Nudge 1° Left"
-            >
-              -1°
-            </button>
-            <span className="text-xs text-zinc-500 font-mono px-2">Fine-Tune</span>
-            <button
-              onClick={() => nudgeDial(1)}
-              className="btn-tactile px-2.5 py-1.5 rounded-xl bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] text-xs font-mono"
-              title="Nudge 1° Right"
-            >
-              +1°
-            </button>
-            <button
-              onClick={() => nudgeDial(5)}
-              className="btn-tactile px-2.5 py-1.5 rounded-xl bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] text-xs font-mono"
-              title="Nudge 5° Right"
-            >
-              +5°
-            </button>
+        {/* Fine-Tuning Controls & Range Slider (Guesser only during guess phase) */}
+        {state.phase === 'guessing' && isGuesser && (
+          <div className="w-full max-w-md space-y-3 pt-2">
+            {/* Quick Touch/Mouse Range Slider */}
+            <div className="bg-[#18191e] border border-[#272930] rounded-xl p-3 space-y-2">
+              <div className="flex justify-between items-center text-[11px] font-mono">
+                <span className="text-amber-400 font-bold truncate max-w-[130px]">
+                  ◀ {state.currentCard.leftTh}
+                </span>
+                <span className="text-white font-extrabold px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700">
+                  {currentAngle}°
+                </span>
+                <span className="text-sky-400 font-bold truncate max-w-[130px] text-right">
+                  {state.currentCard.rightTh} ▶
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="180"
+                step="1"
+                value={currentAngle}
+                onChange={(e) => {
+                  const angle = parseInt(e.target.value, 10);
+                  setLocalAngle(angle);
+                  lastSentAngleRef.current = angle;
+                  onAction({ type: 'ROTATE_DIAL', angle });
+                }}
+                className="w-full h-2.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-rose-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Nudge Buttons */}
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => nudgeDial(-5)}
+                className="btn-tactile px-3 py-1.5 rounded-xl bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] text-xs font-mono"
+                title="Nudge 5° Left"
+              >
+                -5°
+              </button>
+              <button
+                onClick={() => nudgeDial(-1)}
+                className="btn-tactile px-3 py-1.5 rounded-xl bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] text-xs font-mono"
+                title="Nudge 1° Left"
+              >
+                -1°
+              </button>
+              <span className="text-xs text-zinc-500 font-mono px-2">Fine-Tune</span>
+              <button
+                onClick={() => nudgeDial(1)}
+                className="btn-tactile px-3 py-1.5 rounded-xl bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] text-xs font-mono"
+                title="Nudge 1° Right"
+              >
+                +1°
+              </button>
+              <button
+                onClick={() => nudgeDial(5)}
+                className="btn-tactile px-3 py-1.5 rounded-xl bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] text-xs font-mono"
+                title="Nudge 5° Right"
+              >
+                +5°
+              </button>
+            </div>
           </div>
         )}
 
@@ -578,10 +731,23 @@ export default function WavelengthBoard({
               </div>
             </div>
 
-            {isActiveTeamMember ? (
+            {showPsychicWaitingScreen ? (
+              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
+                <div className="flex items-center justify-center gap-2 text-xs font-bold text-amber-300">
+                  <span className="text-base">🤫</span>
+                  <span>คุณคือ Psychic (ผู้ให้คำใบ้)</span>
+                </div>
+                <p className="text-xs text-zinc-300 leading-relaxed">
+                  โปรดรักษาความเงียบและสีหน้า! เพื่อนร่วมทีมกำลังปรึกษาและหมุนเข็มชี้ไปยังตำแหน่งของ &ldquo;{state.clue}&rdquo;
+                </p>
+                <div className="text-[11px] font-mono text-amber-400/80 bg-amber-500/10 rounded-lg py-1.5 px-3 border border-amber-500/20">
+                  🔒 ปุ่มล็อคคำตอบจะแสดงเฉพาะบนหน้าจอของเพื่อนร่วมทีมที่กำลังทาย
+                </div>
+              </div>
+            ) : isGuesser ? (
               <div className="space-y-2">
                 <p className="text-xs text-zinc-400">
-                  Drag the needle or use nudge buttons above to point where &ldquo;{state.clue}&rdquo; belongs!
+                  Drag the dial pointer or use the slider/buttons above to point where &ldquo;{state.clue}&rdquo; belongs!
                 </p>
                 <button
                   onClick={() => {
@@ -594,9 +760,11 @@ export default function WavelengthBoard({
                 </button>
               </div>
             ) : (
-              <p className="text-xs text-zinc-400">
-                Team {activeTeam.name} is currently discussing and aiming the pointer...
-              </p>
+              <div className="p-4 bg-[#18191e] border border-[#272930] rounded-xl text-center space-y-1">
+                <p className="text-xs text-zinc-400">
+                  Team <span className="text-white font-semibold">{activeTeam.name}</span> is currently discussing and aiming the pointer...
+                </p>
+              </div>
             )}
           </div>
         )}

@@ -48,18 +48,25 @@ export function initWavelengthState(
   const brainPlayers: string[] = [];
   const mindPlayers: string[] = [];
 
-  players.forEach((p, index) => {
-    if (index % 2 === 0) {
+  if (mode === 'coop') {
+    // In co-op party mode, all players cooperate together
+    players.forEach((p) => {
       brainPlayers.push(p.id);
-    } else {
-      mindPlayers.push(p.id);
-    }
-  });
+    });
+  } else {
+    players.forEach((p, index) => {
+      if (index % 2 === 0) {
+        brainPlayers.push(p.id);
+      } else {
+        mindPlayers.push(p.id);
+      }
+    });
 
-  // If competitive but second team is empty, split evenly
-  if (mode === 'competitive' && mindPlayers.length === 0 && brainPlayers.length > 1) {
-    const moved = brainPlayers.pop();
-    if (moved) mindPlayers.push(moved);
+    // If competitive but second team is empty, split evenly
+    if (mindPlayers.length === 0 && brainPlayers.length > 1) {
+      const moved = brainPlayers.pop();
+      if (moved) mindPlayers.push(moved);
+    }
   }
 
   const initialCard = getRandomSpectrumCard();
@@ -132,6 +139,13 @@ export function wavelengthReducer(
       if (state.phase !== 'guessing') {
         return { newState: state, error: 'Dial can only be rotated during guessing phase' };
       }
+      const guessingTeam =
+        state.mode === 'coop'
+          ? state.teams.brain.playerIds
+          : state.teams[state.activeTeam].playerIds;
+      if (guessingTeam.length > 1 && playerId === state.psychicId && !playerId.startsWith('bot_')) {
+        return { newState: state, error: 'The Psychic cannot rotate the dial' };
+      }
       // Clamped between 0° and 180°
       const clampedAngle = Math.max(0, Math.min(180, Math.round(action.angle)));
       return {
@@ -145,6 +159,13 @@ export function wavelengthReducer(
     case 'LOCK_GUESS': {
       if (state.phase !== 'guessing') {
         return { newState: state, error: 'Cannot lock guess in current phase' };
+      }
+      const guessingTeam =
+        state.mode === 'coop'
+          ? state.teams.brain.playerIds
+          : state.teams[state.activeTeam].playerIds;
+      if (guessingTeam.length > 1 && playerId === state.psychicId && !playerId.startsWith('bot_')) {
+        return { newState: state, error: 'The Psychic cannot lock the guess' };
       }
 
       // If Co-op mode, skip counter-guess and reveal directly
