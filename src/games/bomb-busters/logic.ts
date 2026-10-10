@@ -170,6 +170,21 @@ export function initBombBustersGame(
         const pick = blueWires[Math.floor(blueWires.length / 2)];
         pick.infoToken = pick.value;
         pick.clues.push(`Token: #${pick.value}`);
+      } else {
+        const otherWires = stand.filter((w) => !w.isCut && w.infoToken === null);
+        if (otherWires.length > 0) {
+          const pick = otherWires[0];
+          if (pick.color === 'yellow') {
+            pick.infoToken = 'YELLOW';
+            pick.clues.push('Token: Yellow Wire 🟡');
+          } else if (pick.color === 'red') {
+            pick.infoToken = 'RED';
+            pick.clues.push('Token: Danger Red 🔴');
+          } else {
+            pick.infoToken = pick.value;
+            pick.clues.push(`Token: #${pick.value}`);
+          }
+        }
       }
     }
   });
@@ -215,7 +230,7 @@ export function initBombBustersGame(
       },
       {
         id: 'clue_phase',
-        text: `💡 SETUP PHASE: Starting with Captain ${captainName}, each operative chooses 1 Blue wire to place their starting Info Token!`,
+        text: `💡 SETUP PHASE: Starting with Captain ${captainName}, each operative chooses 1 wire to place their starting Info Token (Number for Blue wires, or Color for Yellow/Red decimal wires)!`,
         time: Date.now() + 1,
         type: 'info',
       },
@@ -1108,8 +1123,13 @@ export function handleBombBustersAction(
       } else {
         // Missed call!
         const nextDetonator = state.detonatorLives - 1;
-        targetWire.infoToken = targetWire.value;
-        targetWire.clues.push(`Token: #${targetWire.value}`);
+        const revealedToken: WireValue | 'YELLOW' | 'RED' =
+          targetWire.color === 'yellow' ? 'YELLOW' : targetWire.color === 'red' ? 'RED' : targetWire.value;
+        const revealedLabel =
+          targetWire.color === 'yellow' ? 'Yellow Wire 🟡' : targetWire.color === 'red' ? 'Danger Red 🔴' : `#${targetWire.value}`;
+
+        targetWire.infoToken = revealedToken;
+        targetWire.clues.push(`Token: ${revealedLabel}`);
         targetWire.clues.push(`≠${action.guessedValue}`);
 
         const isExploded = nextDetonator <= 0;
@@ -1125,7 +1145,7 @@ export function handleBombBustersAction(
               ...state.history,
               {
                 id: `${Date.now()}`,
-                text: `⚠️ MISS! ${playerName} guessed #${action.guessedValue}, but ${targetName}'s wire was #${targetWire.value}! Info Token placed. Stability: ${nextDetonator}.`,
+                text: `⚠️ MISS! ${playerName} guessed #${action.guessedValue}, but ${targetName}'s wire was ${revealedLabel}! Info Token placed. Stability: ${nextDetonator}.`,
                 time: Date.now(),
                 type: isExploded ? 'boom' : 'error',
               },
@@ -1237,11 +1257,12 @@ export function getBombBustersBotAction(
 
   const uncutBotWires = botStand.filter((w) => !w.isCut && w.color !== 'red');
   const uncutRedWires = botStand.filter((w) => !w.isCut && w.color === 'red');
-  // If in INITIAL CLUE setup phase, bot places starting Info Token on a blue wire
+  // If in INITIAL CLUE setup phase, bot places starting Info Token on a wire (blue preferred, otherwise yellow/red)
   if (state.phase === 'initial_clue') {
-    const blueWires = uncutBotWires.filter((w) => w.color === 'blue' && w.infoToken === null);
-    if (blueWires.length > 0) {
-      const pick = blueWires[Math.floor(blueWires.length / 2)];
+    const uncluedWires = botStand.filter((w) => !w.isCut && w.infoToken === null);
+    if (uncluedWires.length > 0) {
+      const blueWires = uncluedWires.filter((w) => w.color === 'blue');
+      const pick = blueWires.length > 0 ? blueWires[Math.floor(blueWires.length / 2)] : uncluedWires[0];
       return {
         type: 'PLACE_INFO_TOKEN',
         wireId: pick.id,

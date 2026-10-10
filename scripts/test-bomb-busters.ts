@@ -133,9 +133,57 @@ function runTests() {
   if (!ddRes.newState.doubleDetectorUsed['p1']) {
     throw new Error('Double detector should be marked as used for player 1');
   }
-  console.log(`✓ Double Detector on board slots #${slotA} & #${slotB} verified!`);
+  // 5. Test Initial Clue Phase on Full Number Wire vs Decimal (Yellow & Red) Wires
+  const clueTestState = initBombBustersGame([p1, p2], { missionId: 2 });
+  clueTestState.phase = 'initial_clue';
+  // Reset info tokens
+  clueTestState.stands['p1'] = [
+    { id: 'w_blue', value: 4, color: 'blue', isCut: false, infoToken: null, clues: [] },
+    { id: 'w_yellow', value: 1.1, color: 'yellow', isCut: false, infoToken: null, clues: [] },
+    { id: 'w_red', value: 1.5, color: 'red', isCut: false, infoToken: null, clues: [] },
+  ];
 
-  console.log('\n🎉 ALL TESTS PASSED! X-Ray Probe logic and Double Detector slot numbering are 100% verified!\n');
+  // A. Place Clue on Blue Wire -> reveals number #4
+  const resClueBlue = handleBombBustersAction(clueTestState, {
+    type: 'PLACE_INFO_TOKEN',
+    wireId: 'w_blue',
+  }, 'p1', room);
+  if (resClueBlue.error) throw new Error(`Blue wire clue failed: ${resClueBlue.error}`);
+  const blueAfter = resClueBlue.newState.stands['p1'].find((w) => w.id === 'w_blue');
+  if (blueAfter?.infoToken !== 4) {
+    throw new Error(`Expected Blue wire infoToken to be number 4, got ${blueAfter?.infoToken}`);
+  }
+  console.log('✓ Initial clue on Full Number (Blue) wire reveals number: #4');
+
+  // B. Place Clue on Yellow Decimal Wire -> reveals 'YELLOW' color
+  const stateYellowTest = { ...clueTestState };
+  stateYellowTest.stands['p1'] = clueTestState.stands['p1'].map((w) => ({ ...w, infoToken: null }));
+  const resClueYellow = handleBombBustersAction(stateYellowTest, {
+    type: 'PLACE_INFO_TOKEN',
+    wireId: 'w_yellow',
+  }, 'p1', room);
+  if (resClueYellow.error) throw new Error(`Yellow wire clue failed: ${resClueYellow.error}`);
+  const yellowAfter = resClueYellow.newState.stands['p1'].find((w) => w.id === 'w_yellow');
+  if (yellowAfter?.infoToken !== 'YELLOW') {
+    throw new Error(`Expected Yellow wire infoToken to be 'YELLOW', got ${yellowAfter?.infoToken}`);
+  }
+  console.log('✓ Initial clue on Yellow Decimal wire reveals color: "YELLOW"');
+
+  // C. Place Clue on Red Wire -> reveals 'RED' color
+  const stateRedTest = { ...clueTestState };
+  stateRedTest.stands['p1'] = clueTestState.stands['p1'].map((w) => ({ ...w, infoToken: null }));
+  const resClueRed = handleBombBustersAction(stateRedTest, {
+    type: 'PLACE_INFO_TOKEN',
+    wireId: 'w_red',
+  }, 'p1', room);
+  if (resClueRed.error) throw new Error(`Red wire clue failed: ${resClueRed.error}`);
+  const redAfter = resClueRed.newState.stands['p1'].find((w) => w.id === 'w_red');
+  if (redAfter?.infoToken !== 'RED') {
+    throw new Error(`Expected Red wire infoToken to be 'RED', got ${redAfter?.infoToken}`);
+  }
+  console.log('✓ Initial clue on Red Danger wire reveals color: "RED"');
+
+  console.log('\n🎉 ALL TESTS PASSED! Full number wires give numbers, decimal wires give colors!\n');
 }
 
 runTests();

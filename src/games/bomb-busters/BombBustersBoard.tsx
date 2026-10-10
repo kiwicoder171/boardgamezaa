@@ -549,19 +549,19 @@ export default function BombBustersBoard({
                                 ) : wire.infoToken === 'YELLOW' ? (
                                   <div className="flex flex-col items-center leading-none">
                                     <span className="font-mono text-xs font-black text-amber-300 drop-shadow">
-                                      🟡 .1
+                                      🟡 YELLOW
                                     </span>
                                     <span className="text-[7px] font-mono font-bold text-amber-400 uppercase tracking-tighter">
-                                      YELLOW
+                                      COLOR CLUE
                                     </span>
                                   </div>
                                 ) : wire.infoToken === 'RED' ? (
                                   <div className="flex flex-col items-center leading-none">
                                     <span className="font-mono text-xs font-black text-rose-400 drop-shadow">
-                                      🚨 .5
+                                      🚨 RED
                                     </span>
                                     <span className="text-[7px] font-mono font-bold text-rose-400 uppercase tracking-tighter">
-                                      TRAP
+                                      DANGER CLUE
                                     </span>
                                   </div>
                                 ) : hasInfoToken ? (
@@ -570,7 +570,7 @@ export default function BombBustersBoard({
                                       #{wire.infoToken}
                                     </span>
                                     <span className="text-[7px] font-mono font-bold text-amber-400 uppercase tracking-tighter">
-                                      CLUE 💡
+                                      NUMBER CLUE 💡
                                     </span>
                                   </div>
                                 ) : (
@@ -668,7 +668,7 @@ export default function BombBustersBoard({
                   <h3 className="text-sm sm:text-base font-bold text-white">
                     {!myHasPlacedClue ? (
                       <span className="text-amber-200 animate-pulse">
-                        👉 Choose your starting clue! Click &quot;💡 Start Clue&quot; on any BLUE wire on your stand below.
+                        👉 Choose your starting clue! Click &quot;💡 START CLUE&quot; on any wire on your stand below (Blue wire reveals Number, Decimal wire reveals Color).
                       </span>
                     ) : (
                       <span className="text-slate-300">
@@ -677,7 +677,7 @@ export default function BombBustersBoard({
                     )}
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Official Rule: Starting with Captain, each operative places 1 Info Token on a Blue wire to give the squad an opening clue before defusal begins.
+                    Official Rule: Each operative places 1 Info Token on a wire (reveals Number for blue wires, or Color for decimal yellow/red wires) to give the squad an opening clue before defusal begins.
                   </p>
                 </div>
               </div>
@@ -1366,12 +1366,28 @@ export default function BombBustersBoard({
                           e.stopPropagation();
                           handlePlaceInfoToken(wire.id);
                         }}
-                        className="absolute -bottom-3 z-20 px-2 py-0.5 rounded-full font-black text-[8px] shadow-lg border uppercase tracking-wider flex items-center gap-0.5 transition cursor-pointer bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 border-amber-400 animate-bounce scale-105 shadow-amber-500/50"
-                        title={`Place opening clue on this wire`}
+                        className={`absolute -bottom-3.5 z-30 px-2 py-0.5 rounded-full font-black text-[8px] whitespace-nowrap shadow-xl border tracking-tight flex items-center gap-1 transition cursor-pointer active:scale-95 animate-bounce ${
+                          wire.color === 'yellow'
+                            ? 'bg-amber-300 hover:bg-amber-200 text-stone-950 border-amber-600 ring-2 ring-amber-400/50 shadow-amber-900/60'
+                            : wire.color === 'red'
+                            ? 'bg-rose-600 hover:bg-rose-500 text-white border-rose-900 ring-2 ring-rose-500/50 shadow-rose-950/70'
+                            : 'bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 hover:to-yellow-200 text-slate-950 border-amber-500 ring-2 ring-amber-400/50 shadow-amber-500/50'
+                        }`}
+                        title={
+                          wire.color === 'yellow'
+                            ? 'Start Clue: Reveals that this wire is YELLOW (Color) to squad'
+                            : wire.color === 'red'
+                            ? 'Start Clue: Reveals that this wire is RED (Color) to squad'
+                            : `Start Clue: Reveals Number #${wire.value} to squad`
+                        }
                       >
-                        <span>💡</span>
-                        <span>
-                          {wire.color === 'yellow' ? 'Clue (Yel)' : wire.color === 'red' ? 'Clue (Red)' : `Clue #${wire.value}`}
+                        <span className="text-[9px]">💡</span>
+                        <span className="font-extrabold uppercase">
+                          {wire.color === 'yellow'
+                            ? 'CLUE: YELLOW'
+                            : wire.color === 'red'
+                            ? 'CLUE: RED'
+                            : `START CLUE #${wire.value}`}
                         </span>
                       </button>
                     ) : null}
