@@ -61,6 +61,13 @@ assert(
   'Each player in a 4-player game must receive exactly 16 cards'
 );
 
+// 1.1 Two-Player Deal Test (Official rule: remove 10 cards, 27 each)
+const twoPlayersState = initKakerlakenPokerState([mockPlayers[0], mockPlayers[1]]);
+assert(
+  twoPlayersState.hands['p1'].length === 27 && twoPlayersState.hands['p2'].length === 27,
+  'In a 2-player game, exactly 10 cards are removed and each player receives 27 cards'
+);
+
 // 2. Offer Card Action Test
 const firstPlayerId = initialState.currentTurnPlayerId;
 const targetPlayerId = mockPlayers.find((p) => p.id !== firstPlayerId)!.id;

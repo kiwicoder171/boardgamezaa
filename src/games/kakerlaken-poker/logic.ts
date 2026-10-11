@@ -50,7 +50,7 @@ export function initKakerlakenPokerState(
   players: Player[],
   settings?: KakerlakenPokerSettings
 ): KakerlakenPokerState {
-  const deck = createDeck();
+  let deck = createDeck();
   const hands: Record<string, Card[]> = {};
   const tableaus: Record<string, Card[]> = {};
 
@@ -58,6 +58,12 @@ export function initKakerlakenPokerState(
     hands[p.id] = [];
     tableaus[p.id] = [];
   });
+
+  // Official Rule for 2 Players:
+  // Randomly remove 10 cards from the deck before dealing, leaving 54 cards (27 cards each).
+  if (players.length === 2) {
+    deck = deck.slice(10);
+  }
 
   // Deal cards evenly to all players
   deck.forEach((card, idx) => {
@@ -71,6 +77,11 @@ export function initKakerlakenPokerState(
   // Randomize first active player
   const firstPlayerIndex = Math.floor(Math.random() * players.length);
   const firstPlayer = players[firstPlayerIndex] || players[0];
+
+  const startText =
+    players.length === 2
+      ? `🃏 2-Player Game started! 10 random cards removed per official rules. 54 cards dealt (27 each). First turn: ${firstPlayer.name}.`
+      : `🃏 Game started! 64 creature cards dealt to ${players.length} players. First turn: ${firstPlayer.name}.`;
 
   return {
     hands,
@@ -86,7 +97,7 @@ export function initKakerlakenPokerState(
       {
         id: 'start',
         type: 'system',
-        text: `🃏 Game started! 64 creature cards dealt to ${players.length} players. First turn: ${firstPlayer.name}.`,
+        text: startText,
         timestamp: Date.now(),
       },
     ],
