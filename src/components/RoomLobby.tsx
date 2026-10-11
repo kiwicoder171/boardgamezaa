@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { DEFAULT_AVATARS } from '@/lib/storage';
 import RulesModal from '@/components/RulesModal';
+import { useLanguage, LanguageSwitcher } from '@/lib/i18n';
 
 interface RoomLobbyProps {
   room: Room;
@@ -65,6 +66,7 @@ export default function RoomLobby({
   onKickPlayer,
   onUpdateProfile,
 }: RoomLobbyProps) {
+  const { t, isThai } = useLanguage();
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
@@ -111,7 +113,6 @@ export default function RoomLobby({
     );
   });
 
-
   const copyRoomCode = () => {
     soundFX.playClick();
     navigator.clipboard.writeText(room.code);
@@ -137,7 +138,7 @@ export default function RoomLobby({
       <div className="bg-[#111215] border border-[#222429] rounded-2xl p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-5">
         <div className="space-y-1 text-center md:text-left">
           <div className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
-            Room Code
+            {t('roomCode')}
           </div>
           <div className="flex items-center gap-3 justify-center md:justify-start">
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-mono tracking-widest bg-[#18191e] px-4 py-1 rounded-xl border border-[#272930]">
@@ -145,39 +146,39 @@ export default function RoomLobby({
             </h1>
             <button
               onClick={copyRoomCode}
-              className="btn-tactile p-2.5 bg-[#18191e] hover:bg-[#22242a] text-zinc-300 rounded-xl border border-[#272930] transition"
-              title="Copy Room Code"
+              className="btn-tactile p-2.5 bg-[#18191e] hover:bg-[#22242a] text-zinc-300 rounded-xl border border-[#272930] transition cursor-pointer"
+              title={t('copy')}
               aria-label="Copy Room Code"
             >
               {copiedCode ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
             </button>
           </div>
           <p className="text-xs text-zinc-500">
-            Share code or invite link to join this room.
+            {t('shareCodeHint')}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 justify-center">
           <button
             onClick={copyRoomLink}
-            className="btn-tactile px-3.5 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-200 border border-[#272930] font-medium text-xs flex items-center gap-2 transition"
+            className="btn-tactile px-3.5 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-200 border border-[#272930] font-medium text-xs flex items-center gap-2 transition cursor-pointer"
           >
             {copiedLink ? (
               <Check className="w-3.5 h-3.5 text-emerald-400" />
             ) : (
               <Share2 className="w-3.5 h-3.5 text-zinc-400" />
             )}
-            <span>{copiedLink ? 'Link Copied!' : 'Copy Link'}</span>
+            <span>{copiedLink ? t('linkCopied') : t('copyLink')}</span>
           </button>
 
           {onAddBotPlayer && isHost && (
             <button
               onClick={onAddBotPlayer}
-              className="btn-tactile px-3.5 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] font-medium text-xs flex items-center gap-1.5 transition"
+              className="btn-tactile px-3.5 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-300 border border-[#272930] font-medium text-xs flex items-center gap-1.5 transition cursor-pointer"
               title="Add a test player to easily verify multi-seat gameplay"
             >
               <Bot className="w-3.5 h-3.5 text-zinc-400" />
-              <span>+ Add Bot</span>
+              <span>{t('addBot')}</span>
             </button>
           )}
 
@@ -186,11 +187,14 @@ export default function RoomLobby({
               soundFX.playClick();
               setShowRulesModal(true);
             }}
-            className="btn-tactile px-3.5 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-200 border border-[#272930] font-medium text-xs flex items-center gap-1.5 transition"
+            className="btn-tactile px-3.5 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-200 border border-[#272930] font-medium text-xs flex items-center gap-1.5 transition cursor-pointer"
           >
             <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
-            <span>Rules</span>
+            <span>{t('rules')}</span>
           </button>
+
+          {/* Quick Language Switcher inside Room Lobby */}
+          <LanguageSwitcher />
         </div>
       </div>
 
@@ -202,40 +206,56 @@ export default function RoomLobby({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold text-white">
-                  Select Game
+                  {t('selectGame')}
                 </h2>
                 <p className="text-xs text-zinc-400">
-                  {isHost
-                    ? 'As Table Host, choose which game to play.'
-                    : 'The Table Host selects the active game.'}
+                  {isHost ? t('hostSelectsGame') : t('guestWaitingGame')}
                 </p>
               </div>
 
               {/* Category Filter Pills */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => {
-                      soundFX.playClick();
-                      setSelectedCategory(cat);
-                    }}
-                    className={`btn-tactile px-2.5 py-1 rounded-lg text-[11px] font-medium transition whitespace-nowrap ${
-                      selectedCategory === cat
-                        ? 'bg-white text-zinc-950 font-bold shadow-xs'
-                        : 'bg-[#18191e] text-zinc-400 hover:text-white border border-[#272930]'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+                {CATEGORIES.map((cat) => {
+                  const catLabel =
+                    cat === 'All'
+                      ? t('tagAll')
+                      : cat === 'Co-op'
+                      ? t('tagCoop')
+                      : cat === 'Social Deduction'
+                      ? t('tagBluff')
+                      : cat === 'Strategy'
+                      ? t('tagStrategy')
+                      : cat === 'Party'
+                      ? t('tagParty')
+                      : cat;
+
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        soundFX.playClick();
+                        setSelectedCategory(cat);
+                      }}
+                      className={`btn-tactile px-2.5 py-1 rounded-lg text-[11px] font-medium transition whitespace-nowrap cursor-pointer ${
+                        selectedCategory === cat
+                          ? 'bg-white text-zinc-950 font-bold shadow-xs'
+                          : 'bg-[#18191e] text-zinc-400 hover:text-white border border-[#272930]'
+                      }`}
+                    >
+                      {catLabel}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {filteredGames.map((game) => {
                 const isSelected = game.id === activeGameId;
+                const localizedName = t(`game_${game.id}_name`, game.name);
+                const localizedDesc = t(`game_${game.id}_desc`, game.description);
+
                 return (
                   <div
                     key={game.id}
@@ -259,19 +279,19 @@ export default function RoomLobby({
                         <span className="text-2xl">{game.icon}</span>
                         {isSelected && (
                           <span className="text-[10px] font-mono uppercase tracking-wider bg-white text-zinc-950 px-2 py-0.5 rounded font-bold">
-                            Selected
+                            ✓ {t('ready')}
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-base font-bold text-white mt-2">{game.name}</h3>
+                      <h3 className="text-base font-bold text-white mt-2">{localizedName}</h3>
                       <p className="text-xs text-zinc-400 mt-1 line-clamp-2 leading-relaxed">
-                        {game.description}
+                        {localizedDesc}
                       </p>
                     </div>
 
                     <div className="pt-2.5 border-t border-[#1e2025] flex items-center justify-between text-xs text-zinc-500 font-mono">
-                      <span>{game.minPlayers}-{game.maxPlayers} players</span>
+                      <span>{game.minPlayers}-{game.maxPlayers} {t('players')}</span>
                       <span>{game.durationMinutes}</span>
                     </div>
                   </div>
@@ -279,6 +299,7 @@ export default function RoomLobby({
               })}
             </div>
           </div>
+
 
           {/* Game Settings Customization */}
           {selectedGame && selectedGame.settingsSchema.length > 0 && (
@@ -385,11 +406,11 @@ export default function RoomLobby({
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-zinc-400" />
-                <span>Players ({room.players.length})</span>
+                <span>{t('tablePlayers')} ({room.players.length})</span>
               </h2>
               {selectedGame && (
                 <span className="text-xs text-zinc-500 font-mono">
-                  Min: {selectedGame.minPlayers}
+                  {t('min')}: {selectedGame.minPlayers}
                 </span>
               )}
             </div>
@@ -419,7 +440,7 @@ export default function RoomLobby({
                           }
                         }}
                         className={`text-xl ${isMe && onUpdateProfile ? 'hover:scale-110 cursor-pointer transition' : ''}`}
-                        title={isMe ? 'Change avatar' : undefined}
+                        title={isMe ? t('chooseAvatar') : undefined}
                       >
                         {player.avatar}
                       </button>
@@ -428,14 +449,14 @@ export default function RoomLobby({
                           <span>{player.name}</span>
                           {isMe && (
                             <span className="text-[10px] text-zinc-400 bg-zinc-800 px-1.5 py-0.2 rounded font-mono">
-                              You
+                              {t('youBadge')}
                             </span>
                           )}
                         </div>
                         <div className="text-[10px] text-zinc-500 flex items-center gap-2">
                           {player.isHost && (
                             <span className="text-zinc-400 flex items-center gap-0.5">
-                              <Crown className="w-3 h-3 text-amber-400" /> Host
+                              <Crown className="w-3 h-3 text-amber-400" /> {t('hostBadge')}
                             </span>
                           )}
                           {isMe && onUpdateProfile && (
@@ -450,7 +471,7 @@ export default function RoomLobby({
                               className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-0.5 underline-offset-2 hover:underline cursor-pointer"
                             >
                               <Pencil className="w-2.5 h-2.5" />
-                              <span>Edit profile</span>
+                              <span>{t('editProfile')}</span>
                             </button>
                           )}
                         </div>
@@ -470,17 +491,17 @@ export default function RoomLobby({
                           aria-label={`Kick ${player.name}`}
                         >
                           <UserX className="w-3.5 h-3.5" />
-                          <span>Kick</span>
+                          <span>{t('kick')}</span>
                         </button>
                       )}
 
                       {player.isReady ? (
                         <span className="text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md">
-                          Ready
+                          {t('ready')}
                         </span>
                       ) : (
                         <span className="text-[10px] font-mono bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded-md">
-                          Waiting
+                          {t('waiting')}
                         </span>
                       )}
                     </div>
@@ -496,13 +517,13 @@ export default function RoomLobby({
                   soundFX.playClick();
                   onToggleReady(!me.isReady);
                 }}
-                className={`btn-tactile w-full py-2.5 rounded-xl font-semibold text-xs transition ${
+                className={`btn-tactile w-full py-2.5 rounded-xl font-semibold text-xs transition cursor-pointer ${
                   me.isReady
                     ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
                     : 'bg-[#1e2025] hover:bg-[#282a32] text-white border border-[#272930]'
                 }`}
               >
-                {me.isReady ? 'Ready ✓' : 'Mark Ready'}
+                {me.isReady ? `${t('ready')} ✓` : t('setReadyBtn')}
               </button>
             )}
 
@@ -522,16 +543,19 @@ export default function RoomLobby({
                   }`}
                 >
                   <Play className="w-4 h-4 fill-current" />
-                  <span>Start Match</span>
+                  <span>{t('startGameBtn')}</span>
                 </button>
 
                 {!hasEnoughPlayers && selectedGame && (
                   <p className="text-[11px] text-center text-zinc-500 font-medium">
-                    Need {selectedGame.minPlayers} players to start (currently {room.players.length}).
+                    {t('needPlayersToStart')
+                      .replace('{min}', String(selectedGame.minPlayers))
+                      .replace('{curr}', String(room.players.length))}
                   </p>
                 )}
               </div>
             )}
+
           </div>
         </div>
       </div>
@@ -541,11 +565,11 @@ export default function RoomLobby({
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-[#111215] border border-[#222429] rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
             <div className="flex items-center justify-between pb-2 border-b border-[#222429]">
-              <h3 className="text-sm font-bold text-white">Edit Your Profile</h3>
+              <h3 className="text-sm font-bold text-white">{t('editProfileTitle')}</h3>
               <button
                 type="button"
                 onClick={() => setIsEditingProfile(false)}
-                className="btn-tactile p-1 text-zinc-400 hover:text-white rounded-lg transition"
+                className="btn-tactile p-1 text-zinc-400 hover:text-white rounded-lg transition cursor-pointer"
               >
                 ✕
               </button>
@@ -560,7 +584,7 @@ export default function RoomLobby({
             >
               <div>
                 <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Display Name
+                  {t('nickname')}
                 </label>
                 <input
                   type="text"
@@ -568,14 +592,14 @@ export default function RoomLobby({
                   maxLength={20}
                   onChange={(e) => setEditName(e.target.value)}
                   className="w-full bg-[#18191e] border border-[#272930] focus:border-white focus:outline-none rounded-xl px-3.5 py-2 text-xs text-white"
-                  placeholder="Your nickname"
+                  placeholder={t('nicknamePlaceholder')}
                   autoFocus
                 />
               </div>
 
               <div>
                 <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Choose Avatar
+                  {t('chooseAvatar')}
                 </label>
                 <div className="grid grid-cols-7 gap-1.5">
                   {DEFAULT_AVATARS.map((av) => (
@@ -583,7 +607,7 @@ export default function RoomLobby({
                       key={av}
                       type="button"
                       onClick={() => setEditAvatar(av)}
-                      className={`text-xl p-2 rounded-xl transition ${
+                      className={`text-xl p-2 rounded-xl transition cursor-pointer ${
                         editAvatar === av
                           ? 'bg-[#22242a] ring-2 ring-white scale-105'
                           : 'bg-[#18191e] hover:bg-[#22242a] border border-[#272930]'
@@ -599,15 +623,16 @@ export default function RoomLobby({
                 <button
                   type="button"
                   onClick={() => setIsEditingProfile(false)}
-                  className="btn-tactile flex-1 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-300 text-xs font-semibold border border-[#272930] transition"
+                  className="btn-tactile flex-1 py-2 rounded-xl bg-[#18191e] hover:bg-[#22242a] text-zinc-300 text-xs font-semibold border border-[#272930] transition cursor-pointer"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
-                  className="btn-tactile flex-1 py-2 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition shadow-sm"
+                  disabled={!editName.trim()}
+                  className="btn-tactile flex-1 py-2 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition shadow-sm disabled:opacity-40 cursor-pointer"
                 >
-                  Save Profile
+                  {t('saveChanges')}
                 </button>
               </div>
             </form>

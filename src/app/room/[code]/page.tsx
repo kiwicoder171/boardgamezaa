@@ -14,6 +14,7 @@ import { soundFX } from '@/lib/sounds';
 import { AlertCircle, ArrowLeft, Loader2, Settings, Volume2, VolumeX, BookOpen } from 'lucide-react';
 import { GameSettingsModal } from '@/components/ui/GameSettingsModal';
 import { getSupabaseClient } from '@/lib/supabase';
+import { useLanguage, LanguageSwitcher } from '@/lib/i18n';
 
 interface RoomPageProps {
   params: Promise<{ code: string }>;
@@ -23,6 +24,7 @@ export default function RoomPage({ params }: RoomPageProps) {
   const unwrappedParams = use(params);
   const roomCode = unwrappedParams.code.toUpperCase();
   const router = useRouter();
+  const { t, isThai } = useLanguage();
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -495,8 +497,8 @@ export default function RoomPage({ params }: RoomPageProps) {
                 soundFX.playClick();
                 router.push('/');
               }}
-              className="btn-tactile p-2 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] transition"
-              title="Leave Room & Go Home"
+              className="btn-tactile p-2 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-300 border border-[#272930] transition cursor-pointer"
+              title={t('leaveRoom')}
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -523,23 +525,26 @@ export default function RoomPage({ params }: RoomPageProps) {
                   soundFX.playClick();
                   setShowInGameRules(true);
                 }}
-                className="btn-tactile px-2.5 py-1.5 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-300 hover:text-white border border-[#272930] transition flex items-center gap-1.5 font-medium"
-                title="View Rules & Objectives"
+                className="btn-tactile px-2.5 py-1.5 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-300 hover:text-white border border-[#272930] transition flex items-center gap-1.5 font-medium cursor-pointer"
+                title={t('rules')}
               >
                 <BookOpen className="w-3.5 h-3.5 text-zinc-400" />
-                <span className="hidden sm:inline">Rules</span>
+                <span className="hidden sm:inline">{t('rules')}</span>
               </button>
             )}
+
+            {/* Global Language Switcher */}
+            <LanguageSwitcher />
 
             {/* Global sound toggle */}
             <button
               onClick={toggleSound}
-              className={`btn-tactile p-2 rounded-lg border transition ${
+              className={`btn-tactile p-2 rounded-lg border transition cursor-pointer ${
                 soundEnabled
                   ? 'bg-[#18191e] text-zinc-300 hover:text-white border-[#272930]'
                   : 'bg-zinc-900/60 text-zinc-600 border-zinc-800'
               }`}
-              title={soundEnabled ? 'Mute Sounds' : 'Unmute Sounds'}
+              title={soundEnabled ? t('audioMute') : t('audioUnmute')}
               aria-label="Toggle Sound Effects"
             >
               {soundEnabled ? (
@@ -554,8 +559,8 @@ export default function RoomPage({ params }: RoomPageProps) {
                 soundFX.playClick();
                 setIsSettingsOpen(true);
               }}
-              className="btn-tactile p-2 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-400 hover:text-white border border-[#272930] transition"
-              title="Preferences"
+              className="btn-tactile p-2 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-400 hover:text-white border border-[#272930] transition cursor-pointer"
+              title={t('preferences')}
               aria-label="Table Preferences"
             >
               <Settings className="w-4 h-4" />

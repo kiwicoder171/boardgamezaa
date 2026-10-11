@@ -28,6 +28,7 @@ import {
   X,
 } from 'lucide-react';
 import { Card3DTilt } from '@/components/ui/Card3DTilt';
+import { useLanguage, LanguageSwitcher } from '@/lib/i18n';
 
 // Thematic Visual Design Metadata matching real tabletop physical materials & mood
 const GAME_THEMES: Record<
@@ -117,6 +118,7 @@ const GAME_THEMES: Record<
 
 export default function HomePage() {
   const router = useRouter();
+  const { t, isThai } = useLanguage();
   const [profile, setProfile] = useState<UserProfile>({
     id: '',
     name: '',
@@ -209,11 +211,14 @@ export default function HomePage() {
               BoardgameZaa
             </span>
             <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500 border border-zinc-800 px-2 py-0.5 rounded-md hidden sm:inline-block">
-              Free • Multiplayer
+              {t('freeMultiplayer')}
             </span>
           </div>
 
           <nav className="flex items-center gap-2">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             <button
               onClick={() => {
                 const next = !soundEnabled;
@@ -222,8 +227,8 @@ export default function HomePage() {
                 if (next) soundFX.playClick();
               }}
               className="btn-tactile p-2 rounded-lg bg-[#18191e] hover:bg-[#202228] text-zinc-400 hover:text-white border border-[#272930] transition flex items-center gap-1.5"
-              title={soundEnabled ? 'Mute Audio' : 'Unmute Audio'}
-              aria-label={soundEnabled ? 'Mute Audio' : 'Unmute Audio'}
+              title={soundEnabled ? t('audioMute') : t('audioUnmute')}
+              aria-label={soundEnabled ? t('audioMute') : t('audioUnmute')}
             >
               {soundEnabled ? (
                 <Volume2 className="w-4 h-4 text-zinc-300" />
@@ -240,12 +245,13 @@ export default function HomePage() {
             {/* Minimalist Hero Section */}
             <section className="pt-6 sm:pt-10 pb-4 space-y-4 max-w-3xl">
               <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
-                Play board games with friends online.
+                {t('heroTitle')}
               </h1>
               <p className="text-base text-zinc-400 leading-relaxed">
-                Direct room links. Instant setup with no downloads or sign-ups required. Open a table, share the code, and start playing.
+                {t('heroSubtitle')}
               </p>
             </section>
+
 
             {/* Quick Actions Strip: Compact Profile + Direct Host/Join */}
             <section className="bg-[#111215] border border-[#222429] rounded-2xl p-5 sm:p-6 shadow-sm">
@@ -264,13 +270,13 @@ export default function HomePage() {
 
                   <div className="flex-1 space-y-1">
                     <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 block">
-                      Your Nickname
+                      {t('nickname')}
                     </label>
                     <input
                       type="text"
                       value={profile.name}
                       maxLength={18}
-                      placeholder="Player name..."
+                      placeholder={t('nicknamePlaceholder')}
                       onChange={(e) => handleNameChange(e.target.value)}
                       className="w-full bg-[#18191e] border border-[#272930] rounded-lg px-3 py-1.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-400"
                     />
@@ -285,17 +291,17 @@ export default function HomePage() {
                   <button
                     disabled={isCreating}
                     onClick={() => handleCreateRoomWithGame('sky-team')}
-                    className="btn-tactile w-full sm:w-auto px-5 py-2.5 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-lg text-sm transition flex items-center justify-center gap-2 flex-shrink-0"
+                    className="btn-tactile w-full sm:w-auto px-5 py-2.5 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-lg text-sm transition flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer"
                   >
                     <PlusCircle className="w-4 h-4" />
-                    <span>{isCreating ? 'Creating Table...' : 'Host New Table'}</span>
+                    <span>{isCreating ? t('creating') : t('hostNewTable')}</span>
                   </button>
 
                   <form onSubmit={handleJoinRoom} className="flex gap-2 w-full">
                     <input
                       type="text"
                       maxLength={6}
-                      placeholder="ROOM CODE"
+                      placeholder={t('roomCodePlaceholder')}
                       value={roomCodeInput}
                       onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
                       className="flex-1 bg-[#18191e] border border-[#272930] rounded-lg px-3 py-2 text-sm text-white font-mono tracking-wider text-center uppercase placeholder-zinc-500 focus:outline-none focus:border-zinc-400"
@@ -303,9 +309,9 @@ export default function HomePage() {
                     <button
                       type="submit"
                       disabled={!roomCodeInput.trim()}
-                      className="btn-tactile px-4 py-2 bg-[#202228] hover:bg-[#282a32] text-white disabled:opacity-30 font-semibold text-xs rounded-lg border border-[#272930] transition"
+                      className="btn-tactile px-4 py-2 bg-[#202228] hover:bg-[#282a32] text-white disabled:opacity-30 font-semibold text-xs rounded-lg border border-[#272930] transition cursor-pointer"
                     >
-                      Join
+                      {t('joinButton')}
                     </button>
                   </form>
                 </div>
@@ -336,31 +342,46 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#222429] pb-4">
                 <div>
                   <h2 className="text-xl font-bold text-white">
-                    Available Titles ({filteredGames.length})
+                    {t('availableTitles')} ({filteredGames.length})
                   </h2>
                   <p className="text-xs text-zinc-400 mt-0.5">
-                    Select any game to host a private match with your rules.
+                    {t('exploreSubtitle')}
                   </p>
                 </div>
 
                 {/* Filter Pills */}
                 <div className="flex flex-wrap gap-1.5">
-                  {filterTags.map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => {
-                        soundFX.playClick();
-                        setSelectedTag(tag);
-                      }}
-                      className={`btn-tactile text-xs px-3 py-1 rounded-md transition ${
-                        selectedTag === tag
-                          ? 'bg-white text-zinc-950 font-bold'
-                          : 'bg-[#141518] text-zinc-400 hover:text-white border border-[#222429]'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
+                  {filterTags.map((tag) => {
+                    const tagLabel =
+                      tag === 'All'
+                        ? t('tagAll')
+                        : tag === 'Cooperative'
+                        ? t('tagCoop')
+                        : tag === 'Social Deduction'
+                        ? t('tagBluff')
+                        : tag === 'Strategy'
+                        ? t('tagStrategy')
+                        : tag === 'Party'
+                        ? t('tagParty')
+                        : tag;
+
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => {
+                          soundFX.playClick();
+                          setSelectedTag(tag);
+                        }}
+                        className={`btn-tactile text-xs px-3 py-1 rounded-md transition cursor-pointer ${
+                          selectedTag === tag
+                            ? 'bg-white text-zinc-950 font-bold'
+                            : 'bg-[#141518] text-zinc-400 hover:text-white border border-[#222429]'
+                        }`}
+                      >
+                        {tagLabel}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -374,6 +395,9 @@ export default function HomePage() {
                   };
 
                   const isExpanded = expandedGameRule === g.id;
+                  const localizedName = t(`game_${g.id}_name`, g.name);
+                  const localizedDesc = t(`game_${g.id}_desc`, g.description);
+                  const localizedGenre = t(`game_${g.id}_genre`, theme.genre);
 
                   return (
                     <div
@@ -384,16 +408,16 @@ export default function HomePage() {
                         <div className="flex items-center justify-between">
                           <span className="text-3xl">{g.icon}</span>
                           <span className="text-[11px] font-mono text-zinc-400 border border-[#272930] px-2 py-0.5 rounded-md">
-                            {theme.genre}
+                            {localizedGenre}
                           </span>
                         </div>
 
                         <div>
                           <h3 className="text-lg font-bold text-white tracking-tight">
-                            {g.name}
+                            {localizedName}
                           </h3>
                           <p className="text-xs text-zinc-400 mt-1 leading-relaxed line-clamp-2">
-                            {g.description}
+                            {localizedDesc}
                           </p>
                         </div>
 
@@ -404,15 +428,15 @@ export default function HomePage() {
                               soundFX.playClick();
                               setExpandedGameRule(isExpanded ? null : g.id);
                             }}
-                            className="text-[11px] text-zinc-400 hover:text-zinc-200 transition flex items-center gap-1 font-medium"
+                            className="text-[11px] text-zinc-400 hover:text-zinc-200 transition flex items-center gap-1 font-medium cursor-pointer"
                           >
-                            <span>{isExpanded ? 'Hide rules' : 'How it works'}</span>
+                            <span>{isExpanded ? t('hideRulesAccordion') : t('howItWorks')}</span>
                             {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                           </button>
 
                           {isExpanded && (
                             <div className="mt-2 text-xs text-zinc-300 p-3 rounded-lg bg-[#18191e] border border-[#272930] leading-relaxed animate-in fade-in">
-                              {theme.quickRule}
+                              {localizedDesc}
                             </div>
                           )}
                         </div>
@@ -421,7 +445,7 @@ export default function HomePage() {
                       {/* Card Footer: Metadata + Host Button */}
                       <div className="pt-3 border-t border-[#1e2025] flex items-center justify-between">
                         <div className="text-xs text-zinc-500 font-mono flex items-center gap-2">
-                          <span>{g.minPlayers}-{g.maxPlayers}p</span>
+                          <span>{g.minPlayers}-{g.maxPlayers} {t('players')}</span>
                           <span>•</span>
                           <span>{g.durationMinutes}</span>
                         </div>
@@ -429,18 +453,20 @@ export default function HomePage() {
                         <button
                           disabled={isCreating}
                           onClick={() => handleCreateRoomWithGame(g.id)}
-                          className="btn-tactile px-3.5 py-1.5 bg-[#1f2026] hover:bg-white hover:text-zinc-950 text-white font-semibold text-xs rounded-lg border border-[#2a2c35] transition flex items-center gap-1.5"
+                          className="btn-tactile px-3.5 py-1.5 bg-[#1f2026] hover:bg-white hover:text-zinc-950 text-white font-semibold text-xs rounded-lg border border-[#2a2c35] transition flex items-center gap-1.5 cursor-pointer"
                         >
-                          <span>{creatingGameId === g.id ? 'Loading...' : 'Play'}</span>
+                          <span>{creatingGameId === g.id ? t('loading') : t('playBtn')}</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
+
                   );
                 })}
               </div>
             </section>
       </main>
+
 
       {/* Minimalist Footer */}
       <footer className="border-t border-[#1e2025] bg-[#090a0c] px-6 py-5 text-center text-xs text-zinc-500 relative z-10">
