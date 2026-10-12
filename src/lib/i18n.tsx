@@ -211,6 +211,12 @@ export const TRANSLATIONS: Translations = {
     th: 'เกมบลัฟชิงอำนาจ อ้างบทบาท สั่งลอบสังหาร และโค่นล้มคู่แข่งจนเหลือคุณคนสุดท้ายที่รอดชีวิต!',
   },
   'game_coup_genre': { en: 'Dystopian Bluffing', th: 'โค่นอำนาจ' },
+  'game_catan_name': { en: 'Catan', th: 'Catan (ผู้บุกเบิกแห่งคาทาน)' },
+  'game_catan_desc': {
+    en: 'The premier island settlement & trading classic! Harvest resources, trade with neighbors and harbors, construct roads and cities, and race to 10 Victory Points.',
+    th: 'เกมบอร์ดคลาสสิกระดับตำนาน! เก็บเกี่ยวทรัพยากร แลกเปลี่ยนกับเพื่อนและท่าเรือ สร้างถนนและเมืองใหญ่ เพื่อพิชิต 10 คะแนนเกียรติยศ',
+  },
+  'game_catan_genre': { en: 'Strategy & Trading', th: 'วางแผน & เจรจาค้าขาย' },
 
   // Kakerlaken Poker
   kakerlakenTitle: { en: 'Kakerlaken Poker', th: 'โป๊กเกอร์แมลงสาบ' },
@@ -365,6 +371,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 export function useLanguage() {
   return useContext(LanguageContext);
 }
+
+export const useTranslation = useLanguage;
 
 // Polished, tactile Language Switcher Button Component
 interface LanguageSwitcherProps {

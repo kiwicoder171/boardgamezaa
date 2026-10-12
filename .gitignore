@@ -36,3 +36,6 @@ yarn-error.log*
 .vscode/
 *.swp
 *.swo
+
+# Launch Videos / Generated Artifacts
+brag-output/

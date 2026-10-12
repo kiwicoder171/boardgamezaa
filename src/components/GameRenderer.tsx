@@ -14,6 +14,7 @@ import OneNightWerewolfBoard from '@/games/one-night-werewolf/OneNightWerewolfBo
 import ForSaleBoard from '@/games/for-sale/ForSaleBoard';
 import CoupBoard from '@/games/coup/CoupBoard';
 import KakerlakenPokerBoard from '@/games/kakerlaken-poker/KakerlakenPokerBoard';
+import CatanBoard from '@/games/catan/CatanBoard';
 
 interface GameRendererProps {
   room: Room;
@@ -165,6 +166,18 @@ export default function GameRenderer({
     case 'kakerlaken-poker':
       return (
         <KakerlakenPokerBoard
+          state={room.gameState}
+          players={room.players}
+          currentPlayerId={currentPlayerId}
+          isHost={isHost}
+          onAction={onGameAction}
+          onReturnToLobby={onReturnToLobby}
+        />
+      );
+
+    case 'catan':
+      return (
+        <CatanBoard
           state={room.gameState}
           players={room.players}
           currentPlayerId={currentPlayerId}

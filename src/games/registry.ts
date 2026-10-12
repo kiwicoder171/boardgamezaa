@@ -11,6 +11,7 @@ import { oneNightWerewolfGameDefinition } from './one-night-werewolf';
 import { forSaleGameDefinition } from './for-sale';
 import { coupGameDefinition } from './coup';
 import { kakerlakenPokerGameDefinition } from './kakerlaken-poker';
+import { catanGameDefinition } from './catan';
 
 // Central Registry of all games available on BoardgameZaa
 export const GAME_REGISTRY: Record<string, GameDefinition<any, any, any>> = {
@@ -26,6 +27,7 @@ export const GAME_REGISTRY: Record<string, GameDefinition<any, any, any>> = {
   [forSaleGameDefinition.id]: forSaleGameDefinition,
   [coupGameDefinition.id]: coupGameDefinition,
   [kakerlakenPokerGameDefinition.id]: kakerlakenPokerGameDefinition,
+  [catanGameDefinition.id]: catanGameDefinition,
 };
 
 export function getAllGames(): GameDefinition[] {
