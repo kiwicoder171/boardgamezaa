@@ -57,6 +57,17 @@ function runTests() {
   if (state.currentHour !== 2) throw new Error('Expected hour 2');
 
   // Thief swipes cheese
+  // Verify that the Thief CANNOT peek under cups even when awake alone
+  const thiefPeekAttempt = cheeseThiefReducer(state, {
+    type: 'peek_cup',
+    playerId: thief.id,
+    targetId: nonThieves[0].id,
+  });
+  if (thiefPeekAttempt.players[thief.id].hasPeeked || thiefPeekAttempt.players[thief.id].peekedTargetId) {
+    throw new Error('Thief should NEVER be allowed to peek under cups even if awake alone!');
+  }
+  console.log(`✅ Thief waking alone cannot peek under other cups (correctly rejected)!`);
+
   state = cheeseThiefReducer(state, { type: 'steal_cheese', playerId: thief.id });
   if (!state.cheeseStolen || state.stolenAtHour !== 2) {
     throw new Error('Cheese was not stolen properly');

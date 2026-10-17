@@ -444,7 +444,7 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
               const isAwakeNow = isNight && p.dieValue === state.currentHour;
               const isPeekedByMe = me?.peekedTargetId === id && me.peekedTargetDie !== null;
               const canISeeCup = isMe || isPeekedByMe || state.phase === 'game_over';
-              const canIPeekThisTarget = isAloneAwake && !me?.hasPeeked && !isMe;
+              const canIPeekThisTarget = isAloneAwake && !isThief && !me?.hasPeeked && !isMe;
               const canISelectAsFollower =
                 isNight && isMyHour && isThief && !isMe && p.dieValue === state.currentHour && !p.isFollower && !state.followerId;
               const revealedDie = isMe
@@ -642,13 +642,30 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
         )}
 
         {/* Solo Waker Instruction Banner */}
-        {isNight && isAloneAwake && !me?.hasPeeked && (
-          <div className="mt-3 px-4 py-2 bg-sky-950/80 border border-sky-500/60 text-sky-200 text-xs rounded-xl shadow-lg flex items-center gap-3">
-            <span className="text-xl">🌙</span>
-            <div>
-              <span className="font-bold text-sky-300">Solo Waker:</span> You are the ONLY mouse awake at {state.currentHour}:00 AM! You may secretly click <strong className="text-emerald-400">Peek 👁️</strong> above one sleeping mouse&apos;s cup.
+        {isNight && isAloneAwake && (
+          isThief ? (
+            <div className="mt-3 px-4 py-2 bg-amber-950/80 border border-amber-500/60 text-amber-200 text-xs rounded-xl shadow-lg flex items-center gap-3">
+              <span className="text-xl">🧀</span>
+              <div>
+                {!state.cheeseStolen ? (
+                  <span>
+                    <span className="font-bold text-amber-300">Solo Thief Waker:</span> You are the Cheese Thief and the ONLY mouse awake at {state.currentHour}:00 AM! Click <strong className="text-amber-400">Swipe Cheese! 🐾</strong> on the platter to take the cheese without being seen!
+                  </span>
+                ) : (
+                  <span>
+                    <span className="font-bold text-amber-300">Cheese Swiped:</span> You took the cheese without witnesses! Keep your eyes open until the hour ends.
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
+          ) : !me?.hasPeeked ? (
+            <div className="mt-3 px-4 py-2 bg-sky-950/80 border border-sky-500/60 text-sky-200 text-xs rounded-xl shadow-lg flex items-center gap-3">
+              <span className="text-xl">🌙</span>
+              <div>
+                <span className="font-bold text-sky-300">Solo Waker:</span> You are the ONLY mouse awake at {state.currentHour}:00 AM! You may secretly click <strong className="text-emerald-400">Peek 👁️</strong> above one sleeping mouse&apos;s cup.
+              </div>
+            </div>
+          ) : null
         )}
 
         {/* Empty Platter Banner when player wakes up and cheese is already gone */}
@@ -814,10 +831,9 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
               <div className="p-3 bg-[#141518] border border-[#272930] rounded-xl space-y-1">
                 <h4 className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">🐭 Night Phase (Hours 1:00 to 6:00 AM)</h4>
                 <p className="text-zinc-400">
-                  When your hour is called, you wake up!
-                  <br />• <strong className="text-zinc-200">Solo Waker:</strong> If you are the ONLY mouse awake at your hour, you may secretly peek under ONE fellow player&apos;s cup!
+                  <br />• <strong className="text-zinc-200">Solo Waker (Sleepyheads):</strong> If you are a Sleepyhead and the ONLY mouse awake at your hour, you may secretly peek under ONE fellow player&apos;s cup!
                   <br />• <strong className="text-zinc-200">Multiple Wakers:</strong> If two or more mice share the same hour, you make eye contact, but neither may peek under any cups!
-                  <br />• <strong className="text-zinc-200">Cheese Thief:</strong> At your hour, swipe the golden cheese from the platter into your pocket!
+                  <br />• <strong className="text-zinc-200">Cheese Thief:</strong> At your hour, swipe the golden cheese from the platter into your pocket! (The Thief does not peek under cups).
                 </p>
               </div>
 
