@@ -135,6 +135,12 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
     : [];
   const amIAwake = isMyHour;
   const isAloneAwake = amIAwake && awakePlayerIds.length === 1;
+  const canISeeCenter =
+    state.phase === 'setup' ||
+    state.phase === 'day' ||
+    state.phase === 'voting' ||
+    state.phase === 'game_over' ||
+    (isNight && amIAwake);
 
   // Sound triggers on hour changes
   useEffect(() => {
@@ -380,54 +386,71 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
               <div className="absolute inset-0 bg-amber-500/5 pointer-events-none" />
             )}
 
-            {/* Central Platter & Golden Cheese Token */}
+            {/* Central Table: Visible only at player's dice hour or when morning arrives */}
             <div className="relative z-10 flex flex-col items-center justify-center">
-              {/* Wooden Platter */}
-              <div className="w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-stone-800/90 border-4 border-amber-900/60 shadow-2xl flex flex-col items-center justify-center relative p-3">
-                {/* Carved Wood Rim Ring */}
-                <div className="absolute inset-2 rounded-full border border-stone-700/50 pointer-events-none" />
+              {!canISeeCenter ? (
+                /* Sleeping Eyes Closed Shroud */
+                <div className="w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-stone-950/95 border-4 border-stone-800 shadow-2xl flex flex-col items-center justify-center relative p-3 text-center overflow-hidden backdrop-blur-md">
+                  <div className="absolute inset-0 bg-indigo-950/30 rounded-full animate-pulse pointer-events-none" />
+                  <span className="text-4xl sm:text-5xl mb-1 animate-pulse">💤</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
+                    Eyes Closed
+                  </span>
+                  <span className="text-[11px] text-stone-400 mt-1 max-w-[130px] leading-tight">
+                    You are asleep until <strong className="text-amber-400">{me?.dieValue}:00 AM</strong>
+                  </span>
+                  <span className="text-[10px] text-stone-500 mt-1 font-mono">
+                    Clock: {state.currentHour}:00 AM
+                  </span>
+                </div>
+              ) : (
+                /* Wooden Platter */
+                <div className="w-44 h-44 sm:w-52 sm:h-52 rounded-full bg-stone-800/90 border-4 border-amber-900/60 shadow-2xl flex flex-col items-center justify-center relative p-3">
+                  {/* Carved Wood Rim Ring */}
+                  <div className="absolute inset-2 rounded-full border border-stone-700/50 pointer-events-none" />
 
-                {!state.cheeseStolen ? (
-                  <div className="flex flex-col items-center text-center">
-                    {/* Golden Cheese Wedge */}
-                    <div
-                      onClick={() => {
-                        if (isMyHour && isThief && !state.cheeseStolen) {
-                          handleStealCheese();
-                        }
-                      }}
-                      className={`text-6xl sm:text-7xl filter drop-shadow-[0_10px_15px_rgba(245,158,11,0.5)] transition-all transform duration-300 ${
-                        isMyHour && isThief
-                          ? 'cursor-pointer hover:scale-110 animate-bounce'
-                          : 'cursor-default'
-                      }`}
-                    >
-                      🧀
-                    </div>
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-300 mt-2">
-                      Royal Cheese
-                    </span>
-                    {isMyHour && isThief && (
-                      <button
-                        onClick={handleStealCheese}
-                        className="mt-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs rounded-full shadow-lg transition animate-pulse"
+                  {!state.cheeseStolen ? (
+                    <div className="flex flex-col items-center text-center">
+                      {/* Golden Cheese Wedge */}
+                      <div
+                        onClick={() => {
+                          if (isMyHour && isThief && !state.cheeseStolen) {
+                            handleStealCheese();
+                          }
+                        }}
+                        className={`text-6xl sm:text-7xl filter drop-shadow-[0_10px_15px_rgba(245,158,11,0.5)] transition-all transform duration-300 ${
+                          isMyHour && isThief
+                            ? 'cursor-pointer hover:scale-110 animate-bounce'
+                            : 'cursor-default'
+                        }`}
                       >
-                        Swipe Cheese! 🐾
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center text-center">
-                    <div className="text-4xl text-stone-600 mb-1">🍽️</div>
-                    <span className="text-sm font-bold text-red-400">Cheese Stolen!</span>
-                    <span className="text-[11px] text-stone-400 max-w-[140px]">
-                      {isNight && amIAwake && state.stolenAtHour === state.currentHour
-                        ? '⚠️ Stolen right now at this hour!'
-                        : 'Only crumbs remain on the platter...'}
-                    </span>
-                  </div>
-                )}
-              </div>
+                        🧀
+                      </div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-amber-300 mt-2">
+                        Royal Cheese
+                      </span>
+                      {isMyHour && isThief && (
+                        <button
+                          onClick={handleStealCheese}
+                          className="mt-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs rounded-full shadow-lg transition animate-pulse"
+                        >
+                          Swipe Cheese! 🐾
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-center">
+                      <div className="text-4xl text-stone-600 mb-1">🍽️</div>
+                      <span className="text-sm font-bold text-red-400">Cheese Stolen!</span>
+                      <span className="text-[11px] text-stone-400 max-w-[140px]">
+                        {isNight && amIAwake && state.stolenAtHour === state.currentHour
+                          ? '⚠️ Stolen right now at this hour!'
+                          : 'Only crumbs remain on the platter...'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Seated Players around the table */}

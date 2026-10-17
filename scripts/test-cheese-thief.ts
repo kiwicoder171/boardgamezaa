@@ -74,9 +74,24 @@ function runTests() {
   }
   console.log(`✅ Thief successfully stole cheese at Hour 2!`);
 
+  // Anti-cheat verification: P2 (die 3) is asleep at Hour 2, so cheeseStolen MUST be masked as false!
+  const sanitizedForP2AtHour2 = sanitizeCheeseThiefState(state, nonThieves[0].id);
+  if (sanitizedForP2AtHour2.cheeseStolen !== false) {
+    throw new Error('Sleeping player at Hour 2 should NOT know cheese was stolen!');
+  }
+  console.log(`✅ Sleeping player at Hour 2 cannot see cheese theft (properly masked)!`);
+
   // Test 4: Solo Peek at Hour 3
   console.log('--- Test 4: Solo Peek Mechanic ---');
   state = cheeseThiefReducer(state, { type: 'advance_hour' }); // hour 3
+
+  // At Hour 3, P2 wakes up and now discovers cheese was stolen!
+  const sanitizedForP2AtHour3 = sanitizeCheeseThiefState(state, nonThieves[0].id);
+  if (sanitizedForP2AtHour3.cheeseStolen !== true) {
+    throw new Error('Awake player at Hour 3 should see cheese is missing!');
+  }
+  console.log(`✅ Awake player at Hour 3 sees the platter has been stolen!`);
+
   const soloPlayer = state.players[nonThieves[0].id];
   state = cheeseThiefReducer(state, {
     type: 'peek_cup',
@@ -105,11 +120,15 @@ function runTests() {
   // Test Follower rule: when sleepyhead wakes at the same hour as thief
   const followerTestState = initCheeseThiefState(testPlayers, false);
   const fThief = Object.values(followerTestState.players).find((p) => p.role === 'thief')!;
-  const fWitness = Object.values(followerTestState.players).find((p) => p.role === 'sleepyhead')!;
+  const fWitnesses = Object.values(followerTestState.players).filter((p) => p.role === 'sleepyhead');
+  const fWitness = fWitnesses[0];
   followerTestState.phase = 'night';
   followerTestState.currentHour = 3;
   fThief.dieValue = 3;
   fWitness.dieValue = 3;
+  fWitnesses.slice(1).forEach((p, idx) => {
+    p.dieValue = 4 + idx;
+  });
   const afterSteal = cheeseThiefReducer(followerTestState, { type: 'steal_cheese', playerId: fThief.id });
   if (afterSteal.followerId !== fWitness.id || !afterSteal.players[fWitness.id].isFollower) {
     throw new Error('Expected single witness at thief hour to automatically become follower');

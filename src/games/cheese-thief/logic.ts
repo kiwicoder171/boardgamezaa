@@ -687,8 +687,21 @@ export function sanitizeCheeseThiefState(
     return true;
   });
 
+  // Central cheese visibility:
+  // - Setup / Day / Voting / GameOver: visible to everyone
+  // - Night: only visible if viewer is the Thief or currently awake at their dice hour
+  const canSeeCheeseAtCenter =
+    state.phase !== 'night' ||
+    isViewerThief ||
+    isViewerAwake;
+
+  const sanitizedCheeseStolen = canSeeCheeseAtCenter ? state.cheeseStolen : false;
+  const sanitizedStolenAtHour = canSeeCheeseAtCenter ? state.stolenAtHour : null;
+
   return {
     ...state,
+    cheeseStolen: sanitizedCheeseStolen,
+    stolenAtHour: sanitizedStolenAtHour,
     stolenBy: isViewerThief ? state.stolenBy : null,
     followerId:
       isViewerThief || isViewerFollower
