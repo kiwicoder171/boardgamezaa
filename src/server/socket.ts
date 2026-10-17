@@ -41,7 +41,11 @@ export function setupSocketServer(io: SocketIOServer) {
 
       const result = roomManager.joinRoom(normalizedCode, playerData);
       if (result.error) {
-        socket.emit('error_notification', { message: result.error });
+        if (result.error.includes('removed') || result.error.includes('kick')) {
+          socket.emit('kicked_notification', { message: result.error });
+        } else {
+          socket.emit('error_notification', { message: result.error });
+        }
         return;
       }
 
@@ -61,9 +65,9 @@ export function setupSocketServer(io: SocketIOServer) {
       }
     });
 
-    socket.on('select_game', ({ code, gameId }: { code: string; gameId: string }) => {
+    socket.on('select_game', async ({ code, gameId }: { code: string; gameId: string }) => {
       if (!currentPlayerId) return;
-      const result = roomManager.selectGame(code, currentPlayerId, gameId);
+      const result = await roomManager.selectGameAsync(code, currentPlayerId, gameId);
       if (result.error) {
         socket.emit('error_notification', { message: result.error });
         return;
@@ -71,9 +75,9 @@ export function setupSocketServer(io: SocketIOServer) {
       roomManager.broadcastRoomState(result.room!);
     });
 
-    socket.on('update_settings', ({ code, settings }: { code: string; settings: any }) => {
+    socket.on('update_settings', async ({ code, settings }: { code: string; settings: any }) => {
       if (!currentPlayerId) return;
-      const result = roomManager.updateGameSettings(code, currentPlayerId, settings);
+      const result = await roomManager.updateGameSettingsAsync(code, currentPlayerId, settings);
       if (result.error) {
         socket.emit('error_notification', { message: result.error });
         return;
@@ -112,13 +116,13 @@ export function setupSocketServer(io: SocketIOServer) {
       }
     });
 
-    socket.on('kick_player', ({ code, targetPlayerId }: { code: string; targetPlayerId: string }) => {
+    socket.on('kick_player', async ({ code, targetPlayerId }: { code: string; targetPlayerId: string }) => {
       if (!currentPlayerId || !targetPlayerId) return;
       const room = roomManager.getRoom(code);
       const targetPlayer = room?.players.find((p) => p.id === targetPlayerId);
       const targetSocketId = targetPlayer?.socketId;
 
-      const result = roomManager.kickPlayer(code, currentPlayerId, targetPlayerId);
+      const result = await roomManager.kickPlayerAsync(code, currentPlayerId, targetPlayerId);
       if (result.error) {
         socket.emit('error_notification', { message: result.error });
         return;
@@ -127,6 +131,10 @@ export function setupSocketServer(io: SocketIOServer) {
         io.to(targetSocketId).emit('kicked_notification', {
           message: 'You were removed from the room by the host.',
         });
+        const targetSocket = io.sockets.sockets.get(targetSocketId);
+        if (targetSocket) {
+          targetSocket.leave(code);
+        }
       }
       roomManager.broadcastRoomState(result.room!);
     });

@@ -5,6 +5,7 @@ import {
 } from './types';
 import {
   cheeseThiefReducer,
+  getCheeseThiefBotAction,
   initCheeseThiefState,
   sanitizeCheeseThiefState,
 } from './logic';
@@ -101,6 +102,18 @@ export const cheeseThiefGameDefinition: GameDefinition<
       };
     }
     return null;
+  },
+
+  onTimerTick: (state: CheeseThiefState) => {
+    if (state.phase !== 'night' && state.phase !== 'day') {
+      return { newState: state };
+    }
+    const nextState = cheeseThiefReducer(state, { type: 'tick_second' });
+    return { newState: nextState };
+  },
+
+  getBotAction: (state: CheeseThiefState, botPlayerId: string) => {
+    return getCheeseThiefBotAction(state, botPlayerId);
   },
 };
 

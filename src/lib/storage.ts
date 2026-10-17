@@ -17,8 +17,17 @@ export function getUserProfile(): UserProfile {
     localStorage.setItem('bgz_user_id', id);
   }
 
-  const name = localStorage.getItem('bgz_user_name') || `Player_${Math.floor(100 + Math.random() * 900)}`;
-  const avatar = localStorage.getItem('bgz_user_avatar') || DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)];
+  let name = localStorage.getItem('bgz_user_name');
+  if (!name) {
+    name = `Player_${Math.floor(100 + Math.random() * 900)}`;
+    localStorage.setItem('bgz_user_name', name);
+  }
+
+  let avatar = localStorage.getItem('bgz_user_avatar');
+  if (!avatar) {
+    avatar = DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)];
+    localStorage.setItem('bgz_user_avatar', avatar);
+  }
 
   return { id, name, avatar };
 }

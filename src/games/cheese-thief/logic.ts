@@ -631,6 +631,8 @@ export function sanitizeCheeseThiefState(
   const viewer = state.players[viewerId];
   const isViewerThief = viewer?.role === 'thief';
   const isViewerFollower = viewer?.isFollower ?? false;
+  const isViewerAwake =
+    state.phase === 'night' && viewer?.dieValue === state.currentHour;
 
   const sanitizedPlayers: Record<string, CheeseThiefPlayer> = {};
 
@@ -640,16 +642,21 @@ export function sanitizeCheeseThiefState(
 
     // Secret die visibility:
     // - Always see your own die.
-    // - If viewer peeked at this player, viewer can see their die.
+    // - If viewer peeked at this player, viewer sees their die.
+    // - If viewer is awake at currentHour, and player p is ALSO awake at currentHour:
+    //   Both mice make eye contact! The viewer sees that p is awake at currentHour!
     // - Otherwise masked as 0.
+    const isAwakeTogether = isViewerAwake && p.dieValue === state.currentHour;
     const canSeeDie =
-      isSelf || (viewer?.peekedTargetId === id && viewer.peekedTargetDie !== null);
+      isSelf ||
+      (viewer?.peekedTargetId === id && viewer.peekedTargetDie !== null) ||
+      isAwakeTogether;
     const visibleDie = canSeeDie ? p.dieValue : 0;
 
     // Role visibility:
     // - Always see own role.
-    // - Never see others' roles before game_over.
-    const visibleRole: CheeseThiefRole = isSelf ? p.role : 'sleepyhead';
+    // - Other players' roles are masked as 'unknown' before game_over so players know roles are hidden.
+    const visibleRole: CheeseThiefRole = isSelf ? p.role : 'unknown';
 
     // Follower visibility:
     // - Follower knows they are follower.
@@ -663,11 +670,22 @@ export function sanitizeCheeseThiefState(
       role: visibleRole,
       isFollower: visibleFollower,
       dieValue: visibleDie,
-      votedTargetId: isSelf ? p.votedTargetId : null,
+      votedTargetId: isSelf ? p.votedTargetId : p.votedTargetId ? '__voted__' : null,
       peekedTargetId: isSelf ? p.peekedTargetId : null,
       peekedTargetDie: isSelf ? p.peekedTargetDie : null,
     };
   }
+
+  // Sanitize logs during night: only show heist swiped logs to the thief or awake witnesses at that hour
+  const sanitizedLogs = state.logs.filter((log) => {
+    if (log.hour !== undefined && log.text.includes('swiped')) {
+      if (viewer?.role === 'thief' || viewer?.dieValue === log.hour) {
+        return true;
+      }
+      return false;
+    }
+    return true;
+  });
 
   return {
     ...state,
@@ -677,5 +695,51 @@ export function sanitizeCheeseThiefState(
         ? state.followerId
         : null,
     players: sanitizedPlayers,
+    logs: sanitizedLogs,
   };
 }
+
+export function getCheeseThiefBotAction(
+  state: CheeseThiefState,
+  botPlayerId: string
+): CheeseThiefAction | null {
+  const bot = state.players[botPlayerId];
+  if (!bot) return null;
+
+  // 1. Setup Phase: Ready up
+  if (state.phase === 'setup' && !bot.isReady) {
+    return { type: 'set_ready', playerId: botPlayerId };
+  }
+
+  // 2. Voting Phase: Cast vote for another player
+  if (state.phase === 'voting' && !bot.votedTargetId) {
+    const candidates = state.playerOrder.filter((id) => id !== botPlayerId);
+    if (candidates.length > 0) {
+      const targetId = candidates[Math.floor(Math.random() * candidates.length)];
+      return { type: 'cast_vote', playerId: botPlayerId, targetId };
+    }
+  }
+
+  // 3. Night Phase:
+  if (state.phase === 'night' && bot.dieValue === state.currentHour) {
+    // If Thief and cheese not stolen
+    if (bot.role === 'thief' && !state.cheeseStolen) {
+      return { type: 'steal_cheese', playerId: botPlayerId };
+    }
+
+    // If Sleepyhead alone awake and has not peeked
+    const awakeCount = state.playerOrder.filter(
+      (id) => state.players[id].dieValue === state.currentHour
+    ).length;
+    if (awakeCount === 1 && !bot.hasPeeked && bot.role !== 'thief') {
+      const candidates = state.playerOrder.filter((id) => id !== botPlayerId);
+      if (candidates.length > 0) {
+        const targetId = candidates[Math.floor(Math.random() * candidates.length)];
+        return { type: 'peek_cup', playerId: botPlayerId, targetId };
+      }
+    }
+  }
+
+  return null;
+}
+

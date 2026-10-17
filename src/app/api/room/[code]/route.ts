@@ -23,9 +23,12 @@ export async function GET(req: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Room not found. Check the code and try again.' }, { status: 404 });
     }
 
-    // Auto-join if playerId provided and not yet in room
+    // Check kicked list and auto-join if eligible
     if (playerId) {
-      if (room.kickedPlayerIds?.includes(playerId)) {
+      const isKicked =
+        room.kickedPlayerIds?.includes(playerId) ||
+        room.gameSettings?._kickedPlayerIds?.includes(playerId);
+      if (isKicked) {
         return NextResponse.json(
           { error: 'You have been removed from this room by the host.', kicked: true },
           { status: 403 }
@@ -33,7 +36,7 @@ export async function GET(req: Request, context: RouteContext) {
       }
 
       const existing = room.players.find((p) => p.id === playerId);
-      if (!existing && room.status === 'lobby') {
+      if (!existing && room.status === 'lobby' && searchParams.get('join') !== 'false') {
         const joinRes = await roomManager.joinRoomAsync(normalizedCode, {
           id: playerId,
           socketId: '',
@@ -43,6 +46,14 @@ export async function GET(req: Request, context: RouteContext) {
           isReady: false,
           connected: true,
         });
+        if (joinRes.error) {
+          if (joinRes.error.includes('removed') || joinRes.error.includes('kick')) {
+            return NextResponse.json(
+              { error: joinRes.error, kicked: true },
+              { status: 403 }
+            );
+          }
+        }
         if (joinRes.room) {
           room = joinRes.room;
         }

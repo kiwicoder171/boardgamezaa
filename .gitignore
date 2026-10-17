@@ -39,3 +39,4 @@ yarn-error.log*
 
 # Launch Videos / Generated Artifacts
 brag-output/
+graphify-out/

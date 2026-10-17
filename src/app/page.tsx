@@ -130,6 +130,7 @@ export default function HomePage() {
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [expandedGameRule, setExpandedGameRule] = useState<string | null>(null);
   const [selectedTag, setSelectedTag] = useState<string>('All');
+  const [selectedHostGame, setSelectedHostGame] = useState<string>('catan');
   const [isDevDocsOpen, setIsDevDocsOpen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -166,6 +167,9 @@ export default function HomePage() {
       });
       const data = await res.json();
       if (data.code) {
+        if (typeof window !== 'undefined' && data.room) {
+          sessionStorage.setItem(`bgz_initial_room_${data.code}`, JSON.stringify(data.room));
+        }
         router.push(`/room/${data.code}`);
       } else {
         console.error('Room creation returned no code:', data);
@@ -287,15 +291,30 @@ export default function HomePage() {
                 <div className="hidden lg:block lg:col-span-1 border-l border-[#222429] h-10 mx-auto" />
 
                 {/* Host & Join Code Actions (6 Cols) */}
-                <div className="lg:col-span-6 flex flex-col sm:flex-row gap-3 items-center">
-                  <button
-                    disabled={isCreating}
-                    onClick={() => handleCreateRoomWithGame('sky-team')}
-                    className="btn-tactile w-full sm:w-auto px-5 py-2.5 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-lg text-sm transition flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>{isCreating ? t('creating') : t('hostNewTable')}</span>
-                  </button>
+                <div className="lg:col-span-6 flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+                  <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+                    <select
+                      value={selectedHostGame}
+                      onChange={(e) => setSelectedHostGame(e.target.value)}
+                      className="bg-[#18191e] border border-[#272930] hover:border-zinc-500 rounded-lg px-2.5 py-2 text-xs text-white focus:outline-none cursor-pointer font-medium"
+                      title="Select Game to Host"
+                    >
+                      {games.map((g) => (
+                        <option key={g.id} value={g.id} className="bg-[#111215] text-white">
+                          {g.icon} {t(`game_${g.id}_name`, g.name)}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      disabled={isCreating}
+                      onClick={() => handleCreateRoomWithGame(selectedHostGame)}
+                      className="btn-tactile flex-1 sm:flex-initial px-4 py-2 bg-white hover:bg-zinc-200 text-zinc-950 font-bold rounded-lg text-xs transition flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer whitespace-nowrap"
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                      <span>{isCreating ? t('creating') : t('hostNewTable')}</span>
+                    </button>
+                  </div>
 
                   <form onSubmit={handleJoinRoom} className="flex gap-2 w-full">
                     <input

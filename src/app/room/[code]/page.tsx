@@ -28,19 +28,66 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [room, setRoom] = useState<Room | null>(null);
+  const [room, setRoom] = useState<Room | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = sessionStorage.getItem(`bgz_initial_room_${roomCode}`);
+        if (cached) {
+          sessionStorage.removeItem(`bgz_initial_room_${roomCode}`);
+          return JSON.parse(cached);
+        }
+      } catch {
+        // Fallback to normal fetch
+      }
+    }
+    return null;
+  });
   const [error, setError] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [isKicked, setIsKicked] = useState(false);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      if (sessionStorage.getItem(`bgz_kicked_${roomCode}`) === 'true') return false;
+      if (sessionStorage.getItem(`bgz_initial_room_${roomCode}`)) return false;
+    }
+    return true;
+  });
+  const [isKicked, setIsKicked] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem(`bgz_kicked_${roomCode}`) === 'true';
+    }
+    return false;
+  });
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showInGameRules, setShowInGameRules] = useState(false);
 
   const prevTurnRef = React.useRef<string | null>(null);
+  const isKickedRef = React.useRef(isKicked);
+  const pollIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const socketRef = React.useRef<Socket | null>(null);
+
+  // Synchronize ref
+  isKickedRef.current = isKicked;
+
+  const markPlayerAsKicked = () => {
+    isKickedRef.current = true;
+    setIsKicked(true);
+    setLoading(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`bgz_kicked_${roomCode}`, 'true');
+    }
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+  };
 
   // Fetch room via REST API for instant initial load and fallback
   const fetchRoomState = async (userProfile?: UserProfile | null) => {
+    if (isKickedRef.current) return null;
     try {
       const u = userProfile || profile || getUserProfile();
       const params = new URLSearchParams({
@@ -52,22 +99,26 @@ export default function RoomPage({ params }: RoomPageProps) {
       if (res.status === 403) {
         const errData = await res.json().catch(() => ({}));
         if (errData.kicked) {
-          setIsKicked(true);
-          setLoading(false);
+          markPlayerAsKicked();
           return null;
         }
       }
       if (res.ok) {
         const data = await res.json();
         if (data.room) {
-          if (u && data.room.kickedPlayerIds?.includes(u.id)) {
-            setIsKicked(true);
-            setLoading(false);
+          if (
+            u &&
+            (data.room.kickedPlayerIds?.includes(u.id) ||
+              data.room.gameSettings?._kickedPlayerIds?.includes(u.id))
+          ) {
+            markPlayerAsKicked();
             return null;
           }
-          setRoom(data.room);
-          setLoading(false);
-          setError(null);
+          if (!isKickedRef.current) {
+            setRoom(data.room);
+            setLoading(false);
+            setError(null);
+          }
           return data.room;
         }
       } else {
@@ -84,6 +135,11 @@ export default function RoomPage({ params }: RoomPageProps) {
 
   // Dual transport: Immediate HTTP fetch + Socket.IO + Auto polling fallback
   useEffect(() => {
+    if (isKickedRef.current) {
+      setLoading(false);
+      return;
+    }
+
     const user = getUserProfile();
     setProfile(user);
 
@@ -106,8 +162,13 @@ export default function RoomPage({ params }: RoomPageProps) {
           transports: ['websocket', 'polling'],
         });
         setSocket(s);
+        socketRef.current = s;
 
         s.on('connect', () => {
+          if (isKickedRef.current) {
+            s?.disconnect();
+            return;
+          }
           s?.emit('join_room', {
             code: roomCode,
             player: user,
@@ -115,28 +176,38 @@ export default function RoomPage({ params }: RoomPageProps) {
         });
 
         s.on('room_state_update', (updatedRoom: Room) => {
-          if (user && updatedRoom.kickedPlayerIds?.includes(user.id)) {
-            setIsKicked(true);
-            setLoading(false);
+          if (
+            user &&
+            (updatedRoom.kickedPlayerIds?.includes(user.id) ||
+              updatedRoom.gameSettings?._kickedPlayerIds?.includes(user.id))
+          ) {
+            markPlayerAsKicked();
             return;
           }
-          setRoom(updatedRoom);
-          setLoading(false);
-          setError(null);
+          if (!isKickedRef.current) {
+            setRoom(updatedRoom);
+            setLoading(false);
+            setError(null);
+          }
         });
 
         s.on('kicked_notification', () => {
-          setIsKicked(true);
-          setLoading(false);
+          markPlayerAsKicked();
         });
 
         s.on('error_notification', ({ message }: { message: string }) => {
-          setError(message);
-          setLoading(false);
+          if (message.includes('removed') || message.includes('kick')) {
+            markPlayerAsKicked();
+          } else {
+            setError(message);
+            setLoading(false);
+          }
         });
 
         s.on('connect_error', () => {
-          fetchRoomState(user);
+          if (!isKickedRef.current) {
+            fetchRoomState(user);
+          }
         });
       } catch {
         // Socket creation fallback
@@ -159,7 +230,9 @@ export default function RoomPage({ params }: RoomPageProps) {
               filter: `code=eq.${roomCode}`,
             },
             () => {
-              fetchRoomState(user);
+              if (!isKickedRef.current) {
+                fetchRoomState(user);
+              }
             }
           )
           .subscribe();
@@ -171,8 +244,10 @@ export default function RoomPage({ params }: RoomPageProps) {
     // 4. Lightweight safety polling (only when tab is visible, 6s when Supabase is active)
     const pollInterval = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      if (isKickedRef.current) return;
       fetchRoomState(user);
     }, supabase ? 6000 : 3000);
+    pollIntervalRef.current = pollInterval;
 
     return () => {
       clearInterval(pollInterval);
@@ -270,9 +345,8 @@ export default function RoomPage({ params }: RoomPageProps) {
     });
     if (socket && socket.connected) {
       socket.emit('select_game', { code: roomCode, gameId });
-    } else {
-      postRoomAction('select_game', { gameId });
     }
+    postRoomAction('select_game', { gameId });
   };
 
   const handleUpdateSettings = (settings: any) => {
@@ -286,9 +360,8 @@ export default function RoomPage({ params }: RoomPageProps) {
     });
     if (socket && socket.connected) {
       socket.emit('update_settings', { code: roomCode, settings });
-    } else {
-      postRoomAction('update_settings', { settings });
     }
+    postRoomAction('update_settings', { settings });
   };
 
   const handleToggleReady = (isReady: boolean) => {
@@ -317,13 +390,13 @@ export default function RoomPage({ params }: RoomPageProps) {
       return {
         ...prev,
         players: prev.players.filter((p) => p.id !== targetPlayerId),
+        kickedPlayerIds: [...(prev.kickedPlayerIds || []), targetPlayerId],
       };
     });
     if (socket && socket.connected) {
       socket.emit('kick_player', { code: roomCode, targetPlayerId });
-    } else {
-      postRoomAction('kick_player', { targetPlayerId });
     }
+    postRoomAction('kick_player', { targetPlayerId });
   };
 
   const handleStartGame = () => {

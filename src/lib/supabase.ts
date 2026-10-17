@@ -63,7 +63,10 @@ export function roomToDb(room: Room): DbRoom {
     host_id: room.hostId,
     selected_game_id: room.selectedGameId,
     status: room.status,
-    game_settings: room.gameSettings ?? {},
+    game_settings: {
+      ...(room.gameSettings ?? {}),
+      _kickedPlayerIds: room.kickedPlayerIds ?? [],
+    },
     game_state: room.gameState ?? null,
     players: room.players ?? [],
     chat_messages: room.chatMessages ?? [],
@@ -73,16 +76,22 @@ export function roomToDb(room: Room): DbRoom {
 }
 
 export function dbToRoom(db: DbRoom): Room {
+  const gameSettings = db.game_settings ?? {};
+  const kickedPlayerIds = Array.isArray(gameSettings._kickedPlayerIds)
+    ? gameSettings._kickedPlayerIds
+    : [];
+
   return {
     code: db.code,
     hostId: db.host_id,
     selectedGameId: db.selected_game_id,
     status: db.status as any,
-    gameSettings: db.game_settings ?? {},
+    gameSettings,
     gameState: db.game_state ?? null,
     players: Array.isArray(db.players) ? db.players : [],
     chatMessages: Array.isArray(db.chat_messages) ? db.chat_messages : [],
     createdAt: Number(db.created_at) || Date.now(),
     lastActivity: Number(db.last_activity) || Date.now(),
+    kickedPlayerIds,
   };
 }

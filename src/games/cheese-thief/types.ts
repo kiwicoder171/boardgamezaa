@@ -1,4 +1,4 @@
-export type CheeseThiefRole = 'thief' | 'sleepyhead' | 'fall_mouse';
+export type CheeseThiefRole = 'thief' | 'sleepyhead' | 'fall_mouse' | 'unknown';
 
 export type CheeseThiefPhase =
   | 'setup'

@@ -101,10 +101,21 @@ export default function RoomLobby({
     setIsEditingProfile(false);
   };
 
-  // Reset optimistic state when server room updates
+  // Only clear optimistic selection once server has acknowledged the selection
   React.useEffect(() => {
-    setOptimisticGameId(null);
-  }, [room.selectedGameId]);
+    if (optimisticGameId && room.selectedGameId === optimisticGameId) {
+      setOptimisticGameId(null);
+    }
+  }, [room.selectedGameId, optimisticGameId]);
+
+  // Safety timer to clear optimistic state if server failed to respond
+  React.useEffect(() => {
+    if (!optimisticGameId) return;
+    const t = setTimeout(() => {
+      setOptimisticGameId(null);
+    }, 4000);
+    return () => clearTimeout(t);
+  }, [optimisticGameId]);
 
   const filteredGames = games.filter((game) => {
     if (selectedCategory === 'All') return true;

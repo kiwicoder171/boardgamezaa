@@ -114,7 +114,6 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
   onReturnToLobby,
 }) => {
   const [showRoleCard, setShowRoleCard] = useState<boolean>(true);
-  const [peekedNotification, setPeekedNotification] = useState<string | null>(null);
   const [soundMuted, setSoundMuted] = useState<boolean>(false);
   const [showRulesGuide, setShowRulesGuide] = useState<boolean>(false);
 
@@ -148,44 +147,13 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
     }
   }, [state.phase, state.currentHour]);
 
-  // Local countdown timers to eliminate 1-second network POST spam
-  const [localHourSeconds, setLocalHourSeconds] = useState(state.hourSecondsRemaining);
-  const [localDaySeconds, setLocalDaySeconds] = useState(state.daySecondsRemaining);
-
+  // Host ticker timer - drive timer if needed as fallback, but rely primarily on server onTimerTick
   useEffect(() => {
-    setLocalHourSeconds(state.hourSecondsRemaining);
-  }, [state.hourSecondsRemaining, state.currentHour]);
+    if (!isHost || (state.phase !== 'night' && state.phase !== 'day')) return;
 
-  useEffect(() => {
-    setLocalDaySeconds(state.daySecondsRemaining);
-  }, [state.daySecondsRemaining]);
-
-  // Host ticker timer - only dispatches transition action when seconds expire
-  useEffect(() => {
-    if (state.phase !== 'night' && state.phase !== 'day') return;
-
+    // Heartbeat ticker for room stability
     const interval = setInterval(() => {
-      if (state.phase === 'night') {
-        setLocalHourSeconds((prev) => {
-          if (prev <= 1) {
-            if (isHost) {
-              onAction({ type: 'tick_second' });
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      } else if (state.phase === 'day') {
-        setLocalDaySeconds((prev) => {
-          if (prev <= 1) {
-            if (isHost) {
-              onAction({ type: 'tick_second' });
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }
+      onAction({ type: 'tick_second' });
     }, 1000);
 
     return () => clearInterval(interval);
@@ -235,8 +203,6 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
   const handlePeekCup = (targetId: string) => {
     playSfx('shake');
     onAction({ type: 'peek_cup', playerId: myPlayerId, targetId });
-    const target = state.players[targetId];
-    setPeekedNotification(`You peeked under ${target?.name}'s cup and saw Die: 🎲 ${target?.dieValue || '?'}`);
   };
 
   const handleChooseFollower = (targetId: string) => {
@@ -302,9 +268,12 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
             <div className="flex items-center gap-1.5 text-lg font-mono font-bold text-amber-300">
               <span className="text-xl">🕰️</span>
               {state.phase === 'night' ? (
-                <span>{state.currentHour}:00 AM ({localHourSeconds}s)</span>
+                <span>{state.currentHour}:00 AM ({state.hourSecondsRemaining ?? 5}s)</span>
               ) : state.phase === 'day' ? (
-                <span className="text-yellow-300">Discussion ({Math.floor(localDaySeconds / 60)}:{(localDaySeconds % 60).toString().padStart(2, '0')})</span>
+                <span className="text-yellow-300">
+                  Discussion ({Math.floor((state.daySecondsRemaining ?? 60) / 60)}:
+                  {((state.daySecondsRemaining ?? 60) % 60).toString().padStart(2, '0')})
+                </span>
               ) : state.phase === 'voting' ? (
                 <span className="text-red-400">Voting Time!</span>
               ) : state.phase === 'game_over' ? (
@@ -313,6 +282,12 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
                 <span className="text-stone-300">Pre-Night Setup</span>
               )}
             </div>
+          </div>
+
+          {/* Role Roster Badge */}
+          <div className="hidden sm:flex flex-col text-[10px] text-stone-400 pl-2 border-l border-stone-800">
+            <span className="text-amber-400 font-semibold">1 Cheese Thief 🧀</span>
+            <span>{Math.max(1, state.playerOrder.length - 1)} Sleepyheads 😴</span>
           </div>
 
           {/* Quick controls for host & utility buttons */}
@@ -445,8 +420,10 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
                   <div className="flex flex-col items-center text-center">
                     <div className="text-4xl text-stone-600 mb-1">🍽️</div>
                     <span className="text-sm font-bold text-red-400">Cheese Stolen!</span>
-                    <span className="text-[11px] text-stone-400 max-w-[120px]">
-                      Only crumbs remain on the platter...
+                    <span className="text-[11px] text-stone-400 max-w-[140px]">
+                      {isNight && amIAwake && state.stolenAtHour === state.currentHour
+                        ? '⚠️ Stolen right now at this hour!'
+                        : 'Only crumbs remain on the platter...'}
                     </span>
                   </div>
                 )}
@@ -465,10 +442,16 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
               const top = 50 + 36 * Math.sin(angle);
 
               const isAwakeNow = isNight && p.dieValue === state.currentHour;
-              const canISeeCup = isMe || (me?.peekedTargetId === id && me.peekedTargetDie !== null) || state.phase === 'game_over';
+              const isPeekedByMe = me?.peekedTargetId === id && me.peekedTargetDie !== null;
+              const canISeeCup = isMe || isPeekedByMe || state.phase === 'game_over';
               const canIPeekThisTarget = isAloneAwake && !me?.hasPeeked && !isMe;
               const canISelectAsFollower =
-                isNight && isMyHour && isThief && !isMe && p.dieValue === state.currentHour && p.role === 'sleepyhead' && !state.followerId;
+                isNight && isMyHour && isThief && !isMe && p.dieValue === state.currentHour && !p.isFollower && !state.followerId;
+              const revealedDie = isMe
+                ? p.dieValue
+                : isPeekedByMe
+                ? me.peekedTargetDie
+                : p.dieValue;
 
               return (
                 <div
@@ -498,7 +481,7 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
                         {/* Secret Die inside/under cup */}
                         {canISeeCup ? (
                           <div className="w-8 h-8 sm:w-9 sm:h-9 bg-white text-stone-900 rounded-lg shadow-md flex items-center justify-center font-bold text-lg border border-stone-300">
-                            🎲 {p.dieValue}
+                            🎲 {revealedDie || '?'}
                           </div>
                         ) : (
                           <div className="text-[10px] text-amber-200/60 font-mono">
@@ -617,16 +600,72 @@ export const CheeseThiefBoard: React.FC<CheeseThiefBoardProps> = ({
           </div>
         )}
 
-        {/* Solo Peek Notification Banner */}
-        {peekedNotification && (
+        {/* Solo Peek Notification Banner - Reactive from server state */}
+        {me?.peekedTargetId && me.peekedTargetDie !== null && (
           <div className="mt-3 px-4 py-2 bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 text-xs rounded-xl shadow-lg flex items-center justify-between gap-4">
-            <span>{peekedNotification}</span>
-            <button
-              onClick={() => setPeekedNotification(null)}
-              className="text-stone-400 hover:text-white text-xs"
-            >
-              ✕
-            </button>
+            <span className="flex items-center gap-2">
+              <span className="text-base">🔍</span>
+              <span>
+                You peeked under <strong>{state.players[me.peekedTargetId]?.name || 'Player'}&apos;s</strong> cup and discovered die{' '}
+                <strong className="text-amber-300 font-mono text-sm bg-stone-900 px-1.5 py-0.5 rounded border border-amber-500/40">
+                  🎲 {me.peekedTargetDie}
+                </strong>!
+              </span>
+            </span>
+          </div>
+        )}
+
+        {/* Eye Contact Banner when multiple players are awake at current hour */}
+        {isNight && amIAwake && awakePlayerIds.length > 1 && (
+          <div className="mt-3 px-4 py-2.5 bg-amber-950/80 border border-amber-500/60 text-amber-200 text-xs rounded-xl shadow-lg flex items-center gap-3">
+            <span className="text-2xl">👀</span>
+            <div>
+              <div className="font-bold text-amber-300">Eye Contact!</div>
+              <div>
+                You and{' '}
+                <strong>
+                  {awakePlayerIds
+                    .filter((id) => id !== myPlayerId)
+                    .map((id) => state.players[id]?.name)
+                    .join(', ')}
+                </strong>{' '}
+                woke up together at {state.currentHour}:00 AM! You make silent eye contact across the room.
+                Because others are awake, <strong className="text-stone-300">you cannot peek under anyone&apos;s cup</strong>.
+                {isThief && !state.followerId && (
+                  <span className="block mt-1 text-purple-300 font-semibold">
+                    👉 As the Cheese Thief, click &quot;Recruit 🤝&quot; on one of the awake mice above to choose your Accomplice!
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Solo Waker Instruction Banner */}
+        {isNight && isAloneAwake && !me?.hasPeeked && (
+          <div className="mt-3 px-4 py-2 bg-sky-950/80 border border-sky-500/60 text-sky-200 text-xs rounded-xl shadow-lg flex items-center gap-3">
+            <span className="text-xl">🌙</span>
+            <div>
+              <span className="font-bold text-sky-300">Solo Waker:</span> You are the ONLY mouse awake at {state.currentHour}:00 AM! You may secretly click <strong className="text-emerald-400">Peek 👁️</strong> above one sleeping mouse&apos;s cup.
+            </div>
+          </div>
+        )}
+
+        {/* Empty Platter Banner when player wakes up and cheese is already gone */}
+        {isNight && amIAwake && state.cheeseStolen && (
+          <div className="mt-3 px-4 py-2 bg-rose-950/80 border border-rose-500/60 text-rose-200 text-xs rounded-xl shadow-lg flex items-center gap-3">
+            <span className="text-xl">🧀</span>
+            <div>
+              {state.stolenAtHour === state.currentHour ? (
+                <span>
+                  <strong className="text-rose-300">Theft Alert:</strong> The cheese was just snatched from the platter right now during {state.currentHour}:00 AM!
+                </span>
+              ) : (
+                <span>
+                  <strong className="text-stone-300">Platter Empty:</strong> You look at the center table and notice the cheese is <span className="underline font-semibold">already missing</span>! It was stolen earlier at an unknown hour while you were asleep.
+                </span>
+              )}
+            </div>
           </div>
         )}
 
